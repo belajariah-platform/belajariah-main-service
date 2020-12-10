@@ -2,6 +2,10 @@ package main
 
 import (
 	"belajariah-main-service/config"
+	"belajariah-main-service/handler"
+	"belajariah-main-service/middleware"
+	"belajariah-main-service/repository"
+	"belajariah-main-service/usecase"
 	"belajariah-main-service/utils"
 	"fmt"
 	"io"
@@ -23,7 +27,15 @@ func main() {
 
 	//get db config
 	db := config.ConnectDB(configModel)
-	fmt.Println(db)
+
+	//initiate repository
+	userRepository := repository.InitUserRepository(db)
+
+	//initiate usecase
+	userUsecase := usecase.InitUserUsecase(userRepository)
+
+	//initiate handler
+	userHandler := handler.InitUserHandler(userUsecase)
 
 	//initiate router
 	router := gin.New()
@@ -40,9 +52,15 @@ func main() {
 			param.ErrorMessage,
 		)
 	}))
-	router.Use()
 
+	router.Use()
 	router.Use(gin.Recovery())
+	router.Use(middleware.CORSMiddleware())
+
+	// routeruser
+	fmt.Println(userHandler)
+	// router.GET("/vessels", userHandler)
+
 	utils.PushLogf("BELAJARIAH MAIN SERVICE STARTED")
 	fmt.Println(fmt.Sprintf("BELAJARIAH MAIN SERVICE STARTED ON PORT %d", configModel.Server.Port))
 
