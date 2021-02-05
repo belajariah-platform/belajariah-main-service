@@ -56,10 +56,14 @@ func main() {
 	router.Use()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.AuthMiddleware(configModel))
 
-	// routeruser
-	fmt.Println(userHandler)
-	// router.GET("/vessels", userHandler)
+	// router-user
+	router.POST("/login", userHandler.LoginUser)
+	router.POST("/register", userHandler.RegisterUser)
+	router.POST("/check_email", userHandler.CheckEmail)
+	router.PUT("/verify_account", userHandler.VerifyUser)
+	router.PUT("/change_password", userHandler.ChangePassword)
 
 	utils.PushLogf("BELAJARIAH MAIN SERVICE STARTED")
 	fmt.Println(fmt.Sprintf("BELAJARIAH MAIN SERVICE STARTED ON PORT %d", configModel.Server.Port))

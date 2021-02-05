@@ -1,18 +1,17 @@
 package shape
 
-import "time"
+import (
+	"time"
+)
 
-type ClassTest struct {
+type PaymentMethod struct {
 	ID             int
 	Code           string
-	Class_Code     string
-	Test_Type_Code string
-	Question       string
-	Option_A       string
-	Option_B       string
-	Option_C       string
-	Option_D       string
-	Answer         string
+	Type           string
+	Value          string
+	Account_Name   string
+	Account_Number string
+	Method_Image   string
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time

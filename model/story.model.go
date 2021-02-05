@@ -5,11 +5,14 @@ import (
 	"time"
 )
 
-type Enum struct {
+type Story struct {
 	ID           int
 	Code         string
-	Type         string
-	Value        string
+	CategoryCode string
+	ImageCode    sql.NullString
+	VideoCode    sql.NullString
+	Title        string
+	Content      string
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time

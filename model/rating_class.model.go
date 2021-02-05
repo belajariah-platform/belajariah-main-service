@@ -5,11 +5,14 @@ import (
 	"time"
 )
 
-type Enum struct {
+type RatingClass struct {
 	ID           int
-	Code         string
-	Type         string
-	Value        string
+	ClassCode    string
+	ClassName    string
+	ClassInitial sql.NullString
+	UserCode     int
+	Rating       float64
+	Comment      sql.NullString
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time
