@@ -14,6 +14,7 @@ type Promotion struct {
 	Discount      float64
 	Banner_Image  string
 	Header_Image  string
+	Expired_Date  string
 	Is_Active     bool
 	Created_By    string
 	Created_Date  time.Time

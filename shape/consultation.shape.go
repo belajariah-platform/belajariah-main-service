@@ -19,9 +19,10 @@ type Consultation struct {
 	Description        string
 	Taken_Code         int
 	Taken_Name         string
-	Is_Play            float64
-	Is_Read            float64
-	Is_Action_Taken    float64
+	Is_Play            bool
+	Is_Read            bool
+	Is_Action_Taken    bool
+	Is_Active          bool
 	Created_By         string
 	Created_Date       time.Time
 	Modified_By        string

@@ -44,7 +44,7 @@ func (classHandler *classHandler) GetAllClass(ctx *gin.Context) {
 		}
 
 		var classResult []shape.Class
-		// activityResult, count, err = activityHandler.activityUsecase.GetAllActivity(query)
+		classResult, count, err = classHandler.classUsecase.GetAllClass(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
 				"data":      classResult,

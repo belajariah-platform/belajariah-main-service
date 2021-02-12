@@ -12,7 +12,8 @@ type ClassTest struct {
 	Option_B       string
 	Option_C       string
 	Option_D       string
-	Answer         string
+	Answer         int
+	Test_Image     string
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time
@@ -20,4 +21,10 @@ type ClassTest struct {
 	Modified_Date  time.Time
 	Deleted_By     string
 	Deleted_Date   time.Time
+}
+
+type ClassTestPost struct {
+	ID        int
+	Test_Type string
+	Answers   []ClassTest
 }

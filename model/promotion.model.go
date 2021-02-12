@@ -15,11 +15,12 @@ type Promotion struct {
 	Discount     sql.NullFloat64
 	BannerImage  sql.NullString
 	HeaderImage  sql.NullString
+	ExpiredDate  sql.NullTime
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time
-	ModifiedBy   string
-	ModifiedDate time.Time
-	DeletedBy    string
-	DeletedDate  time.Time
+	ModifiedBy   sql.NullString
+	ModifiedDate sql.NullTime
+	DeletedBy    sql.NullString
+	DeletedDate  sql.NullTime
 }

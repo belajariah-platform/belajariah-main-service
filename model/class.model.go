@@ -17,6 +17,8 @@ type Class struct {
 	ClassVideo            sql.NullString
 	ClassRating           float64
 	TotalReview           int
+	TotalVideo            int
+	TotalVideoDuration    float64
 	InstructorName        string
 	InstructorDescription sql.NullString
 	InstructorBiografi    sql.NullString
@@ -24,8 +26,8 @@ type Class struct {
 	IsActive              bool
 	CreatedBy             string
 	CreatedDate           time.Time
-	ModifiedBy            string
-	ModifiedDate          time.Time
-	DeletedBy             string
-	DeletedDate           time.Time
+	ModifiedBy            sql.NullString
+	ModifiedDate          sql.NullTime
+	DeletedBy             sql.NullString
+	DeletedDate           sql.NullTime
 }

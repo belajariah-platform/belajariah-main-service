@@ -20,9 +20,10 @@ type Consultation struct {
 	Description       sql.NullString
 	TakenCode         sql.NullInt64
 	TakenName         sql.NullString
-	IsPlay            sql.NullFloat64
-	IsRead            sql.NullFloat64
-	IsActionTaken     sql.NullFloat64
+	IsPlay            sql.NullBool
+	IsRead            sql.NullBool
+	IsActionTaken     sql.NullBool
+	IsActive          bool
 	CreatedBy         string
 	CreatedDate       time.Time
 	ModifiedBy        sql.NullString

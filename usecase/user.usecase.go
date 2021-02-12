@@ -141,7 +141,6 @@ func (userUsecase *userUsecase) ChangePasswordUser(users shape.Users) (bool, err
 }
 
 func (userUsecase *userUsecase) GetUserInfo(email string) (shape.UserInfo, error) {
-	fmt.Println(email)
 	user, err := userUsecase.userRepository.GetUserInfo(email)
 	if user == (model.UserInfo{}) {
 		return shape.UserInfo{}, nil
@@ -152,10 +151,10 @@ func (userUsecase *userUsecase) GetUserInfo(email string) (shape.UserInfo, error
 		Role:           user.Role,
 		Email:          user.Email,
 		Full_Name:      user.FullName.String,
-		Phone:          user.Phone.Int64,
+		Phone:          int(user.Phone.Int64),
 		Profession:     user.Profession.String,
 		Gender:         user.Gender.String,
-		Age:            user.Age.Int64,
+		Age:            int(user.Age.Int64),
 		Province:       user.Province.String,
 		City:           user.City.String,
 		Address:        user.Address.String,

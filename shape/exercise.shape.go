@@ -1,15 +1,14 @@
 package shape
 
-import "time"
+import (
+	"time"
+)
 
-type RatingClass struct {
+type Exercise struct {
 	ID            int
-	Class_Code    string
-	Class_Name    string
-	Class_Initial string
-	User_Code     int
-	Rating        float64
-	Comment       string
+	Code          string
+	Subtitle_Code string
+	Option        string
 	Is_Active     bool
 	Created_By    string
 	Created_Date  time.Time

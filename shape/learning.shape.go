@@ -9,6 +9,7 @@ type Learning struct {
 	Code          string
 	Class_Code    string
 	Title         string
+	SubTitles     []SubLearning
 	Document      string
 	Sequence      int
 	Is_Active     bool
@@ -21,19 +22,21 @@ type Learning struct {
 }
 
 type SubLearning struct {
-	ID            int
-	Code          string
-	TitleCode     string
-	SubTitle      string
-	VideoDuration float64
-	Video         string
-	Document      string
-	Sequence      int
-	IsActive      bool
-	CreatedBy     string
-	CreatedDate   time.Time
-	ModifiedBy    string
-	ModifiedDate  time.Time
-	DeletedBy     string
-	DeletedDate   time.Time
+	ID             int
+	Code           string
+	Title_Code     string
+	Sub_Title      string
+	Video_Duration float64
+	Video          string
+	Document       string
+	Exercise_Image string
+	Exercises      []Exercise
+	Sequence       int
+	Is_Active      bool
+	Created_By     string
+	Created_Date   time.Time
+	Modified_By    string
+	Modified_Date  time.Time
+	Deleted_By     string
+	Deleted_Date   time.Time
 }

@@ -10,6 +10,7 @@ type Learning struct {
 	Code         string
 	ClassCode    string
 	Title        string
+	SubTitles    []SubLearning
 	Document     sql.NullString
 	Sequence     sql.NullInt64
 	IsActive     bool
@@ -29,6 +30,8 @@ type SubLearning struct {
 	VideoDuration sql.NullFloat64
 	Video         sql.NullString
 	Document      sql.NullString
+	ExerciseImage sql.NullString
+	Exercises     []Exercise
 	Sequence      sql.NullInt64
 	IsActive      bool
 	CreatedBy     string

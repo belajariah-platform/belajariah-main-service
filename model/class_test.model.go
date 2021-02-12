@@ -15,7 +15,8 @@ type ClassTest struct {
 	OptionB      string
 	OptionC      string
 	OptionD      string
-	Answer       string
+	Answer       int
+	TestImage    sql.NullString
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time

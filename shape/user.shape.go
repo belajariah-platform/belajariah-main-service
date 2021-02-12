@@ -28,10 +28,10 @@ type UserInfo struct {
 	Role           string
 	Email          string
 	Full_Name      string
-	Phone          int64
+	Phone          int
 	Profession     string
 	Gender         string
-	Age            int64
+	Age            int
 	Province       string
 	City           string
 	Address        string

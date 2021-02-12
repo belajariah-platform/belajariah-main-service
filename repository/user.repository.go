@@ -50,24 +50,6 @@ func (userRepository *userRepository) CheckVerifyCodeUser(users model.Users) (in
 		count = 0
 	}
 	return count, sqlError
-
-	// query := fmt.Sprintf(`
-	// SELECT
-	// 	email
-	// FROM
-	// 	private.users
-	// WHERE
-	// 	verified_code = '%s' and
-	// 	email = '%s'
-	// `, users.VerifiedCode.String, users.Email)
-
-	// row := userRepository.db.QueryRow(query)
-	// sqlError := row.Scan(&email)
-	// fmt.Println("g", sqlError, query)
-	// if sqlError != nil {
-	// 	utils.PushLogf("SQL error on CheckVerifyCodeUser => ", sqlError)
-	// }
-	// return email, sqlError
 }
 
 func (userRepository *userRepository) CheckValidateLogin(users model.Users) (model.Users, error) {
