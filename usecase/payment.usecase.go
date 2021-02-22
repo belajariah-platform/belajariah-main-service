@@ -12,25 +12,32 @@ import (
 )
 
 type paymentUsecase struct {
-	enumRepository           repository.EnumRepository
-	paymentsRepository       repository.PaymentsRepository
-	approvalStatusRepository repository.ApprovalStatusRepository
+	enumRepository             repository.EnumRepository
+	packageRepository          repository.PackageRepository
+	paymentsRepository         repository.PaymentsRepository
+	userClassRepository        repository.UserClassRepository
+	approvalStatusRepository   repository.ApprovalStatusRepository
+	userClassHistoryRepository repository.UserClassHistoryRepository
 }
 
 type PaymentUsecase interface {
 	CheckAllPaymentExpired()
 	GetAllPayment(query model.Query) ([]shape.Payment, int, error)
 	GetAllPaymentByUserID(query model.Query, userObj model.UserInfo) ([]shape.Payment, int, error)
+
 	InsertPayment(payment shape.PaymentPost, email string) (bool, error)
 	UploadPayment(payment shape.PaymentPost, email string) (bool, error)
 	ConfirmPayment(payment shape.PaymentPost, email string) (bool, error)
 }
 
-func InitPaymentUsecase(enumRepository repository.EnumRepository, paymentsRepository repository.PaymentsRepository, approvalStatusRepository repository.ApprovalStatusRepository) PaymentUsecase {
+func InitPaymentUsecase(enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
 	return &paymentUsecase{
 		enumRepository,
+		packageRepository,
 		paymentsRepository,
+		userClassRepository,
 		approvalStatusRepository,
+		userClassHistoryRepository,
 	}
 }
 
@@ -155,21 +162,22 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 }
 
 func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, email string) (bool, error) {
-	var srStatusCode string
+	var statusCode string
 
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	switch strings.ToLower(payment.Action) {
 	case "approved":
-		srStatusCode = status.ApprovedStatus.String
+		statusCode = status.ApprovedStatus.String
 	case "rejected":
+		statusCode = status.RejectStatus.String
 	default:
-		srStatusCode = ""
+		statusCode = ""
 	}
 
 	dataPayment := model.Payment{
 		ID:                payment.ID,
 		PaymentMethodCode: payment.Payment_Method_Code,
-		StatusPaymentCode: srStatusCode,
+		StatusPaymentCode: statusCode,
 		SenderBank: sql.NullString{
 			String: payment.Sender_Bank,
 		},
@@ -191,33 +199,89 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 }
 
 func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, email string) (bool, error) {
-	var srStatusCode, paymentType string
+	var err error
+	var result bool
+	var enum model.Enum
+	var class model.UserClass
+	var packages model.Package
+	var statusCode, paymentType string
+	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
+		payment.User_Code, payment.Class_Code)
 
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	switch strings.ToLower(payment.Action) {
 	case "approved":
-		srStatusCode = status.ApprovedStatus.String
+		statusCode = status.ApprovedStatus.String
 		paymentType = "Completed|Complete|Lunas"
+
+		packages, err = paymentUsecase.packageRepository.GetPackage(payment.Package_Code)
+		dataUserClass := model.UserClass{
+			UserCode:     payment.User_Code,
+			ClassCode:    payment.Class_Code,
+			PackageCode:  payment.Package_Code,
+			StartDate:    time.Now(),
+			ExpiredDate:  utils.TimeAdd(time.Now(), packages.Duration),
+			TimeDuration: packages.Duration,
+			CreatedBy:    email,
+			CreatedDate:  time.Now(),
+			ModifiedBy: sql.NullString{
+				String: email,
+			},
+			ModifiedDate: sql.NullTime{
+				Time: time.Now(),
+			},
+		}
+		class, err = paymentUsecase.userClassRepository.GetUserClass(filter)
+		if class != (model.UserClass{}) {
+			result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
+		} else if class == (model.UserClass{}) {
+			result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
+		}
+
+		if err == nil {
+			result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataUserClass)
+		}
 	case "rejected":
-		srStatusCode = status.RejectStatus.String
+		statusCode = status.RejectStatus.String
 		paymentType = "Failed|Failed|Batal"
+	case "revised":
+		statusCode = status.ReviseStatus.String
+		paymentType = "WaitingForPayment|Waiting for Payment|Menunggu"
+		if status.CurrentStatusValue == "Completed" {
+			dataUserClass := model.UserClass{
+				ID:       payment.ID,
+				UserCode: payment.User_Code,
+				DeletedBy: sql.NullString{
+					String: email,
+				},
+				DeletedDate: sql.NullTime{
+					Time: time.Now(),
+				},
+			}
+			result, err = paymentUsecase.userClassRepository.DeleteUserClass(dataUserClass)
+		}
 	default:
-		srStatusCode = ""
+		statusCode = ""
 	}
 
-	enum, err := paymentUsecase.enumRepository.GetEnum(paymentType)
-	dataPayment := model.Payment{
-		ID:                payment.ID,
-		StatusPaymentCode: srStatusCode,
-		PaymentTypeCode:   enum.Code,
-		ModifiedBy: sql.NullString{
-			String: email,
-		},
-		ModifiedDate: sql.NullTime{
-			Time: time.Now(),
-		},
+	if err == nil {
+		enum, err = paymentUsecase.enumRepository.GetEnum(paymentType)
+		dataPayment := model.Payment{
+			ID:                payment.ID,
+			StatusPaymentCode: statusCode,
+			PaymentTypeCode:   enum.Code,
+			Remarks: sql.NullString{
+				String: payment.Remarks,
+			},
+			ModifiedBy: sql.NullString{
+				String: email,
+			},
+			ModifiedDate: sql.NullTime{
+				Time: time.Now(),
+			},
+		}
+		result, err = paymentUsecase.paymentsRepository.ConfirmPayment(dataPayment)
 	}
-	result, err := paymentUsecase.paymentsRepository.ConfirmPayment(dataPayment)
 	return result, err
 }
 

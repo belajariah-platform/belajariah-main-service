@@ -16,6 +16,8 @@ type Promotion struct {
 	BannerImage  sql.NullString
 	HeaderImage  sql.NullString
 	ExpiredDate  sql.NullTime
+	QuotaUser    sql.NullInt64
+	QuotaUsed    sql.NullInt64
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time

@@ -11,6 +11,7 @@ type Learning struct {
 	ClassCode    string
 	Title        string
 	SubTitles    []SubLearning
+	Exercises    ExerciseReading
 	Document     sql.NullString
 	Sequence     sql.NullInt64
 	IsActive     bool

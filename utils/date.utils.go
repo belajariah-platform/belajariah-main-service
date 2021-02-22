@@ -30,3 +30,13 @@ func HandleNullableDate(date time.Time) string {
 		return stringDate
 	}
 }
+
+func GetDuration(date1, date2 time.Time) float64 {
+	duration := date2.Sub(date1).Minutes()
+	return duration
+}
+
+func TimeAdd(date1 time.Time, duration int) time.Time {
+	date2 := date1.AddDate(0, 0, duration)
+	return date2
+}

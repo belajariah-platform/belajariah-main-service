@@ -5,6 +5,8 @@ import (
 	"belajariah-main-service/repository"
 	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
+	"database/sql"
+	"time"
 )
 
 type promotionUsecase struct {
@@ -12,6 +14,7 @@ type promotionUsecase struct {
 }
 
 type PromotionUsecase interface {
+	CheckAllPromotionExpired()
 	GetAllPromotion(query model.Query) ([]shape.Promotion, int, error)
 	GetPromotion(code string) (shape.Promotion, error)
 }
@@ -45,6 +48,8 @@ func (promotionUsecase *promotionUsecase) GetAllPromotion(query model.Query) ([]
 				Banner_Image:  value.BannerImage.String,
 				Header_Image:  value.HeaderImage.String,
 				Expired_Date:  utils.HandleNullableDate(value.ExpiredDate.Time),
+				Quota_User:    int(value.QuotaUser.Int64),
+				Quota_Used:    int(value.QuotaUsed.Int64),
 				Is_Active:     value.IsActive,
 				Created_By:    value.CreatedBy,
 				Created_Date:  value.CreatedDate,
@@ -78,6 +83,8 @@ func (promotionUsecase *promotionUsecase) GetPromotion(code string) (shape.Promo
 		Banner_Image:  promotion.BannerImage.String,
 		Header_Image:  promotion.HeaderImage.String,
 		Expired_Date:  utils.HandleNullableDate(promotion.ExpiredDate.Time),
+		Quota_User:    int(promotion.QuotaUser.Int64),
+		Quota_Used:    int(promotion.QuotaUsed.Int64),
 		Is_Active:     promotion.IsActive,
 		Created_By:    promotion.CreatedBy,
 		Created_Date:  promotion.CreatedDate,
@@ -87,4 +94,34 @@ func (promotionUsecase *promotionUsecase) GetPromotion(code string) (shape.Promo
 		Deleted_Date:  promotion.DeletedDate.Time,
 	}
 	return promotionResult, err
+}
+
+func (promotionUsecase *promotionUsecase) CheckAllPromotionExpired() {
+	var email = "belajariah20@gmail.com"
+
+	firstloop := true
+	for {
+		if !firstloop {
+			time.Sleep(time.Minute)
+		}
+		promotionList, err := promotionUsecase.promotionRepository.CheckAllPromotionExpired()
+		firstloop = false
+		if err == nil {
+			for _, value := range promotionList {
+				dataPromotion := model.Promotion{
+					ID: value.ID,
+					ModifiedBy: sql.NullString{
+						String: email,
+					},
+					ModifiedDate: sql.NullTime{
+						Time: time.Now(),
+					},
+				}
+				result, err := promotionUsecase.promotionRepository.UpdatePromotionActivated(dataPromotion)
+				if err != nil {
+					utils.PushLogf("ERROR : ", err, result)
+				}
+			}
+		}
+	}
 }

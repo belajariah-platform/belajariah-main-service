@@ -12,6 +12,7 @@ type Package struct {
 	Type          string
 	PricePackage  string
 	PriceDiscount sql.NullString
+	Duration      int
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time

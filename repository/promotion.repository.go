@@ -18,6 +18,9 @@ type PromotionRepository interface {
 	GetAllPromotion(skip, take int, filter string) ([]model.Promotion, error)
 	GetPromotion(filter string) (model.Promotion, error)
 	GetAllPromotionCount(filter string) (int, error)
+
+	CheckAllPromotionExpired() ([]model.Promotion, error)
+	UpdatePromotionActivated(payment model.Promotion) (bool, error)
 }
 
 func InitPromotionRepository(db *sqlx.DB) PromotionRepository {
@@ -40,6 +43,8 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 		banner_image,
 		header_image,
 		expired_date,
+		quota_user,
+		quota_used,
 		is_active,
 		created_by,
 		created_date,
@@ -68,6 +73,7 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 			var isActive bool
 			var createdDate time.Time
 			var discount sql.NullFloat64
+			var quoteUser, quotaUsed sql.NullInt64
 			var modifiedDate, expiredDate, deletedDate sql.NullTime
 			var code, classCode, title, promoCode, createdBy string
 			var bannerImage, headerImage, description, modifiedBy, deletedBy sql.NullString
@@ -83,6 +89,8 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 				&bannerImage,
 				&headerImage,
 				&expiredDate,
+				&quoteUser,
+				&quotaUsed,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -107,6 +115,8 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 						BannerImage:  bannerImage,
 						HeaderImage:  headerImage,
 						ExpiredDate:  expiredDate,
+						QuotaUser:    quoteUser,
+						QuotaUsed:    quotaUsed,
 						IsActive:     isActive,
 						CreatedBy:    createdBy,
 						CreatedDate:  createdDate,
@@ -136,13 +146,16 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		banner_image,
 		header_image,
 		expired_date,
+		quota_user,
+		quota_used,
 		is_active,
 		created_by,
 		created_date,
 		modified_by,
 		modified_date,
 		deleted_by,
-		deleted_date
+		deleted_date,
+		quote_user,
 	FROM 
 		v_m_promotion
 	WHERE 
@@ -154,6 +167,7 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 	var isActive bool
 	var createdDate time.Time
 	var discount sql.NullFloat64
+	var quoteUser, quotaUsed sql.NullInt64
 	var modifiedDate, expiredDate, deletedDate sql.NullTime
 	var code, classCode, title, promoCode, createdBy string
 	var bannerImage, headerImage, description, modifiedBy, deletedBy sql.NullString
@@ -169,6 +183,8 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		&bannerImage,
 		&headerImage,
 		&expiredDate,
+		&quoteUser,
+		&quotaUsed,
 		&isActive,
 		&createdBy,
 		&createdDate,
@@ -176,6 +192,7 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		&modifiedDate,
 		&deletedBy,
 		&deletedDate,
+		&quoteUser,
 	)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetPromotion => ", sqlError)
@@ -192,6 +209,8 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 			BannerImage:  bannerImage,
 			HeaderImage:  headerImage,
 			ExpiredDate:  expiredDate,
+			QuotaUser:    quoteUser,
+			QuotaUsed:    quotaUsed,
 			IsActive:     isActive,
 			CreatedBy:    createdBy,
 			CreatedDate:  createdDate,
@@ -222,4 +241,83 @@ func (promotionRepository *promotionRepository) GetAllPromotionCount(filter stri
 		count = 0
 	}
 	return count, sqlError
+}
+
+func (promotionRepository *promotionRepository) UpdatePromotionActivated(promotion model.Promotion) (bool, error) {
+	var err error
+	var result bool
+
+	tx, errTx := promotionRepository.db.Begin()
+	if errTx != nil {
+		utils.PushLogf("error in UpdatePromotionActivated", errTx)
+	} else {
+		err = updatePromotionActivated(tx, promotion)
+		if err != nil {
+			utils.PushLogf("err in promotion---", err)
+		}
+	}
+
+	if err == nil {
+		result = true
+		tx.Commit()
+	} else {
+		result = false
+		tx.Rollback()
+		utils.PushLogf("failed to updatePromotionActivated", err)
+	}
+
+	return result, err
+}
+
+func updatePromotionActivated(tx *sql.Tx, promotion model.Promotion) error {
+	_, err := tx.Exec(`
+	UPDATE
+		master_promotion
+	 SET
+	 	is_active=false,
+		modified_by=$1,
+		modified_date=$2
+ 	WHERE
+ 		id=$3
+	`,
+		promotion.ModifiedBy.String,
+		promotion.ModifiedDate.Time,
+		promotion.ID,
+	)
+	return err
+}
+
+func (promotionRepository *promotionRepository) CheckAllPromotionExpired() ([]model.Promotion, error) {
+	var promotionList []model.Promotion
+	rows, sqlError := promotionRepository.db.Query(`
+	SELECT
+		id
+	FROM 
+		v_m_promotion
+	WHERE  
+		deleted_by IS NULL AND
+		is_active=true AND
+		expired_date <= now() OR 
+		expired_date = now() OR 
+		quota_used >= quota_user
+	;
+	`)
+	if sqlError != nil {
+		utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var id int
+
+			sqlError := rows.Scan(&id)
+			if sqlError != nil {
+				utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError)
+			} else {
+				promotionList = append(promotionList, model.Promotion{
+					ID: id,
+				})
+			}
+		}
+	}
+	return promotionList, sqlError
 }

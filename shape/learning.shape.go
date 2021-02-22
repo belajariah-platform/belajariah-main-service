@@ -10,6 +10,7 @@ type Learning struct {
 	Class_Code    string
 	Title         string
 	SubTitles     []SubLearning
+	Exercises     ExerciseReading
 	Document      string
 	Sequence      int
 	Is_Active     bool

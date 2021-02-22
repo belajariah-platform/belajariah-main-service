@@ -15,8 +15,11 @@ type UserClass struct {
 	Class_Image           string
 	Class_Rating          float64
 	Total_User            int
+	Type_Code             string
+	Type                  string
 	Status_Code           string
 	Status                string
+	Promo_Code            string
 	Is_Expired            bool
 	Start_Date            string
 	Expired_Date          string

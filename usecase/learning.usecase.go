@@ -8,16 +8,18 @@ import (
 )
 
 type learningUsecase struct {
-	learningRepository repository.LearningRepository
+	learningRepository        repository.LearningRepository
+	exerciseReadingRepository repository.ExerciseReadingRepository
 }
 
 type LearningUsecase interface {
 	GetAllLearning(query model.Query) ([]shape.Learning, int, error)
 }
 
-func InitLearningUsecase(learningRepository repository.LearningRepository) LearningUsecase {
+func InitLearningUsecase(learningRepository repository.LearningRepository, exerciseReadingRepository repository.ExerciseReadingRepository) LearningUsecase {
 	return &learningUsecase{
 		learningRepository,
+		exerciseReadingRepository,
 	}
 }
 
@@ -38,25 +40,44 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 			var subLearningResult []shape.SubLearning
 			subLearning, err := learningUsecase.learningRepository.GetAllSubLearning(value.Code)
 			if err == nil {
-				for _, val := range subLearning {
+				for _, sublearn := range subLearning {
 					subLearningResult = append(subLearningResult, shape.SubLearning{
-						ID:             val.ID,
-						Code:           val.Code,
-						Title_Code:     val.TitleCode,
-						Sub_Title:      val.SubTitle.String,
-						Video_Duration: val.VideoDuration.Float64,
-						Video:          val.Video.String,
-						Document:       val.Document.String,
-						Exercise_Image: val.ExerciseImage.String,
-						Sequence:       int(val.Sequence.Int64),
-						Is_Active:      val.IsActive,
-						Created_By:     val.CreatedBy,
-						Created_Date:   val.CreatedDate,
-						Modified_By:    val.ModifiedBy.String,
-						Modified_Date:  val.ModifiedDate.Time,
-						Deleted_By:     val.DeletedBy.String,
-						Deleted_Date:   val.DeletedDate.Time,
+						ID:             sublearn.ID,
+						Code:           sublearn.Code,
+						Title_Code:     sublearn.TitleCode,
+						Sub_Title:      sublearn.SubTitle.String,
+						Video_Duration: sublearn.VideoDuration.Float64,
+						Video:          sublearn.Video.String,
+						Document:       sublearn.Document.String,
+						Exercise_Image: sublearn.ExerciseImage.String,
+						Sequence:       int(sublearn.Sequence.Int64),
+						Is_Active:      sublearn.IsActive,
+						Created_By:     sublearn.CreatedBy,
+						Created_Date:   sublearn.CreatedDate,
+						Modified_By:    sublearn.ModifiedBy.String,
+						Modified_Date:  sublearn.ModifiedDate.Time,
+						Deleted_By:     sublearn.DeletedBy.String,
+						Deleted_Date:   sublearn.DeletedDate.Time,
 					})
+				}
+			}
+			var exerciseResult shape.ExerciseReading
+			exercise, err := learningUsecase.exerciseReadingRepository.GetExerciseReading(value.Code)
+			if err == nil {
+				exerciseResult = shape.ExerciseReading{
+					ID:            exercise.ID,
+					Code:          exercise.Code,
+					Title_Code:    exercise.TitleCode,
+					Surat_Code:    exercise.SuratCode,
+					Ayat_Start:    exercise.AyatStart,
+					Ayat_End:      exercise.AyatEnd,
+					Is_Active:     exercise.IsActive,
+					Created_By:    exercise.CreatedBy,
+					Created_Date:  exercise.CreatedDate,
+					Modified_By:   exercise.ModifiedBy.String,
+					Modified_Date: exercise.ModifiedDate.Time,
+					Deleted_By:    exercise.DeletedBy.String,
+					Deleted_Date:  exercise.DeletedDate.Time,
 				}
 			}
 			learningResult = append(learningResult, shape.Learning{
@@ -67,6 +88,7 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 				Document:      value.Document.String,
 				Sequence:      int(value.Sequence.Int64),
 				SubTitles:     subLearningResult,
+				Exercises:     exerciseResult,
 				Is_Active:     value.IsActive,
 				Created_By:    value.CreatedBy,
 				Created_Date:  value.CreatedDate,

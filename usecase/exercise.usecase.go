@@ -34,17 +34,18 @@ func (exerciseUsecase *exerciseUsecase) GetAllExercise(query model.Query) ([]sha
 	if err == nil && errCount == nil {
 		for _, value := range exercises {
 			exerciseResult = append(exerciseResult, shape.Exercise{
-				ID:            value.ID,
-				Code:          value.Code,
-				Subtitle_Code: value.SubtitleCode,
-				Option:        value.Option,
-				Is_Active:     value.IsActive,
-				Created_By:    value.CreatedBy,
-				Created_Date:  value.CreatedDate,
-				Modified_By:   value.ModifiedBy.String,
-				Modified_Date: value.ModifiedDate.Time,
-				Deleted_By:    value.DeletedBy.String,
-				Deleted_Date:  value.DeletedDate.Time,
+				ID:             value.ID,
+				Code:           value.Code,
+				Subtitle_Code:  value.SubtitleCode,
+				Image_Code:     value.ImageCode,
+				Exercise_Image: value.ExerciseImage,
+				Is_Active:      value.IsActive,
+				Created_By:     value.CreatedBy,
+				Created_Date:   value.CreatedDate,
+				Modified_By:    value.ModifiedBy.String,
+				Modified_Date:  value.ModifiedDate.Time,
+				Deleted_By:     value.DeletedBy.String,
+				Deleted_Date:   value.DeletedDate.Time,
 			})
 		}
 	}

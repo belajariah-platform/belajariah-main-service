@@ -52,6 +52,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, filt
 		image_proof,
 		payment_type_code,
 		payment_type,
+		remarks,
 		is_active,
 		created_by,
 		created_date,
@@ -75,7 +76,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, filt
 			var createdDate time.Time
 			var modifiedDate sql.NullTime
 			var id, userCode, totalTransfer int
-			var senderBank, senderName, imageProof, modifiedBy sql.NullString
+			var remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
 			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy string
 
 			sqlError := rows.Scan(
@@ -98,6 +99,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, filt
 				&imageProof,
 				&paymentTypeCode,
 				&paymentType,
+				&remarks,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -130,6 +132,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, filt
 						ImageProof:        imageProof,
 						PaymentTypeCode:   paymentTypeCode,
 						PaymentType:       paymentType,
+						Remarks:           remarks,
 						IsActive:          isActive,
 						CreatedBy:         createdBy,
 						CreatedDate:       createdDate,
@@ -321,13 +324,15 @@ func confirmPayment(tx *sql.Tx, payment model.Payment) error {
 	 SET
 		status_payment=$1,
 		payment_type=$2,
-		modified_by=$3,
-		modified_date=$4
+		remarks=$3,
+		modified_by=$4,
+		modified_date=$5
  	WHERE
- 		id=$5
+ 		id=$6
 	`,
 		payment.StatusPaymentCode,
 		payment.PaymentTypeCode,
+		payment.Remarks.String,
 		payment.ModifiedBy.String,
 		payment.ModifiedDate.Time,
 		payment.ID,
@@ -345,7 +350,7 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentExpired() ([]model.
 	FROM v_m_payments
 	WHERE  
 		created_date <= now() AND 
-		sr_status IN ('Waiting for Payment');
+		status_payment IN ('Waiting for Payment');
 	`)
 
 	if sqlError != nil {

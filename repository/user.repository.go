@@ -15,9 +15,9 @@ type userRepository struct {
 }
 
 type UserRepository interface {
+	GetUserInfo(email string) (model.UserInfo, error)
 	CheckVerifyCodeUser(users model.Users) (int, error)
 	CheckValidateLogin(users model.Users) (model.Users, error)
-	GetUserInfo(email string) (model.UserInfo, error)
 
 	VerifyUser(users model.Users) (bool, error)
 	RegisterUser(users model.Users) (bool, error)
@@ -111,7 +111,6 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 	FROM 
 		private.v_users
 	WHERE 
-
 		email = $1`, email)
 
 	var id int

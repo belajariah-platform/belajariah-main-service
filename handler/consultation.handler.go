@@ -19,6 +19,11 @@ type ConsultationHandler interface {
 	GetAllConsultation(ctx *gin.Context)
 	GetAllConsultationUser(ctx *gin.Context)
 	GetAllConsultationMentor(ctx *gin.Context)
+
+	ReadConsultation(ctx *gin.Context)
+	InsertConsultation(ctx *gin.Context)
+	UpdateConsultation(ctx *gin.Context)
+	ConfirmConsultation(ctx *gin.Context)
 }
 
 func InitConsultationHandler(consultationUsecase usecase.ConsultationUsecase) ConsultationHandler {
@@ -158,5 +163,105 @@ func (consultationHandler *consultationHandler) GetAllConsultationMentor(ctx *gi
 
 	} else {
 		utils.PushLogf("err", err)
+	}
+}
+
+func (consultationHandler *consultationHandler) ReadConsultation(ctx *gin.Context) {
+	var consultation shape.ConsultationPost
+	var email string
+	for _, value := range ctx.Request.Header["Email"] {
+		email = value
+		break
+	}
+	if err := ctx.ShouldBindJSON(&consultation); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	result, err := consultationHandler.consultationUsecase.ReadConsultation(consultation, email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (consultationHandler *consultationHandler) InsertConsultation(ctx *gin.Context) {
+	var consultation shape.ConsultationPost
+	var email string
+	for _, value := range ctx.Request.Header["Email"] {
+		email = value
+		break
+	}
+	if err := ctx.ShouldBindJSON(&consultation); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	result, err := consultationHandler.consultationUsecase.InsertConsultation(consultation, email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (consultationHandler *consultationHandler) UpdateConsultation(ctx *gin.Context) {
+	var consultation shape.ConsultationPost
+	var email string
+	for _, value := range ctx.Request.Header["Email"] {
+		email = value
+		break
+	}
+	if err := ctx.ShouldBindJSON(&consultation); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	result, err := consultationHandler.consultationUsecase.UpdateConsultation(consultation, email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (consultationHandler *consultationHandler) ConfirmConsultation(ctx *gin.Context) {
+	var consultation shape.ConsultationPost
+	var email string
+	for _, value := range ctx.Request.Header["Email"] {
+		email = value
+		break
+	}
+	if err := ctx.ShouldBindJSON(&consultation); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	result, err := consultationHandler.consultationUsecase.ConfirmConsultation(consultation, email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
 	}
 }

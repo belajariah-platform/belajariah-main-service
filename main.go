@@ -33,6 +33,7 @@ func main() {
 	testRepository := repository.InitTestRepository(db)
 	enumRepository := repository.InitEnumRepository(db)
 	classRepository := repository.InitClassRepository(db)
+	quranRepository := repository.InitQuranRepository(db)
 	storyRepository := repository.InitStoryRepository(db)
 	mentorRepository := repository.InitMentorRepository(db)
 	ratingRepository := repository.InitRatingRepository(db)
@@ -42,31 +43,39 @@ func main() {
 	learningRepository := repository.InitLearningRepository(db)
 	promotionRepository := repository.InitPromotionRepository(db)
 	userClassRepository := repository.InitUserClassRepository(db)
+	notificationRepository := repository.InitNotificationRepository(db)
 	consultationRepository := repository.InitConsultationRepository(db)
 	paymentMethodRepository := repository.InitPaymentMethodRepository(db)
 	approvalStatusRepository := repository.InitApprovalStatusRepository(db)
+	exerciseReadingRepository := repository.InitExerciseReadingRepository(db)
+	userClassHistoryRepository := repository.InitUserClassHistoryRepository(db)
+	userExerciseReadingRepository := repository.InitUserExerciseReadingRepository(db)
 
 	//initiate usecase
 	userUsecase := usecase.InitUserUsecase(userRepository)
 	enumUsecase := usecase.InitEnumUsecase(enumRepository)
+	quranUsecase := usecase.InitQuranUsecase(quranRepository)
 	storyUsecase := usecase.InitStoryUsecase(storyRepository)
 	classUsecase := usecase.InitClassUsecase(classRepository)
 	mentorUsecase := usecase.InitMentorUsecase(mentorRepository)
 	ratingUsecase := usecase.InitRatingUsecase(ratingRepository)
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
-	learningUsecase := usecase.InitLearningUsecase(learningRepository)
 	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository)
-	userClassUsecase := usecase.InitUserClassUsecase(userClassRepository)
 	testUsecase := usecase.InitTestUsecase(testRepository, userClassRepository)
 	paymentMethodUsecase := usecase.InitPaymentMethodUsecase(paymentMethodRepository)
-	paymentUsecase := usecase.InitPaymentUsecase(enumRepository, paymentRepository, approvalStatusRepository)
-	consultationUsecase := usecase.InitConsultationUsecase(consultationRepository, approvalStatusRepository)
+	exerciseReadingUsecase := usecase.InitExerciseReadingUsecase(exerciseReadingRepository)
+	learningUsecase := usecase.InitLearningUsecase(learningRepository, exerciseReadingRepository)
+	userExerciseReadingUsecase := usecase.InitUserExerciseReadingUsecase(userExerciseReadingRepository)
+	consultationUsecase := usecase.InitConsultationUsecase(userRepository, enumRepository, consultationRepository, approvalStatusRepository)
+	paymentUsecase := usecase.InitPaymentUsecase(enumRepository, packageRepository, paymentRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
+	userClassUsecase := usecase.InitUserClassUsecase(enumRepository, userClassRepository, notificationRepository)
 
 	//initiate handler
 	userHandler := handler.InitUserHandler(userUsecase)
 	testHandler := handler.InitTestHandler(testUsecase)
 	enumHandler := handler.InitEnumHandler(enumUsecase)
+	quranHandler := handler.InitQuranHandler(quranUsecase)
 	storyHandler := handler.InitStoryHandler(storyUsecase)
 	classHandler := handler.InitClassHandler(classUsecase)
 	mentorHandler := handler.InitMentorHandler(mentorUsecase)
@@ -79,6 +88,8 @@ func main() {
 	userClassHandler := handler.InitUserClassHandler(userClassUsecase)
 	consultationHandler := handler.InitConsultationHandler(consultationUsecase)
 	paymentMethodHandler := handler.InitPaymentMethodHandler(paymentMethodUsecase)
+	exerciseReadingHandler := handler.InitExerciseReadingHandler(exerciseReadingUsecase)
+	userExerciseReadingHandler := handler.InitUserExerciseReadingHandler(userExerciseReadingUsecase)
 
 	//initiate router
 	router := gin.New()
@@ -125,9 +136,14 @@ func main() {
 	router.GET("/mentors", mentorHandler.GetAllMentor)
 
 	// router-rating
-	router.GET("/rating_class", ratingHandler.GetAllRatingClass)
 	router.POST("/rating_class", ratingHandler.GiveRatingClass)
+	router.GET("/rating_class", ratingHandler.GetAllRatingClass)
 	router.POST("/rating_mentor", ratingHandler.GiveRatingMentor)
+
+	// router-quran
+	router.GET("/qurans", quranHandler.GetAllQuranView)
+	router.GET("/quran/surat", quranHandler.GetAllQuran)
+	router.GET("/quran/ayat", quranHandler.GetAllAyatQuran)
 
 	// router-package
 	router.GET("/packages", packageHandler.GetAllPackage)
@@ -136,10 +152,17 @@ func main() {
 	router.GET("/payments", paymentHandler.GetAllPayment)
 	router.GET("/payment", paymentHandler.GetAllPaymentByUserID)
 	router.POST("/payment", paymentHandler.InsertPayment)
-	router.PUT("/payment", paymentHandler.UploadPayment)
+	router.PUT("/payment/confirm", paymentHandler.ConfirmPayment)
+	router.PUT("/payment/upload", paymentHandler.UploadPayment)
 
 	// router-exercise
 	router.GET("/exercises", exerciseHandler.GetAllExercise)
+
+	// router-exercise-reading
+	router.GET("/exercise_reading", exerciseReadingHandler.GetAllExerciseReading)
+
+	// router-exercise-reading
+	router.POST("/user_exercise_reading", userExerciseReadingHandler.InserteUserExerciseReading)
 
 	// router-learning
 	router.GET("/learnings", learningHandler.GetAllLearning)
@@ -154,13 +177,22 @@ func main() {
 
 	// router-consultation
 	router.GET("/consultations", consultationHandler.GetAllConsultation)
-	router.GET("/consultation_user", consultationHandler.GetAllConsultationUser)
-	router.GET("/consultation_mentor", consultationHandler.GetAllConsultationMentor)
+	router.GET("/consultation/user", consultationHandler.GetAllConsultationUser)
+	router.GET("/consultation/mentor", consultationHandler.GetAllConsultationMentor)
+	router.PUT("/consultation", consultationHandler.UpdateConsultation)
+	router.POST("/consultation", consultationHandler.InsertConsultation)
+	router.PUT("/consultation/read", consultationHandler.ReadConsultation)
+	router.PUT("/consultation/confirm", consultationHandler.ConfirmConsultation)
 
 	// router-payment-method
 	router.GET("/payment_methods", paymentMethodHandler.GetAllPaymentMethod)
 
 	go paymentUsecase.CheckAllPaymentExpired()
+	go promotionUsecase.CheckAllPromotionExpired()
+	go userClassUsecase.CheckAllUserClassExpired()
+	go userClassUsecase.CheckAllUserClass3DaysExpired()
+	go consultationUsecase.CheckAllConsultationExpired()
+	go userClassUsecase.CheckAllUserClassOneDaysExpired()
 
 	utils.PushLogf("BELAJARIAH MAIN SERVICE STARTED")
 	fmt.Println(fmt.Sprintf("BELAJARIAH MAIN SERVICE STARTED ON PORT %d", configModel.Server.Port))

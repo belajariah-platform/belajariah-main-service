@@ -51,6 +51,7 @@ type PaymentPost struct {
 	Image_Code          int64
 	Image_Proof         string
 	Action              string
+	Remarks             string
 	Is_Active           bool
 	Created_By          string
 	Created_Date        time.Time

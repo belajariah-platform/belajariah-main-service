@@ -29,35 +29,50 @@ func (approvalStatusRepository *approvalStatusRepository) GetApprovalStatus(stat
 		id,
 		code, 
 		current_status,
+		current_status_value,
 		approve_status,
-		reject_status
+		approve_status_value,
+		reject_status,
+		reject_status_value,
+		revise_status,
+		revise_status_value
 	FROM 
-		master_approval_status
+		v_m_approval_status
 	WHERE
 		current_status = $1
 	;
 	`, statusCode)
 	var id int
-	var code, currentStatus string
-	var approvedStatus, rejectStatus sql.NullString
+	var code, currentStatus, currentStatusValue string
+	var approvedStatus, approvedStatusValue, rejectStatus, rejectStatusValue, reviseStatus, reviseStatusValue sql.NullString
 
 	err := row.Scan(
 		&id,
 		&code,
 		&currentStatus,
+		&currentStatusValue,
 		&approvedStatus,
+		&approvedStatusValue,
 		&rejectStatus,
+		&rejectStatusValue,
+		&reviseStatus,
+		&reviseStatusValue,
 	)
 	if err != nil {
 		utils.PushLogf("SQL error on GetApprovalStatusByID => ", err)
 		return model.ApprovalStatus{}, nil
 	} else {
 		approvalStatusRow = model.ApprovalStatus{
-			ID:             id,
-			Code:           code,
-			CurrentStatus:  currentStatus,
-			ApprovedStatus: approvedStatus,
-			RejectStatus:   rejectStatus,
+			ID:                  id,
+			Code:                code,
+			CurrentStatus:       currentStatus,
+			CurrentStatusValue:  currentStatusValue,
+			ApprovedStatus:      approvedStatus,
+			ApprovedStatusValue: approvedStatusValue,
+			RejectStatus:        rejectStatus,
+			RejectStatusValue:   rejectStatusValue,
+			ReviseStatus:        reviseStatus,
+			ReviseStatusValue:   reviseStatusValue,
 		}
 		return approvalStatusRow, err
 	}

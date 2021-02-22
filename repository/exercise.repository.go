@@ -32,7 +32,8 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 		id,
 		code,
 		subtitle_code,
-		option,
+		image_code,
+		exercise_image,
 		is_active,
 		created_by,
 		created_date,
@@ -40,7 +41,7 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 		modified_date,
 		deleted_by,
 		deleted_date
-	FROM master_exercise
+	FROM v_m_exercise
 	WHERE 
 		deleted_by IS NULL AND
 		is_active=true
@@ -56,18 +57,19 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var id int
 			var isActive bool
+			var id, imageCode int
 			var createdDate time.Time
 			var modifiedBy, deletedBy sql.NullString
 			var modifiedDate, deletedDate sql.NullTime
-			var option, subtitleCode, code, createdBy string
+			var exerciseImage, subtitleCode, code, createdBy string
 
 			sqlError := rows.Scan(
 				&id,
 				&code,
 				&subtitleCode,
-				&option,
+				&imageCode,
+				&exerciseImage,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -83,17 +85,18 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 				exerciseList = append(
 					exerciseList,
 					model.Exercise{
-						ID:           id,
-						Code:         code,
-						SubtitleCode: subtitleCode,
-						Option:       option,
-						IsActive:     isActive,
-						CreatedBy:    createdBy,
-						CreatedDate:  createdDate,
-						ModifiedBy:   modifiedBy,
-						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						ID:            id,
+						Code:          code,
+						SubtitleCode:  subtitleCode,
+						ImageCode:     imageCode,
+						ExerciseImage: exerciseImage,
+						IsActive:      isActive,
+						CreatedBy:     createdBy,
+						CreatedDate:   createdDate,
+						ModifiedBy:    modifiedBy,
+						ModifiedDate:  modifiedDate,
+						DeletedBy:     deletedBy,
+						DeletedDate:   deletedDate,
 					},
 				)
 			}

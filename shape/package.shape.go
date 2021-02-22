@@ -11,6 +11,7 @@ type Package struct {
 	Type           string
 	Price_Package  string
 	Price_Discount string
+	Duration       int
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time

@@ -18,6 +18,7 @@ type EnumRepository interface {
 	GetAllEnum(skip, take int, filter string) ([]model.Enum, error)
 	GetAllEnumCount(filter string) (int, error)
 	GetEnum(value string) (model.Enum, error)
+	GetEnumSplit(value string) (model.Enum, error)
 }
 
 func InitEnumRepository(db *sqlx.DB) EnumRepository {
@@ -130,14 +131,7 @@ func (enumRepository *enumRepository) GetEnum(values string) (model.Enum, error)
 		id,
 		code,
 		type,
-		value,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		deleted_by,
-		deleted_date
+		value
 	FROM master_enum
 	WHERE 
 		deleted_by IS NULL AND
@@ -145,25 +139,14 @@ func (enumRepository *enumRepository) GetEnum(values string) (model.Enum, error)
 		value=$1
 	`, values)
 
-	var isActive bool
 	var id int
-	var createdDate time.Time
-	var modifiedDate, deletedDate sql.NullTime
-	var modifiedBy, deletedBy sql.NullString
-	var types, value, code, createdBy string
+	var types, value, code string
 
 	sqlError := row.Scan(
 		&id,
 		&code,
 		&types,
 		&value,
-		&isActive,
-		&createdBy,
-		&createdDate,
-		&modifiedBy,
-		&modifiedDate,
-		&deletedBy,
-		&deletedDate,
 	)
 
 	if sqlError != nil {
@@ -171,17 +154,48 @@ func (enumRepository *enumRepository) GetEnum(values string) (model.Enum, error)
 		return model.Enum{}, nil
 	} else {
 		enumRow = model.Enum{
-			ID:           id,
-			Code:         code,
-			Type:         types,
-			Value:        value,
-			IsActive:     isActive,
-			CreatedBy:    createdBy,
-			CreatedDate:  createdDate,
-			ModifiedBy:   modifiedBy,
-			ModifiedDate: modifiedDate,
-			DeletedBy:    deletedBy,
-			DeletedDate:  deletedDate,
+			ID:    id,
+			Code:  code,
+			Type:  types,
+			Value: value,
+		}
+		return enumRow, sqlError
+	}
+}
+
+func (enumRepository *enumRepository) GetEnumSplit(values string) (model.Enum, error) {
+	var enumRow model.Enum
+	row := enumRepository.db.QueryRow(`
+	SELECT
+		id,
+		code,
+		type,
+		value
+	WHERE 
+		deleted_by IS NULL AND
+		is_active=true AND
+		split_part(value, '|', 1)=$1
+	`, values)
+
+	var id int
+	var types, value, code string
+
+	sqlError := row.Scan(
+		&id,
+		&code,
+		&types,
+		&value,
+	)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetEnumSplit => ", sqlError)
+		return model.Enum{}, nil
+	} else {
+		enumRow = model.Enum{
+			ID:    id,
+			Code:  code,
+			Type:  types,
+			Value: value,
 		}
 		return enumRow, sqlError
 	}

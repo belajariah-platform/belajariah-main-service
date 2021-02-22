@@ -26,6 +26,7 @@ type Payment struct {
 	ImageProof        sql.NullString
 	PaymentTypeCode   string
 	PaymentType       string
+	Remarks           sql.NullString
 	IsActive          bool
 	CreatedBy         string
 	CreatedDate       time.Time

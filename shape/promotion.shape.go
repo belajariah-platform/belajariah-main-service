@@ -15,6 +15,8 @@ type Promotion struct {
 	Banner_Image  string
 	Header_Image  string
 	Expired_Date  string
+	Quota_User    int
+	Quota_Used    int
 	Is_Active     bool
 	Created_By    string
 	Created_Date  time.Time

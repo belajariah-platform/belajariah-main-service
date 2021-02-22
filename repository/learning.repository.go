@@ -170,7 +170,6 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 				&deletedBy,
 				&deletedDate,
 			)
-			fmt.Println(sqlError)
 			if sqlError != nil {
 				utils.PushLogf("SQL error on GetAllSubLearning => ", sqlError)
 			} else {

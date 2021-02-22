@@ -24,6 +24,7 @@ type Consultation struct {
 	IsRead            sql.NullBool
 	IsActionTaken     sql.NullBool
 	IsActive          bool
+	ExpiredDate       sql.NullTime
 	CreatedBy         string
 	CreatedDate       time.Time
 	ModifiedBy        sql.NullString

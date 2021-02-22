@@ -16,9 +16,13 @@ type UserClass struct {
 	ClassImage          sql.NullString
 	ClassRating         float64
 	TotalUser           int
+	PackageCode         string
+	TypeCode            string
+	Type                string
 	StatusCode          string
 	Status              string
 	IsExpired           bool
+	PromoCode           sql.NullString
 	StartDate           time.Time
 	ExpiredDate         time.Time
 	TimeDuration        int
