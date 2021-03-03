@@ -13,6 +13,8 @@ type Package struct {
 	PricePackage  string
 	PriceDiscount sql.NullString
 	Duration      int
+	Webinar       sql.NullInt64
+	Consultation  sql.NullInt64
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time

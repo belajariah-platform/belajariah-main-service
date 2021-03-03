@@ -12,6 +12,7 @@ import (
 )
 
 type paymentUsecase struct {
+	emailUsecase               EmailUsecase
 	enumRepository             repository.EnumRepository
 	packageRepository          repository.PackageRepository
 	paymentsRepository         repository.PaymentsRepository
@@ -22,6 +23,7 @@ type paymentUsecase struct {
 
 type PaymentUsecase interface {
 	CheckAllPaymentExpired()
+	CheckAllPayment2HourBeforeExpired()
 	GetAllPayment(query model.Query) ([]shape.Payment, int, error)
 	GetAllPaymentByUserID(query model.Query, userObj model.UserInfo) ([]shape.Payment, int, error)
 
@@ -30,8 +32,9 @@ type PaymentUsecase interface {
 	ConfirmPayment(payment shape.PaymentPost, email string) (bool, error)
 }
 
-func InitPaymentUsecase(enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
+func InitPaymentUsecase(emailUsecase EmailUsecase, enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
 	return &paymentUsecase{
+		emailUsecase,
 		enumRepository,
 		packageRepository,
 		paymentsRepository,
@@ -136,15 +139,17 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 }
 
 func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, email string) (bool, error) {
-	var paymentType = "WaitingForPayment|Waiting for Payment|Menunggu"
+	var emailType string = "Waiting for Payment"
+	var paymentType string = "WaitingForPayment|Waiting for Payment|Menunggu"
 
 	enum, err := paymentUsecase.enumRepository.GetEnum(paymentType)
 	dataPayment := model.Payment{
 		UserCode:          payment.User_Code,
 		ClassCode:         payment.Class_Code,
+		PromoCode:         payment.Promo_Code,
 		PackageCode:       payment.Package_Code,
 		PaymentMethodCode: payment.Payment_Method_Code,
-		InvoiceNumber:     payment.Invoice_Number,
+		InvoiceNumber:     utils.GenerateInvoiceNumber(payment),
 		StatusPaymentCode: payment.Status_Payment_Code,
 		TotalTransfer:     payment.Total_Transfer,
 		PaymentTypeCode:   enum.Code,
@@ -157,7 +162,26 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 			Time: time.Now(),
 		},
 	}
-	result, err := paymentUsecase.paymentsRepository.InsertPayment(dataPayment)
+	data, result, err := paymentUsecase.paymentsRepository.InsertPayment(dataPayment)
+	if err == nil && data != (model.Payment{}) {
+		filter := fmt.Sprintf(`WHERE id = %d`, data.ID)
+		payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+		dataEmail := model.EmailBody{
+			BodyTemp:          emailType,
+			UserCode:          payments.UserCode,
+			InvoiceNumber:     payments.InvoiceNumber,
+			PaymentMethod:     payments.PaymentMethod,
+			AccountName:       payments.AccountName.String,
+			AccountNumber:     payments.AccountNumber.String,
+			ClassName:         payments.ClassInitial,
+			ClassPrice:        int(payments.PackageDiscount.Int64),
+			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
+			TotalConsultation: int(payments.TotalConsultation.Int64),
+			TotalWebinar:      int(payments.TotalWebinar.Int64),
+			TotalTransfer:     payments.TotalTransfer,
+		}
+		paymentUsecase.emailUsecase.SendEmail(dataEmail)
+	}
 	return result, err
 }
 
@@ -201,29 +225,40 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, email string) (bool, error) {
 	var err error
 	var result bool
+	var date time.Time
 	var enum model.Enum
 	var class model.UserClass
 	var packages model.Package
-	var statusCode, paymentType string
+	var statusCode, paymentType, emailType string
 	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
-		payment.User_Code, payment.Class_Code)
+		payment.User_Code,
+		payment.Class_Code,
+	)
 
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	switch strings.ToLower(payment.Action) {
 	case "approved":
 		statusCode = status.ApprovedStatus.String
 		paymentType = "Completed|Complete|Lunas"
+		emailType = "Payment Success"
 
 		packages, err = paymentUsecase.packageRepository.GetPackage(payment.Package_Code)
 		dataUserClass := model.UserClass{
 			UserCode:     payment.User_Code,
 			ClassCode:    payment.Class_Code,
 			PackageCode:  payment.Package_Code,
+			StatusCode:   statusCode,
 			StartDate:    time.Now(),
 			ExpiredDate:  utils.TimeAdd(time.Now(), packages.Duration),
-			TimeDuration: packages.Duration,
-			CreatedBy:    email,
-			CreatedDate:  time.Now(),
+			TimeDuration: packages.Duration * 30,
+			TotalConsultation: sql.NullInt64{
+				Int64: packages.Consultation.Int64,
+			},
+			TotalWebinar: sql.NullInt64{
+				Int64: packages.Webinar.Int64,
+			},
+			CreatedBy:   email,
+			CreatedDate: time.Now(),
 			ModifiedBy: sql.NullString{
 				String: email,
 			},
@@ -231,26 +266,43 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 				Time: time.Now(),
 			},
 		}
+
 		class, err = paymentUsecase.userClassRepository.GetUserClass(filter)
-		if class != (model.UserClass{}) {
+		if class != (model.UserClass{}) && !class.IsExpired {
+			dataUserClass.TypeCode = "extend class"
+			dataUserClass.StartDate = class.StartDate
+			dataUserClass.TimeDuration = class.TimeDuration + packages.Duration*30
+			dataUserClass.ExpiredDate = utils.TimeAdd(class.ExpiredDate, packages.Duration)
+			dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
+			dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
+			result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
+		} else if class != (model.UserClass{}) && class.IsExpired {
+			dataUserClass.TypeCode = "extend class"
+			dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
+			dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
 			result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
 		} else if class == (model.UserClass{}) {
+			dataUserClass.TypeCode = "new class"
 			result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
 		}
 
 		if err == nil {
 			result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataUserClass)
 		}
+
 	case "rejected":
 		statusCode = status.RejectStatus.String
 		paymentType = "Failed|Failed|Batal"
+		emailType = "Payment Canceled"
 	case "revised":
 		statusCode = status.ReviseStatus.String
 		paymentType = "WaitingForPayment|Waiting for Payment|Menunggu"
+		emailType = "Payment Revised"
+
 		if status.CurrentStatusValue == "Completed" {
 			dataUserClass := model.UserClass{
-				ID:       payment.ID,
-				UserCode: payment.User_Code,
+				ClassCode: payment.Class_Code,
+				UserCode:  payment.User_Code,
 				DeletedBy: sql.NullString{
 					String: email,
 				},
@@ -258,7 +310,11 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 					Time: time.Now(),
 				},
 			}
-			result, err = paymentUsecase.userClassRepository.DeleteUserClass(dataUserClass)
+			date, result, err = paymentUsecase.userClassRepository.DeleteUserClass(dataUserClass)
+			if err == nil {
+				dataUserClass.ExpiredDate = date
+				result, err = paymentUsecase.userClassHistoryRepository.DeleteUserClassHistory(dataUserClass)
+			}
 		}
 	default:
 		statusCode = ""
@@ -281,14 +337,35 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			},
 		}
 		result, err = paymentUsecase.paymentsRepository.ConfirmPayment(dataPayment)
+		if err == nil && status.CurrentStatusValue == "Has been Payment" && payment.Action != "Rejected" {
+			filter := fmt.Sprintf(`WHERE id = %d`, dataPayment.ID)
+			payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+			dataEmail := model.EmailBody{
+				BodyTemp:          emailType,
+				UserCode:          payments.UserCode,
+				InvoiceNumber:     payments.InvoiceNumber,
+				PaymentMethod:     payments.PaymentMethod,
+				AccountName:       payments.AccountName.String,
+				AccountNumber:     payments.AccountNumber.String,
+				ClassName:         payments.ClassInitial,
+				ClassPrice:        int(payments.PackageDiscount.Int64),
+				PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
+				TotalConsultation: int(payments.TotalConsultation.Int64),
+				TotalWebinar:      int(payments.TotalWebinar.Int64),
+				TotalTransfer:     payments.TotalTransfer,
+			}
+			paymentUsecase.emailUsecase.SendEmail(dataEmail)
+		}
 	}
 	return result, err
 }
 
 func (paymentUsecase *paymentUsecase) CheckAllPaymentExpired() {
 	var err error
+	var action string = "Rejected"
 	var paymentList []model.Payment
-	var email = "belajariah20@gmail.com"
+	var email string = "belajariah20@gmail.com"
+	var emailType string = "Payment Failed"
 
 	firstloop := true
 	for {
@@ -301,12 +378,75 @@ func (paymentUsecase *paymentUsecase) CheckAllPaymentExpired() {
 			for _, value := range paymentList {
 				dataPayment := shape.PaymentPost{
 					ID:                  value.ID,
+					Action:              action,
+					Status_Payment_Code: value.StatusPaymentCode,
+				}
+				result, err := paymentUsecase.ConfirmPayment(dataPayment, email)
+				if err != nil {
+					utils.PushLogf("ERROR : ", err, result)
+				} else {
+					if value != (model.Payment{}) {
+						filter := fmt.Sprintf(`WHERE id = %d`, value.ID)
+						payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+						dataEmail := model.EmailBody{
+							BodyTemp:          emailType,
+							UserCode:          payments.UserCode,
+							InvoiceNumber:     payments.InvoiceNumber,
+							ClassName:         payments.ClassInitial,
+							TotalConsultation: int(payments.TotalConsultation.Int64),
+							TotalWebinar:      int(payments.TotalWebinar.Int64),
+						}
+						paymentUsecase.emailUsecase.SendEmail(dataEmail)
+					}
+				}
+			}
+		}
+	}
+}
+
+func (paymentUsecase *paymentUsecase) CheckAllPayment2HourBeforeExpired() {
+	var err error
+	var paymentList []model.Payment
+	var email string = "belajariah20@gmail.com"
+	var emailType string = "2 Hour Before Payment Expired"
+
+	firstloop := true
+	for {
+		if !firstloop {
+			time.Sleep(time.Minute)
+		}
+		paymentList, err = paymentUsecase.paymentsRepository.CheckAllPaymentBeforeExpired()
+		firstloop = false
+		if err == nil {
+			for _, value := range paymentList {
+				dataPayment := shape.PaymentPost{
+					ID:                  value.ID,
 					Action:              "Rejected",
 					Status_Payment_Code: value.StatusPaymentCode,
 				}
 				result, err := paymentUsecase.ConfirmPayment(dataPayment, email)
 				if err != nil {
 					utils.PushLogf("ERROR : ", err, result)
+				} else {
+					if value != (model.Payment{}) {
+						filter := fmt.Sprintf(`WHERE id = %d`, value.ID)
+						payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+						dataEmail := model.EmailBody{
+							BodyTemp:          emailType,
+							UserCode:          payments.UserCode,
+							InvoiceNumber:     payments.InvoiceNumber,
+							PaymentMethod:     payments.PaymentMethod,
+							AccountName:       payments.AccountName.String,
+							AccountNumber:     payments.AccountNumber.String,
+							ClassName:         payments.ClassInitial,
+							ClassPrice:        int(payments.PackageDiscount.Int64),
+							TotalConsultation: int(payments.TotalConsultation.Int64),
+							TotalWebinar:      int(payments.TotalWebinar.Int64),
+							TotalTransfer:     payments.TotalTransfer,
+							ExpiredDate:       payments.ModifiedDate.Time,
+						}
+						paymentUsecase.emailUsecase.SendEmail(dataEmail)
+					}
 				}
 			}
 		}

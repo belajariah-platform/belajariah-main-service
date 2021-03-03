@@ -23,6 +23,8 @@ type UserHandler interface {
 	CheckEmail(ctx *gin.Context)
 	RegisterUser(ctx *gin.Context)
 	ChangePassword(ctx *gin.Context)
+	VerifyPasswordUser(ctx *gin.Context)
+	ResetVerificationUser(ctx *gin.Context)
 }
 
 func InitUserHandler(userUsecase usecase.UserUsecase) UserHandler {
@@ -65,6 +67,26 @@ func (userHandler *userHandler) LoginUser(ctx *gin.Context) {
 	})
 }
 
+func (userHandler *userHandler) ResetVerificationUser(ctx *gin.Context) {
+	var users shape.Users
+
+	if err := ctx.ShouldBindJSON(&users); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	result, err := userHandler.userUsecase.ResetVerificationUser(users)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
 func (userHandler *userHandler) VerifyUser(ctx *gin.Context) {
 	var users shape.Users
 
@@ -77,6 +99,26 @@ func (userHandler *userHandler) VerifyUser(ctx *gin.Context) {
 			"result": result,
 			"error":  "",
 			"mesage": msg,
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (userHandler *userHandler) VerifyPasswordUser(ctx *gin.Context) {
+	var users shape.Users
+
+	if err := ctx.ShouldBindJSON(&users); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	result, err := userHandler.userUsecase.VerifyPasswordUser(users)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{

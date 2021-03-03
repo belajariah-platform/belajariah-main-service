@@ -22,6 +22,7 @@ func GetConfig() *model.Config {
 	}
 
 	dbPort, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	mailPort, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
 	logMaxAge, _ := strconv.Atoi(os.Getenv("LOG_MAXAGE"))
 	logMaxSize, _ := strconv.Atoi(os.Getenv("LOG_MAXSIZE"))
 	serverPort, _ := strconv.Atoi(os.Getenv("SERVER_PORT"))
@@ -45,6 +46,13 @@ func GetConfig() *model.Config {
 			MaxBackups: logMaxBackup,
 			MaxAge:     logMaxAge,
 			Compress:   logCompress,
+		},
+		Mail: model.MailConfig{
+			AuthEmail:    os.Getenv("AUTH_EMAIL"),
+			AuthPassword: os.Getenv("AUTH_PASSWORD"),
+			SMTPHost:     os.Getenv("SMTP_HOST"),
+			SMTPPort:     mailPort,
+			SenderName:   os.Getenv("SENDER_NAME"),
 		},
 	}
 

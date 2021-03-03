@@ -41,6 +41,8 @@ func (packageUsecase *packageUsecase) GetAllPackage(query model.Query) ([]shape.
 				Price_Package:  value.PricePackage,
 				Price_Discount: value.PriceDiscount.String,
 				Duration:       value.Duration,
+				Consultation:   int(value.Consultation.Int64),
+				Webinar:        int(value.Webinar.Int64),
 				Is_Active:      value.IsActive,
 				Created_By:     value.CreatedBy,
 				Created_Date:   value.CreatedDate,

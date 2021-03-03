@@ -11,19 +11,23 @@ import (
 )
 
 type userUsecase struct {
+	emailUsecase   EmailUsecase
 	userRepository repository.UserRepository
 }
 
 type UserUsecase interface {
 	LoginUser(users shape.Users) (shape.UserInfo, error, string)
+	ResetVerificationUser(users shape.Users) (bool, error)
 	RegisterUser(users shape.Users) (bool, error, string)
+	VerifyPasswordUser(users shape.Users) (bool, error)
 	VerifyUser(users shape.Users) (bool, error, string)
 	ChangePasswordUser(users shape.Users) (bool, error)
 	GetUserInfo(email string) (shape.UserInfo, error)
 }
 
-func InitUserUsecase(userRepository repository.UserRepository) UserUsecase {
+func InitUserUsecase(emailUsecase EmailUsecase, userRepository repository.UserRepository) UserUsecase {
 	return &userUsecase{
+		emailUsecase,
 		userRepository,
 	}
 }
@@ -51,11 +55,45 @@ func (userUsecase *userUsecase) LoginUser(users shape.Users) (shape.UserInfo, er
 	return user, err, msg
 }
 
-func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, string) {
-	var user model.UserInfo
+func (userUsecase *userUsecase) ResetVerificationUser(users shape.Users) (bool, error) {
+	var emailType string = "Account Verification"
+	var userAuth model.Users
 	var result bool
-	var msg string
 	var err error
+
+	dataUser := model.Users{
+		Email: users.Email,
+		VerifiedCode: sql.NullString{
+			String: utils.
+				GenerateVerifyCode(users.Email),
+		},
+		ModifiedBy: sql.NullString{
+			String: users.Email,
+		},
+		ModifiedDate: sql.NullTime{
+			Time: time.Now(),
+		},
+	}
+
+	userAuth, result, err = userUsecase.userRepository.ResetVerificationCode(dataUser)
+	if err == nil && userAuth.ID != 0 {
+		dataEmail := model.EmailBody{
+			UserCode:         userAuth.ID,
+			BodyTemp:         emailType,
+			VerificationCode: dataUser.VerifiedCode.String,
+		}
+		userUsecase.emailUsecase.SendEmail(dataEmail)
+	}
+	return result, err
+}
+
+func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, string) {
+	var emailType string = "Account Verification"
+	var user model.UserInfo
+	var err error
+	var msg string
+	var userID int
+	var result bool
 
 	hashPassword, err := utils.GenerateHashPassword(users.Password)
 	if err != nil {
@@ -85,18 +123,48 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 		},
 	}
 	user, err = userUsecase.userRepository.GetUserInfo(dataUser.Email)
-	if user.Email == dataUser.Email {
+	if user.Email == dataUser.Email && user.IsVerified {
 		msg = fmt.Sprintf(`Email '%s' sudah ada`, dataUser.Email)
 		return result, err, msg
+	} else if user.Email == dataUser.Email && !user.IsVerified {
+		msg = fmt.Sprintf(`Silahkan verifikasi email anda`)
+		return result, err, msg
 	}
-	result, err = userUsecase.userRepository.RegisterUser(dataUser)
+	userID, result, err = userUsecase.userRepository.RegisterUser(dataUser)
+	if err == nil && userID != 0 {
+		dataEmail := model.EmailBody{
+			UserCode:         userID,
+			BodyTemp:         emailType,
+			VerificationCode: dataUser.VerifiedCode.String,
+		}
+		userUsecase.emailUsecase.SendEmail(dataEmail)
+	}
 	return result, err, msg
 }
 
-func (userUsecase *userUsecase) VerifyUser(users shape.Users) (bool, error, string) {
-	var result bool
-	var msg string
+func (userUsecase *userUsecase) VerifyPasswordUser(users shape.Users) (bool, error) {
 	var err error
+	var result bool
+	var user model.Users
+
+	dataUser := model.Users{
+		Email: users.Email,
+		VerifiedCode: sql.NullString{
+			String: users.Verified_Code,
+		},
+	}
+
+	user, result, err = userUsecase.userRepository.VerifyUser(dataUser)
+	utils.PushLogf(user.Email)
+	return result, err
+}
+
+func (userUsecase *userUsecase) VerifyUser(users shape.Users) (bool, error, string) {
+	var err error
+	var msg string
+	var result bool
+	var user model.Users
+	var emailType string = "Registration Success"
 
 	dataUser := model.Users{
 		Email: users.Email,
@@ -109,11 +177,20 @@ func (userUsecase *userUsecase) VerifyUser(users shape.Users) (bool, error, stri
 		msg = fmt.Sprintf(`Kode verifikasi salah`)
 		return result, err, msg
 	}
-	result, err = userUsecase.userRepository.VerifyUser(dataUser)
+	user, result, err = userUsecase.userRepository.VerifyUser(dataUser)
+	if err == nil {
+		dataEmail := model.EmailBody{
+			BodyTemp: emailType,
+			UserCode: user.ID,
+		}
+		userUsecase.emailUsecase.SendEmail(dataEmail)
+	}
 	return result, err, msg
 }
 
 func (userUsecase *userUsecase) ChangePasswordUser(users shape.Users) (bool, error) {
+	var emailType string = "Change Password"
+	var user model.Users
 	var result bool
 	var err error
 
@@ -125,10 +202,6 @@ func (userUsecase *userUsecase) ChangePasswordUser(users shape.Users) (bool, err
 	dataUser := model.Users{
 		Email:    users.Email,
 		Password: hashPassword,
-		VerifiedCode: sql.NullString{
-			String: utils.
-				GenerateVerifyCode(users.Email),
-		},
 		ModifiedBy: sql.NullString{
 			String: users.Email,
 		},
@@ -136,7 +209,16 @@ func (userUsecase *userUsecase) ChangePasswordUser(users shape.Users) (bool, err
 			Time: time.Now(),
 		},
 	}
-	result, err = userUsecase.userRepository.ChangePasswordUser(dataUser)
+	fmt.Println(dataUser)
+	user, result, err = userUsecase.userRepository.ChangePasswordUser(dataUser)
+	if err == nil {
+		dataEmail := model.EmailBody{
+			UserEmail: dataUser.Email,
+			BodyTemp:  emailType,
+			UserCode:  user.ID,
+		}
+		userUsecase.emailUsecase.SendEmail(dataEmail)
+	}
 	return result, err
 }
 

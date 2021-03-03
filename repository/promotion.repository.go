@@ -154,8 +154,7 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		modified_by,
 		modified_date,
 		deleted_by,
-		deleted_date,
-		quote_user,
+		deleted_date
 	FROM 
 		v_m_promotion
 	WHERE 
@@ -192,8 +191,8 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		&modifiedDate,
 		&deletedBy,
 		&deletedDate,
-		&quoteUser,
 	)
+
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetPromotion => ", sqlError)
 		return model.Promotion{}, nil
@@ -297,6 +296,7 @@ func (promotionRepository *promotionRepository) CheckAllPromotionExpired() ([]mo
 	WHERE  
 		deleted_by IS NULL AND
 		is_active=true AND
+		promo_code <> 'BLJEXP' AND
 		expired_date <= now() OR 
 		expired_date = now() OR 
 		quota_used >= quota_user

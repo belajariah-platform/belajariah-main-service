@@ -9,7 +9,25 @@ func CurrentDateString(date time.Time) string {
 	dateString := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d.000Z",
 		date.Year(), date.Month(), date.Day(),
 		date.Hour(), date.Minute(), date.Second())
+	return dateString
+}
 
+func CurrentDateStringCustom(date time.Time) string {
+	dateString := fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+		date.Year(), date.Month(), date.Day(),
+		date.Hour(), date.Minute(), date.Second())
+	return dateString
+}
+
+func CurrentDate(date time.Time) string {
+	dateString := fmt.Sprintf("%d-%02d-%02d",
+		date.Year(), date.Month(), date.Day())
+	return dateString
+}
+
+func CurrentTime(date time.Time) string {
+	dateString := fmt.Sprintf("%02d:%02d:%02d",
+		date.Hour(), date.Minute(), date.Second())
 	return dateString
 }
 
@@ -37,6 +55,6 @@ func GetDuration(date1, date2 time.Time) float64 {
 }
 
 func TimeAdd(date1 time.Time, duration int) time.Time {
-	date2 := date1.AddDate(0, 0, duration)
+	date2 := date1.AddDate(0, 0, duration*30)
 	return date2
 }

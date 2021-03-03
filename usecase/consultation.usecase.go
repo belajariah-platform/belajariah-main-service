@@ -20,6 +20,7 @@ type consultationUsecase struct {
 
 type ConsultationUsecase interface {
 	GetAllConsultation(query model.Query) ([]shape.Consultation, int, error)
+	GetAllConsultationLimit(query model.Query, userObj model.Mentor) ([]shape.Consultation, error)
 	GetAllConsultationUser(query model.Query, userObj model.UserInfo) ([]shape.Consultation, int, error)
 	GetAllConsultationMentor(query model.Query, userObj model.Mentor) ([]shape.Consultation, int, error)
 
@@ -29,6 +30,8 @@ type ConsultationUsecase interface {
 	ConfirmConsultation(consultation shape.ConsultationPost, email string) (bool, error)
 
 	CheckAllConsultationExpired()
+	CheckConsultationSpamUser(userObj model.UserInfo) (int, error)
+	CheckConsultationSpamMentor(userObj model.Mentor) (int, error)
 }
 
 func InitConsultationUsecase(userRepository repository.UserRepository, enumRepository repository.EnumRepository, consultationRepository repository.ConsultationRepository, approvalStatusRepository repository.ApprovalStatusRepository) ConsultationUsecase {
@@ -86,6 +89,53 @@ func (consultationUsecase *consultationUsecase) GetAllConsultation(query model.Q
 		return consultationEmpty, count, err
 	}
 	return consultationsResult, count, err
+}
+
+func (consultationUsecase *consultationUsecase) GetAllConsultationLimit(query model.Query, userObj model.Mentor) ([]shape.Consultation, error) {
+	var filterQuery, filterUser string
+	var consultations []model.Consultation
+	var consultationsResult []shape.Consultation
+
+	filterQuery = utils.GetFilterHandler(query.Filters)
+	filterUser = fmt.Sprintf(`AND taken_code=%d`, userObj.ID)
+
+	consultations, err := consultationUsecase.consultationRepository.GetAllConsultationLimit(query.Skip, query.Take, filterQuery, filterUser)
+
+	if err == nil {
+		for _, value := range consultations {
+			consultationsResult = append(consultationsResult, shape.Consultation{
+				ID:                 value.ID,
+				User_Code:          value.UserCode,
+				User_Name:          value.UserName,
+				Class_Code:         value.ClassCode,
+				Class_Name:         value.ClassName,
+				Recording_Code:     int(value.RecordingCode.Int64),
+				Recording_Path:     value.RecordingPath.String,
+				Recording_Name:     value.RecordingName.String,
+				Recording_Duration: int(value.RecordingDuration.Int64),
+				Status_Code:        value.StatusCode,
+				Status:             value.Status,
+				Description:        value.Description.String,
+				Taken_Code:         int(value.TakenCode.Int64),
+				Taken_Name:         value.TakenName.String,
+				Is_Play:            value.IsPlay.Bool,
+				Is_Read:            value.IsPlay.Bool,
+				Is_Action_Taken:    value.IsActionTaken.Bool,
+				Is_Active:          value.IsActive,
+				Created_By:         value.CreatedBy,
+				Created_Date:       value.CreatedDate,
+				Modified_By:        value.ModifiedBy.String,
+				Modified_Date:      value.ModifiedDate.Time,
+				Deleted_By:         value.DeletedBy.String,
+				Deleted_Date:       value.DeletedDate.Time,
+			})
+		}
+	}
+	consultationEmpty := make([]shape.Consultation, 0)
+	if len(consultationsResult) == 0 {
+		return consultationEmpty, err
+	}
+	return consultationsResult, err
 }
 
 func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query model.Query, userObj model.UserInfo) ([]shape.Consultation, int, error) {
@@ -185,12 +235,14 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationMentor(query m
 }
 
 func (consultationUsecase *consultationUsecase) InsertConsultation(consultation shape.ConsultationPost, email string) (bool, error) {
-	var err error
-	var result bool
-	var statusCode string
-
 	var enum model.Enum
 	var user model.UserInfo
+	var consultations model.Consultation
+
+	var err error
+	var takenCode int
+	var statusCode string
+	var result, isActionTaken bool
 	var approved string = "Approved"
 	var completed string = "Completed"
 	var waitingForResponse string = "Waiting for Response"
@@ -198,29 +250,48 @@ func (consultationUsecase *consultationUsecase) InsertConsultation(consultation 
 	status, err := consultationUsecase.approvalStatusRepository.GetApprovalStatus(consultation.Status_Code)
 	switch strings.ToLower(consultation.Action) {
 	case "approved":
-		filter := fmt.Sprintf(`AND user_code=%d AND class_code='%s' AND expired_date='%s'`,
+		filterUser := fmt.Sprintf(`AND user_code=%d AND class_code='%s' AND expired_date='%s'`,
 			consultation.User_Code,
 			consultation.Class_Code,
-			consultation.Expired_Date,
+			utils.CurrentDateStringCustom(consultation.Expired_Date),
 		)
+		filterMentor := fmt.Sprintf(`AND user_code=%d AND class_code='%s' AND expired_date='%s'`,
+			consultation.Taken_Code,
+			consultation.Class_Code,
+			utils.CurrentDateStringCustom(consultation.Expired_Date),
+		)
+
 		user, err = consultationUsecase.userRepository.GetUserInfo(email)
 		if user.Role == "Mentor" {
+			consultations, err = consultationUsecase.consultationRepository.GetConsultation(filterMentor)
 			statusCode = status.ApprovedStatus.String
+			takenCode = int(consultations.UserCode)
+			isActionTaken = consultations.IsActionTaken.Bool
+			if consultations.Status == approved {
+				return result, err
+			}
 		} else {
-			consultations, _ := consultationUsecase.consultationRepository.GetConsultation(filter)
+			consultations, err = consultationUsecase.consultationRepository.GetConsultation(filterUser)
 			if consultations == (model.Consultation{}) {
-				statusCode = status.ApprovedStatus.String
+				statusCode = consultation.Status_Code
 			} else if consultations != (model.Consultation{}) && consultations.Status == waitingForResponse {
 				enum, err = consultationUsecase.enumRepository.GetEnum(waitingForResponse)
 				statusCode = enum.Code
+				takenCode = int(consultations.TakenCode.Int64)
+				isActionTaken = consultations.IsActionTaken.Bool
 			} else if consultations != (model.Consultation{}) && consultations.Status == completed {
 				enum, err = consultationUsecase.enumRepository.GetEnum(waitingForResponse)
 				statusCode = enum.Code
+				takenCode = int(consultations.TakenCode.Int64)
+				isActionTaken = consultations.IsActionTaken.Bool
 			} else if consultations != (model.Consultation{}) && consultations.Status == approved {
 				enum, err = consultationUsecase.enumRepository.GetEnum(approved)
 				statusCode = enum.Code
+			} else {
+				statusCode = consultation.Status_Code
 			}
 		}
+
 	case "rejected":
 		statusCode = status.RejectStatus.String
 	default:
@@ -242,10 +313,13 @@ func (consultationUsecase *consultationUsecase) InsertConsultation(consultation 
 				String: consultation.Description,
 			},
 			TakenCode: sql.NullInt64{
-				Int64: consultation.Taken_Code,
+				Int64: int64(takenCode),
+			},
+			IsActionTaken: sql.NullBool{
+				Bool: isActionTaken,
 			},
 			ExpiredDate: sql.NullTime{
-				Time: time.Now(),
+				Time: consultation.Expired_Date,
 			},
 			CreatedBy:   email,
 			CreatedDate: time.Now(),
@@ -257,8 +331,27 @@ func (consultationUsecase *consultationUsecase) InsertConsultation(consultation 
 			},
 		}
 		if user.Role == "Mentor" {
-			dataConsultation.IsActionTaken.Bool = true
-			result, err = consultationUsecase.consultationRepository.UpdateConsultation(dataConsultation, consultation.Status_Code)
+			dataConsultationMentor := model.Consultation{
+				UserCode:   int(consultation.Taken_Code),
+				ClassCode:  consultation.Class_Code,
+				StatusCode: statusCode,
+				TakenCode: sql.NullInt64{
+					Int64: int64(consultation.User_Code),
+				},
+				ExpiredDate: sql.NullTime{
+					Time: consultation.Expired_Date,
+				},
+				IsActionTaken: sql.NullBool{
+					Bool: true,
+				},
+				ModifiedBy: sql.NullString{
+					String: email,
+				},
+				ModifiedDate: sql.NullTime{
+					Time: time.Now(),
+				},
+			}
+			result, err = consultationUsecase.consultationRepository.UpdateConsultation(dataConsultationMentor, consultation.Status_Code)
 		}
 		result, err = consultationUsecase.consultationRepository.InsertConsultation(dataConsultation)
 	}
@@ -374,4 +467,36 @@ func (consultationUsecase *consultationUsecase) CheckAllConsultationExpired() {
 			}
 		}
 	}
+}
+
+func (consultationUsecase *consultationUsecase) CheckConsultationSpamUser(userObj model.UserInfo) (int, error) {
+	var err error
+	var count int
+	var consultationList []model.Consultation
+
+	consultationList, err = consultationUsecase.consultationRepository.CheckConsultationSpam()
+	if err == nil {
+		for _, value := range consultationList {
+			if value.UserCode == userObj.ID {
+				count = count + 1
+			}
+		}
+	}
+	return count, err
+}
+
+func (consultationUsecase *consultationUsecase) CheckConsultationSpamMentor(userObj model.Mentor) (int, error) {
+	var err error
+	var count int
+	var consultationList []model.Consultation
+
+	consultationList, err = consultationUsecase.consultationRepository.CheckConsultationSpam()
+	if err == nil {
+		for _, value := range consultationList {
+			if value.UserCode == userObj.ID {
+				count = count + 1
+			}
+		}
+	}
+	return count, err
 }

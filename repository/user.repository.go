@@ -15,14 +15,16 @@ type userRepository struct {
 }
 
 type UserRepository interface {
+	GetUserData(ids int) (model.UserInfo, error)
 	GetUserInfo(email string) (model.UserInfo, error)
 	CheckVerifyCodeUser(users model.Users) (int, error)
 	CheckValidateLogin(users model.Users) (model.Users, error)
 
-	VerifyUser(users model.Users) (bool, error)
-	RegisterUser(users model.Users) (bool, error)
 	LoginUser(users model.Users) (model.Users, error)
-	ChangePasswordUser(users model.Users) (bool, error)
+	RegisterUser(users model.Users) (int, bool, error)
+	VerifyUser(users model.Users) (model.Users, bool, error)
+	ChangePasswordUser(users model.Users) (model.Users, bool, error)
+	ResetVerificationCode(users model.Users) (model.Users, bool, error)
 }
 
 func InitUserRepository(db *sqlx.DB) UserRepository {
@@ -80,6 +82,46 @@ func (userRepository *userRepository) CheckValidateLogin(users model.Users) (mod
 			Password: password,
 		}
 		return userLogin, sqlError
+	}
+}
+
+func (userRepository *userRepository) GetUserData(ids int) (model.UserInfo, error) {
+	var userRow model.UserInfo
+	row := userRepository.db.QueryRow(`
+	SELECT
+		id,
+		role_code,
+		role, 
+		email,
+		full_name
+	FROM 
+		private.v_users
+	WHERE 
+		id = $1`, ids)
+
+	var id int
+	var emailUsr, roleCode, role string
+	var fullname sql.NullString
+
+	sqlError := row.Scan(
+		&id,
+		&roleCode,
+		&role,
+		&emailUsr,
+		&fullname,
+	)
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetUserData => ", sqlError)
+		return model.UserInfo{}, nil
+	} else {
+		userRow = model.UserInfo{
+			ID:       id,
+			RoleCode: roleCode,
+			Role:     role,
+			Email:    emailUsr,
+			FullName: fullname,
+		}
+		return userRow, sqlError
 	}
 }
 
@@ -207,15 +249,16 @@ func (userRepository *userRepository) LoginUser(users model.Users) (model.Users,
 	}
 }
 
-func (userRepository *userRepository) VerifyUser(users model.Users) (bool, error) {
+func (userRepository *userRepository) VerifyUser(users model.Users) (model.Users, bool, error) {
 	var err error
 	var result bool
+	var user model.Users
 
 	tx, errTx := userRepository.db.Begin()
 	if errTx != nil {
 		utils.PushLogf("error in verify account", errTx)
 	} else {
-		err = verifyUser(tx, users)
+		user, err = verifyUser(tx, users)
 		if err != nil {
 			utils.PushLogf("err---", err)
 		}
@@ -230,11 +273,13 @@ func (userRepository *userRepository) VerifyUser(users model.Users) (bool, error
 		utils.PushLogf(users.VerifiedCode.String, "failed to verify account")
 	}
 
-	return result, err
+	return user, result, err
 }
 
-func verifyUser(tx *sql.Tx, users model.Users) error {
-	_, err := tx.Exec(`
+func verifyUser(tx *sql.Tx, users model.Users) (model.Users, error) {
+	var id int
+	var userRow model.Users
+	err := tx.QueryRow(`
 	UPDATE
  		private.users
 	 SET
@@ -242,13 +287,77 @@ func verifyUser(tx *sql.Tx, users model.Users) error {
 		verified_code=default
  	WHERE
  		email=$1
+		returning id
 	`,
 		users.Email,
-	)
-	return err
+	).Scan(&id)
+
+	if err != nil {
+		utils.PushLogf("SQL error on Return verify user => ", err)
+		return model.Users{}, nil
+	} else {
+		userRow = model.Users{
+			ID: id,
+		}
+		return userRow, err
+	}
 }
 
-func (userRepository *userRepository) RegisterUser(users model.Users) (bool, error) {
+func (userRepository *userRepository) ResetVerificationCode(users model.Users) (model.Users, bool, error) {
+	var err error
+	var result bool
+	var user model.Users
+
+	tx, errTx := userRepository.db.Begin()
+	if errTx != nil {
+		utils.PushLogf("error in ResetVerificationCode", errTx)
+	} else {
+		user, err = resetVerificationCode(tx, users)
+		if err != nil {
+			utils.PushLogf("err in authentication", err)
+		}
+	}
+
+	if err == nil {
+		result = true
+		tx.Commit()
+	} else {
+		result = false
+		tx.Rollback()
+		utils.PushLogf("failed to ResetVerificationCode")
+	}
+	return user, result, err
+}
+
+func resetVerificationCode(tx *sql.Tx, users model.Users) (model.Users, error) {
+	var id int
+	var userRow model.Users
+	err := tx.QueryRow(`
+	UPDATE
+ 		private.users
+	 SET
+		verified_code=$1
+ 	WHERE
+ 		email=$2
+		returning id
+	`,
+		users.VerifiedCode.String,
+		users.Email,
+	).Scan(&id)
+
+	if err != nil {
+		utils.PushLogf("SQL error on Return reset verification code => ", err)
+		return model.Users{}, nil
+	} else {
+		userRow = model.Users{
+			ID: id,
+		}
+		return userRow, err
+	}
+}
+
+func (userRepository *userRepository) RegisterUser(users model.Users) (int, bool, error) {
+	var id int
 	var err error
 	var result bool
 	var email string
@@ -257,7 +366,7 @@ func (userRepository *userRepository) RegisterUser(users model.Users) (bool, err
 	if errTx != nil {
 		utils.PushLogf("error in register", errTx)
 	} else {
-		email, err = registerUser(tx, users)
+		id, email, err = registerUser(tx, users)
 		if err == nil {
 			insertUserDetail(tx, email, users)
 		} else if err != nil {
@@ -274,10 +383,11 @@ func (userRepository *userRepository) RegisterUser(users model.Users) (bool, err
 		utils.PushLogf(users.Email, "failed to register")
 	}
 
-	return result, err
+	return id, result, err
 }
 
-func registerUser(tx *sql.Tx, users model.Users) (string, error) {
+func registerUser(tx *sql.Tx, users model.Users) (int, string, error) {
+	var ids int
 	var email string
 	err := tx.QueryRow(`
 	INSERT INTO private.users
@@ -300,7 +410,7 @@ func registerUser(tx *sql.Tx, users model.Users) (string, error) {
 		$5,
 		$6,
 		$7
-	) returning email
+	) returning email, id
 	`,
 		users.Email,
 		users.Password,
@@ -309,8 +419,8 @@ func registerUser(tx *sql.Tx, users model.Users) (string, error) {
 		users.CreatedDate,
 		users.ModifiedBy.String,
 		users.ModifiedDate.Time,
-	).Scan(&email)
-	return email, err
+	).Scan(&email, &ids)
+	return ids, email, err
 }
 
 func insertUserDetail(tx *sql.Tx, email string, users model.Users) error {
@@ -346,15 +456,16 @@ func insertUserDetail(tx *sql.Tx, email string, users model.Users) error {
 	return err
 }
 
-func (userRepository *userRepository) ChangePasswordUser(users model.Users) (bool, error) {
+func (userRepository *userRepository) ChangePasswordUser(users model.Users) (model.Users, bool, error) {
 	var err error
 	var result bool
+	var user model.Users
 
 	tx, errTx := userRepository.db.Begin()
 	if errTx != nil {
 		utils.PushLogf("error in change password", errTx)
 	} else {
-		err = changePassword(tx, users)
+		user, err = changePassword(tx, users)
 		if err != nil {
 			utils.PushLogf("err---", err)
 		}
@@ -369,27 +480,36 @@ func (userRepository *userRepository) ChangePasswordUser(users model.Users) (boo
 		utils.PushLogf(users.VerifiedCode.String, "failed to change password")
 	}
 
-	return result, err
+	return user, result, err
 }
 
-func changePassword(tx *sql.Tx, users model.Users) error {
-	_, err := tx.Exec(`
+func changePassword(tx *sql.Tx, users model.Users) (model.Users, error) {
+	var id int
+	var userRow model.Users
+	err := tx.QueryRow(`
 	UPDATE
  		private.users
 	 SET
 	 	password=$1,
-		is_verified=false,
-		verified_code=$2,
-		modified_by=$3,
-		modified_date=$4
+		modified_by=$2,
+		modified_date=$3
  	WHERE
- 		email=$5
+ 		email=$4
+		returning id
 	`,
 		users.Password,
-		users.VerifiedCode,
 		users.ModifiedBy,
 		users.ModifiedDate,
 		users.Email,
-	)
-	return err
+	).Scan(&id)
+
+	if err != nil {
+		utils.PushLogf("SQL error on Return changePassword => ", err)
+		return model.Users{}, nil
+	} else {
+		userRow = model.Users{
+			ID: id,
+		}
+		return userRow, err
+	}
 }

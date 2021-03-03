@@ -15,15 +15,17 @@ type consultationRepository struct {
 }
 
 type ConsultationRepository interface {
-	GetAllConsultation(skip, take int, filter, filterUser string) ([]model.Consultation, error)
-	GetAllConsultationCount(filter, filterUser string) (int, error)
 	GetConsultation(filter string) (model.Consultation, error)
+	GetAllConsultationCount(filter, filterUser string) (int, error)
+	GetAllConsultation(skip, take int, filter, filterUser string) ([]model.Consultation, error)
+	GetAllConsultationLimit(skip, take int, filter, filterUser string) ([]model.Consultation, error)
 
 	ReadConsultation(consultation model.Consultation) (bool, error)
 	InsertConsultation(consultation model.Consultation) (bool, error)
 	UpdateConsultation(consultation model.Consultation, status string) (bool, error)
 	ConfirmConsultation(consultation model.Consultation, status string) (bool, error)
 
+	CheckConsultationSpam() ([]model.Consultation, error)
 	CheckAllConsultationExpired() ([]model.Consultation, error)
 }
 
@@ -31,6 +33,125 @@ func InitConsultationRepository(db *sqlx.DB) ConsultationRepository {
 	return &consultationRepository{
 		db,
 	}
+}
+
+func (consultationRepository *consultationRepository) GetAllConsultationLimit(skip, take int, filter, filterUser string) ([]model.Consultation, error) {
+	var consultationList []model.Consultation
+	query := fmt.Sprintf(`
+	SELECT
+		DISTINCT ON (user_code) user_code,
+		id,
+		user_name,
+		class_code,
+		class_name,
+		recording_code,
+		recording_path,
+		recording_name,
+		recording_duration,
+		status_code,
+		status,
+		description,
+		taken_code,
+		taken_name,
+		is_play,
+		is_read,
+		is_action_taken,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		deleted_by,
+		deleted_date
+	FROM v_t_consultation
+	WHERE 
+		deleted_by IS NULL
+		%s
+	%s
+	ORDER BY user_code, id DESC
+	OFFSET %d
+	LIMIT %d
+	`, filterUser, filter, skip, take)
+
+	rows, sqlError := consultationRepository.db.Query(query)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetAllConsultationLimit => ", sqlError)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var isActive bool
+			var id, userCode int
+			var isPlay, isRead, isActionTaken sql.NullBool
+			var createdDate time.Time
+			var modifiedDate, deletedDate sql.NullTime
+			var recordingCode, recordingDuration, takenCode sql.NullInt64
+			var recordingPath, recordingName, description, takenName, modifiedBy, deletedBy sql.NullString
+			var userName, statusCode, status, classCode, className, createdBy string
+
+			sqlError := rows.Scan(
+				&userCode,
+				&id,
+				&userName,
+				&classCode,
+				&className,
+				&recordingCode,
+				&recordingPath,
+				&recordingName,
+				&recordingDuration,
+				&statusCode,
+				&status,
+				&description,
+				&takenCode,
+				&takenName,
+				&isPlay,
+				&isRead,
+				&isActionTaken,
+				&isActive,
+				&createdBy,
+				&createdDate,
+				&modifiedBy,
+				&modifiedDate,
+				&deletedBy,
+				&deletedDate,
+			)
+
+			if sqlError != nil {
+				utils.PushLogf("SQL error on GetAllConsultationLimit => ", sqlError)
+			} else {
+				consultationList = append(
+					consultationList,
+					model.Consultation{
+						UserCode:          userCode,
+						ID:                id,
+						UserName:          userName,
+						ClassCode:         classCode,
+						ClassName:         className,
+						RecordingCode:     recordingCode,
+						RecordingPath:     recordingPath,
+						RecordingName:     recordingName,
+						RecordingDuration: recordingDuration,
+						StatusCode:        statusCode,
+						Status:            status,
+						Description:       description,
+						TakenCode:         takenCode,
+						TakenName:         takenName,
+						IsPlay:            isPlay,
+						IsRead:            isRead,
+						IsActionTaken:     isActionTaken,
+						IsActive:          isActive,
+						CreatedBy:         createdBy,
+						CreatedDate:       createdDate,
+						ModifiedBy:        modifiedBy,
+						ModifiedDate:      modifiedDate,
+						DeletedBy:         deletedBy,
+						DeletedDate:       deletedDate,
+					},
+				)
+			}
+		}
+	}
+	return consultationList, sqlError
 }
 
 func (consultationRepository *consultationRepository) GetAllConsultation(skip, take int, filter, filterUser string) ([]model.Consultation, error) {
@@ -65,7 +186,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 	WHERE 
 		deleted_by IS NULL
 		%s
-	%s
+		%s
 	OFFSET %d
 	LIMIT %d
 	`, filterUser, filter, skip, take)
@@ -190,7 +311,6 @@ func (consultationRepository *consultationRepository) GetConsultation(filter str
 		%s
 	ORDER BY id desc
 	`, filter)
-
 	row := consultationRepository.db.QueryRow(query)
 
 	var id, userCode int
@@ -213,7 +333,7 @@ func (consultationRepository *consultationRepository) GetConsultation(filter str
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetEnum => ", sqlError)
+		utils.PushLogf("SQL error on GetConsultation => ", sqlError)
 		return model.Consultation{}, nil
 	} else {
 		consultationRow = model.Consultation{
@@ -268,6 +388,7 @@ func insertConsultation(tx *sql.Tx, consultation model.Consultation) error {
 		status_code,
 		description,
 		taken_code,
+		is_action_taken,
 		created_by,
 		created_date,
 		modified_by,
@@ -286,7 +407,8 @@ func insertConsultation(tx *sql.Tx, consultation model.Consultation) error {
 		$9,
 		$10,
 		$11,
-		$12
+		$12,
+		$13
 	);
 	`,
 		consultation.UserCode,
@@ -296,11 +418,12 @@ func insertConsultation(tx *sql.Tx, consultation model.Consultation) error {
 		consultation.StatusCode,
 		consultation.Description.String,
 		consultation.TakenCode.Int64,
+		consultation.IsActionTaken.Bool,
 		consultation.CreatedBy,
 		consultation.CreatedDate,
 		consultation.ModifiedBy.String,
 		consultation.ModifiedDate.Time,
-		consultation.ExpiredDate.Time,
+		utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
 	)
 	return err
 }
@@ -386,7 +509,6 @@ func updateConsultation(tx *sql.Tx, consultation model.Consultation, status stri
 		class_code=$7 AND
 		expired_date=$8 AND
 		status_code=$9
-	);
 	`,
 		consultation.StatusCode,
 		consultation.TakenCode.Int64,
@@ -395,7 +517,7 @@ func updateConsultation(tx *sql.Tx, consultation model.Consultation, status stri
 		consultation.ModifiedDate.Time,
 		consultation.UserCode,
 		consultation.ClassCode,
-		consultation.ExpiredDate.Time,
+		utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
 		status,
 	)
 	return err
@@ -440,17 +562,54 @@ func confirmConsultation(tx *sql.Tx, consultation model.Consultation, status str
 		class_code=$5 AND
 		expired_date=$6 AND
 		status_code=$7
-	);
 	`,
 		consultation.StatusCode,
 		consultation.ModifiedBy.String,
 		consultation.ModifiedDate.Time,
 		consultation.UserCode,
 		consultation.ClassCode,
-		consultation.ExpiredDate.Time,
+		utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
 		status,
 	)
 	return err
+}
+
+func (consultationRepository *consultationRepository) CheckConsultationSpam() ([]model.Consultation, error) {
+	var consultationList []model.Consultation
+
+	rows, sqlError := consultationRepository.db.Query(`
+	SELECT
+		id,
+		user_code
+	FROM 
+		v_t_consultation 
+	ORDER BY id DESC 
+	LIMIT 2;
+	`)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on CheckConsultationSpam => ", sqlError)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var id, userCode int
+
+			sqlError := rows.Scan(
+				&id,
+				&userCode,
+			)
+
+			if sqlError != nil {
+				utils.PushLogf("SQL error on CheckConsultationSpam => ", sqlError)
+			} else {
+				consultationList = append(consultationList, model.Consultation{
+					ID:       id,
+					UserCode: userCode,
+				})
+			}
+		}
+	}
+	return consultationList, sqlError
 }
 
 func (consultationRepository *consultationRepository) CheckAllConsultationExpired() ([]model.Consultation, error) {
@@ -465,7 +624,10 @@ func (consultationRepository *consultationRepository) CheckAllConsultationExpire
 		status_code
 	FROM v_t_consultation
 	WHERE  
-		created_date <= now() AND 
+		DATE_PART('day', now()::timestamp - modified_date::timestamp) * 24 * 60 * 60 + 
+		DATE_PART('hour', now()::timestamp - modified_date::timestamp) * 60 * 60 +
+		DATE_PART('minute', now()::timestamp - modified_date::timestamp) * 60 +
+		DATE_PART('second', now()::timestamp - modified_date::timestamp) > 600 AND 
 		status IN ('Waiting for Response')
 	ORDER BY id ASC 
 	LIMIT 1;

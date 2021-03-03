@@ -67,8 +67,8 @@ func (notificationRepository *notificationRepository) GetNotification(filter, ty
 		v_t_notifications
 	WHERE 
 		deleted_by IS NULL AND
-		split_part(value, '|', 1)='%s' 
-		'%s'
+		split_part(notification_type_text, '|', 1)='%s' 
+		%s
 	`, types, filter)
 
 	row := notificationRepository.db.QueryRow(query)
@@ -142,10 +142,10 @@ func (notificationRepository *notificationRepository) InsertNotification(notific
 
 func insertNotification(tx *sql.Tx, notification model.Notification) error {
 	sqlQuery := `
-	INSERT INTO workflow.transact_notification
+	INSERT INTO transact_notification
 	(
 		table_ref,
-		user_code,
+		user_class_code,
 		payment_code,
 		notification_type,
 		user_code,
@@ -167,12 +167,12 @@ func insertNotification(tx *sql.Tx, notification model.Notification) error {
 		$8, 
 		$9,
 		$10,
-		$11,
+		$11
 		);
 `
 	_, err := tx.Exec(sqlQuery,
 		notification.TableRef,
-		notification.UserClassCode,
+		notification.UserClassCode.Int64,
 		notification.PaymentCode,
 		notification.NotificationType,
 		notification.UserCode,

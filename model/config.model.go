@@ -5,6 +5,7 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Log      LogConfig
+	Mail     MailConfig
 }
 
 // ServerConfig ...
@@ -28,4 +29,13 @@ type LogConfig struct {
 	MaxBackups int
 	MaxAge     int
 	Compress   bool
+}
+
+// MailConfig ...
+type MailConfig struct {
+	AuthEmail    string
+	AuthPassword string
+	SMTPHost     string
+	SMTPPort     int
+	SenderName   string
 }

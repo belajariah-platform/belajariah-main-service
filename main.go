@@ -32,6 +32,7 @@ func main() {
 	userRepository := repository.InitUserRepository(db)
 	testRepository := repository.InitTestRepository(db)
 	enumRepository := repository.InitEnumRepository(db)
+	emailRepository := repository.InitEmailRepository(db)
 	classRepository := repository.InitClassRepository(db)
 	quranRepository := repository.InitQuranRepository(db)
 	storyRepository := repository.InitStoryRepository(db)
@@ -52,7 +53,6 @@ func main() {
 	userExerciseReadingRepository := repository.InitUserExerciseReadingRepository(db)
 
 	//initiate usecase
-	userUsecase := usecase.InitUserUsecase(userRepository)
 	enumUsecase := usecase.InitEnumUsecase(enumRepository)
 	quranUsecase := usecase.InitQuranUsecase(quranRepository)
 	storyUsecase := usecase.InitStoryUsecase(storyRepository)
@@ -62,14 +62,16 @@ func main() {
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
 	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository)
+	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, emailRepository)
+	userUsecase := usecase.InitUserUsecase(emailUsecase, userRepository)
 	testUsecase := usecase.InitTestUsecase(testRepository, userClassRepository)
 	paymentMethodUsecase := usecase.InitPaymentMethodUsecase(paymentMethodRepository)
 	exerciseReadingUsecase := usecase.InitExerciseReadingUsecase(exerciseReadingRepository)
 	learningUsecase := usecase.InitLearningUsecase(learningRepository, exerciseReadingRepository)
 	userExerciseReadingUsecase := usecase.InitUserExerciseReadingUsecase(userExerciseReadingRepository)
 	consultationUsecase := usecase.InitConsultationUsecase(userRepository, enumRepository, consultationRepository, approvalStatusRepository)
-	paymentUsecase := usecase.InitPaymentUsecase(enumRepository, packageRepository, paymentRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
-	userClassUsecase := usecase.InitUserClassUsecase(enumRepository, userClassRepository, notificationRepository)
+	paymentUsecase := usecase.InitPaymentUsecase(emailUsecase, enumRepository, packageRepository, paymentRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
+	userClassUsecase := usecase.InitUserClassUsecase(emailUsecase, enumRepository, promotionRepository, userClassRepository, notificationRepository)
 
 	//initiate handler
 	userHandler := handler.InitUserHandler(userUsecase)
@@ -118,6 +120,8 @@ func main() {
 	router.POST("/check_email", userHandler.CheckEmail)
 	router.PUT("/verify_account", userHandler.VerifyUser)
 	router.PUT("/change_password", userHandler.ChangePassword)
+	router.PUT("/verifiy_password", userHandler.VerifyPasswordUser)
+	router.PUT("/reset_verification", userHandler.ResetVerificationUser)
 
 	// router-test
 	router.GET("/tests", testHandler.GetAllTest)
@@ -178,7 +182,10 @@ func main() {
 	// router-consultation
 	router.GET("/consultations", consultationHandler.GetAllConsultation)
 	router.GET("/consultation/user", consultationHandler.GetAllConsultationUser)
+	router.GET("/consultation/limit", consultationHandler.GetAllConsultationLimit)
 	router.GET("/consultation/mentor", consultationHandler.GetAllConsultationMentor)
+	router.GET("/consultation/spam_user", consultationHandler.CheckConsultationSpamUser)
+	router.GET("/consultation/spam_mentor", consultationHandler.CheckConsultationSpamMentor)
 	router.PUT("/consultation", consultationHandler.UpdateConsultation)
 	router.POST("/consultation", consultationHandler.InsertConsultation)
 	router.PUT("/consultation/read", consultationHandler.ReadConsultation)
@@ -188,11 +195,14 @@ func main() {
 	router.GET("/payment_methods", paymentMethodHandler.GetAllPaymentMethod)
 
 	go paymentUsecase.CheckAllPaymentExpired()
+	go paymentUsecase.CheckAllPayment2HourBeforeExpired()
 	go promotionUsecase.CheckAllPromotionExpired()
-	go userClassUsecase.CheckAllUserClassExpired()
-	go userClassUsecase.CheckAllUserClass3DaysExpired()
 	go consultationUsecase.CheckAllConsultationExpired()
-	go userClassUsecase.CheckAllUserClassOneDaysExpired()
+	go userClassUsecase.CheckAllUserClassExpired()
+	go userClassUsecase.CheckAllUserClass1DaysBeforeExpired()
+	go userClassUsecase.CheckAllUserClass2DaysBeforeExpired()
+	go userClassUsecase.CheckAllUserClass5DaysBeforeExpired()
+	go userClassUsecase.CheckAllUserClass7DaysBeforeExpired()
 
 	utils.PushLogf("BELAJARIAH MAIN SERVICE STARTED")
 	fmt.Println(fmt.Sprintf("BELAJARIAH MAIN SERVICE STARTED ON PORT %d", configModel.Server.Port))

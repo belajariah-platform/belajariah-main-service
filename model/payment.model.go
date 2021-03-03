@@ -14,8 +14,16 @@ type Payment struct {
 	ClassInitial      string
 	PackageCode       string
 	PackageType       string
+	PackageDiscount   sql.NullInt64
+	TotalConsultation sql.NullInt64
+	TotalWebinar      sql.NullInt64
+	PromoCode         string
+	PromoTitle        string
+	PromoDiscount     sql.NullFloat64
 	PaymentMethodCode string
 	PaymentMethod     string
+	AccountName       sql.NullString
+	AccountNumber     sql.NullString
 	InvoiceNumber     string
 	StatusPaymentCode string
 	StatusPayment     string

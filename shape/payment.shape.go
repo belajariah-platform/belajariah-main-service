@@ -38,6 +38,7 @@ type PaymentPost struct {
 	Class_Code          string
 	Class_Name          string
 	Class_Initial       string
+	Promo_Code          string
 	Package_Code        string
 	Package_Type        string
 	Payment_Method_Code string

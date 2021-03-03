@@ -43,7 +43,9 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		modified_date,
 		deleted_by,
 		deleted_date,
-		duration
+		duration,
+		consultation,
+		webinar
 	FROM master_class_package
 	WHERE 
 		deleted_by IS NULL AND
@@ -54,6 +56,7 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 	var isActive bool
 	var id, duration int
 	var createdDate time.Time
+	var consultation, webinar sql.NullInt64
 	var modifiedDate, deletedDate sql.NullTime
 	var PriceDiscount, modifiedBy, deletedBy sql.NullString
 	var types, classCode, pricePackage, code, createdBy string
@@ -73,6 +76,8 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		&deletedBy,
 		&deletedDate,
 		&duration,
+		&consultation,
+		&webinar,
 	)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetPackage => ", sqlError)
@@ -93,6 +98,8 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 			DeletedBy:     deletedBy,
 			DeletedDate:   deletedDate,
 			Duration:      duration,
+			Consultation:  consultation,
+			Webinar:       webinar,
 		}
 		return packageRow, sqlError
 	}
@@ -115,7 +122,9 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 		modified_date,
 		deleted_by,
 		deleted_date,
-		duration
+		duration,
+		consultation,
+		webinar
 	FROM master_class_package
 	WHERE 
 		deleted_by IS NULL AND
@@ -135,6 +144,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 			var isActive bool
 			var id, duration int
 			var createdDate time.Time
+			var consultation, webinar sql.NullInt64
 			var modifiedDate, deletedDate sql.NullTime
 			var PriceDiscount, modifiedBy, deletedBy sql.NullString
 			var types, classCode, pricePackage, code, createdBy string
@@ -154,6 +164,8 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 				&deletedBy,
 				&deletedDate,
 				&duration,
+				&consultation,
+				&webinar,
 			)
 
 			if sqlError != nil {
@@ -176,6 +188,8 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 						DeletedBy:     deletedBy,
 						DeletedDate:   deletedDate,
 						Duration:      duration,
+						Consultation:  consultation,
+						Webinar:       webinar,
 					},
 				)
 			}

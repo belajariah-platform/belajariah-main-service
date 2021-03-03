@@ -171,6 +171,8 @@ func (enumRepository *enumRepository) GetEnumSplit(values string) (model.Enum, e
 		code,
 		type,
 		value
+	FROM 
+		master_enum
 	WHERE 
 		deleted_by IS NULL AND
 		is_active=true AND

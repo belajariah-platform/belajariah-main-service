@@ -21,14 +21,14 @@ type UserClassRepository interface {
 	GetAllUserClass(skip, take int, filter, filterUser string) ([]model.UserClass, error)
 
 	InsertUserClass(userClass model.UserClass) (bool, error)
-	DeleteUserClass(userClass model.UserClass) (bool, error)
 	UpdateUserClass(userClass model.UserClass) (bool, error)
 	UpdateUserClassExpired(userClass model.UserClass) (bool, error)
 	UpdateUserClassProgress(userClass model.UserClass) (bool, error)
+	DeleteUserClass(userClass model.UserClass) (time.Time, bool, error)
 	UpdateUserClassTest(userClass model.UserClass, types string) (bool, error)
 
 	CheckAllUserClassExpired() ([]model.UserClass, error)
-	CheckAllUserClassBeforeExpired(times int) ([]model.UserClass, error)
+	CheckAllUserClassBeforeExpired(interval model.TimeInterval) ([]model.UserClass, error)
 }
 
 func InitUserClassRepository(db *sqlx.DB) UserClassRepository {
@@ -50,20 +50,23 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		start_date,
 		expired_date,
 		time_duration,
-		progress
+		progress,
+		total_consultation,
+		total_webinar
 	FROM 
 		v_t_user_class
 	WHERE 
-		deleted_by IS NULL AND
+		deleted_by IS NULL
 		%s
 	`, filter)
 	row := userClassRepository.db.QueryRow(query)
 
 	var isExpired bool
+	var progress sql.NullFloat64
 	var id, userCode, timeDuration int
 	var startDate, expiredDate time.Time
-	var progress sql.NullFloat64
 	var typeCode, statusCode, classCode string
+	var totalConsultation, totalWebinar sql.NullInt64
 
 	sqlError := row.Scan(
 		&id,
@@ -76,22 +79,26 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		&expiredDate,
 		&timeDuration,
 		&progress,
+		&totalConsultation,
+		&totalWebinar,
 	)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetUserClass => ", sqlError)
 		return model.UserClass{}, nil
 	} else {
 		userClassRow = model.UserClass{
-			ID:           id,
-			UserCode:     userCode,
-			ClassCode:    classCode,
-			TypeCode:     typeCode,
-			StatusCode:   statusCode,
-			IsExpired:    isExpired,
-			StartDate:    startDate,
-			ExpiredDate:  expiredDate,
-			TimeDuration: timeDuration,
-			Progress:     progress,
+			ID:                id,
+			UserCode:          userCode,
+			ClassCode:         classCode,
+			TypeCode:          typeCode,
+			StatusCode:        statusCode,
+			IsExpired:         isExpired,
+			StartDate:         startDate,
+			ExpiredDate:       expiredDate,
+			TimeDuration:      timeDuration,
+			Progress:          progress,
+			TotalConsultation: totalConsultation,
+			TotalWebinar:      totalWebinar,
 		}
 		return userClassRow, sqlError
 	}
@@ -115,6 +122,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		type,
 		status_code,
 		status,
+		package_code,
+		package_type,
 		is_expired,
 		start_date,
 		expired_date,
@@ -126,6 +135,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		pre_test_scores,
 		post_test_scores,
 		post_test_date,
+		total_consultation,
+		total_webinar,
 		is_active,
 		created_by,
 		created_date,
@@ -155,9 +166,9 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 			var startDate, expiredDate, createdDate time.Time
 			var postTestDate, modifiedDate, deletedDate sql.NullTime
 			var progress, preTestScores, postTestScores sql.NullFloat64
-			var progressIndex, progressCurIndex, progressCurSubindex sql.NullInt64
 			var classInitial, classDescription, classImage, modifiedBy, deletedBy sql.NullString
-			var typeCode, types, status, statusCode, classCode, className, classCategory, createdBy string
+			var progressIndex, progressCurIndex, progressCurSubindex, totalConsultation, totalWebinar sql.NullInt64
+			var packageCode, packageType, typeCode, types, status, statusCode, classCode, className, classCategory, createdBy string
 
 			sqlError := rows.Scan(
 				&id,
@@ -174,6 +185,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 				&types,
 				&statusCode,
 				&status,
+				&packageCode,
+				&packageType,
 				&isExpired,
 				&startDate,
 				&expiredDate,
@@ -185,6 +198,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 				&preTestScores,
 				&postTestScores,
 				&postTestDate,
+				&totalConsultation,
+				&totalWebinar,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -214,6 +229,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 						Type:                types,
 						StatusCode:          statusCode,
 						Status:              status,
+						PackageCode:         packageCode,
+						PackageType:         packageType,
 						IsExpired:           isExpired,
 						StartDate:           startDate,
 						ExpiredDate:         expiredDate,
@@ -225,6 +242,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 						PreTestScores:       preTestScores,
 						PostTestScores:      postTestScores,
 						PostTestDate:        postTestDate,
+						TotalConsultation:   totalConsultation,
+						TotalWebinar:        totalWebinar,
 						IsActive:            isActive,
 						CreatedBy:           createdBy,
 						CreatedDate:         createdDate,
@@ -301,7 +320,9 @@ func insertUserClass(tx *sql.Tx, userClass model.UserClass) error {
 		created_by,
 		created_date,
 		modified_by,
-		modified_date
+		modified_date,
+		total_consultation,
+		total_webinar
 	)
 	VALUES(
 		$1,
@@ -319,32 +340,37 @@ func insertUserClass(tx *sql.Tx, userClass model.UserClass) error {
 		$7,
 		$8,
 		$9,
-		$10
+		$10,
+		$11,
+		$12
 	);
 	`,
 		userClass.UserCode,
 		userClass.ClassCode,
 		userClass.PackageCode,
+		userClass.StartDate,
 		userClass.ExpiredDate,
 		userClass.TimeDuration,
-		userClass.StartDate,
 		userClass.CreatedBy,
 		userClass.CreatedDate,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
+		userClass.TotalConsultation.Int64,
+		userClass.TotalWebinar.Int64,
 	)
 	return err
 }
 
-func (userClassRepository *userClassRepository) DeleteUserClass(userClass model.UserClass) (bool, error) {
+func (userClassRepository *userClassRepository) DeleteUserClass(userClass model.UserClass) (time.Time, bool, error) {
 	var err error
 	var result bool
+	var date time.Time
 
 	tx, errTx := userClassRepository.db.Begin()
 	if errTx != nil {
 		utils.PushLogf("error in DeleteUserClass", errTx)
 	} else {
-		err = deleteUserClass(tx, userClass)
+		date, err = deleteUserClass(tx, userClass)
 		if err != nil {
 			utils.PushLogf("err in user-class---", err)
 		}
@@ -359,26 +385,28 @@ func (userClassRepository *userClassRepository) DeleteUserClass(userClass model.
 		utils.PushLogf("failed to DeleteUserClass", err)
 	}
 
-	return result, err
+	return date, result, err
 }
 
-func deleteUserClass(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
+func deleteUserClass(tx *sql.Tx, userClass model.UserClass) (time.Time, error) {
+	var expiredDate time.Time
+	err := tx.QueryRow(`
 	UPDATE
 		transact_user_class
 	 SET
 		deleted_by=$1,
 		deleted_date=$2
  	WHERE
- 		id=$7 AND
-		user_code=$8 
+ 		class_code=$3 AND
+		user_code=$4 
+		returning expired_date
 	`,
 		userClass.DeletedBy.String,
 		userClass.DeletedDate.Time,
-		userClass.ID,
+		userClass.ClassCode,
 		userClass.UserCode,
-	)
-	return err
+	).Scan(&expiredDate)
+	return expiredDate, err
 }
 
 func (userClassRepository *userClassRepository) UpdateUserClass(userClass model.UserClass) (bool, error) {
@@ -412,10 +440,10 @@ func updateUserClass(tx *sql.Tx, userClass model.UserClass) error {
 	UPDATE
 		transact_user_class
 	 SET
-		package_code=$1
+		package_code=$1,
 		type_code=(SELECT code 
 			FROM master_enum me 
-			WHERE lower(value)=lower('extend class') LIMIT 1),
+			WHERE value='Extend Class' LIMIT 1),
 		is_expired=false,
 		start_date=$2,
 		expired_date=$3,
@@ -424,10 +452,12 @@ func updateUserClass(tx *sql.Tx, userClass model.UserClass) error {
 		post_test_scores=default,
 		post_test_date=default,
 		modified_by=$5,
-		modified_date=$6
+		modified_date=$6,
+		total_consultation=$7,
+		total_webinar=$8
  	WHERE
- 		id=$7 AND
-		user_code=$8 
+ 		class_code=$9 AND
+		user_code=$10 
 	`,
 		userClass.PackageCode,
 		userClass.StartDate,
@@ -435,7 +465,9 @@ func updateUserClass(tx *sql.Tx, userClass model.UserClass) error {
 		userClass.TimeDuration,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
-		userClass.ID,
+		userClass.TotalConsultation.Int64,
+		userClass.TotalWebinar.Int64,
+		userClass.ClassCode,
 		userClass.UserCode,
 	)
 	return err
@@ -680,7 +712,7 @@ func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]mo
 	return userClassList, sqlError
 }
 
-func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(times int) ([]model.UserClass, error) {
+func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(interval model.TimeInterval) ([]model.UserClass, error) {
 	var userClassList []model.UserClass
 
 	rows, sqlError := userClassRepository.db.Query(`
@@ -702,8 +734,12 @@ func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(t
 		DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
 		DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
 		DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
-		DATE_PART('second', expired_date::timestamp - now()::timestamp) <= $1
-	`, times)
+		DATE_PART('second', expired_date::timestamp - now()::timestamp) <= $1 AND
+		DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
+		DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
+		DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
+		DATE_PART('second', expired_date::timestamp - now()::timestamp) >= $2
+	`, interval.Interval1, interval.Interval2)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError)

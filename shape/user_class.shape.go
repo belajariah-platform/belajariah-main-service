@@ -19,6 +19,8 @@ type UserClass struct {
 	Type                  string
 	Status_Code           string
 	Status                string
+	Package_Code          string
+	Package_Type          string
 	Promo_Code            string
 	Is_Expired            bool
 	Start_Date            string
@@ -31,6 +33,8 @@ type UserClass struct {
 	Pre_Test_Scores       float64
 	Post_Test_Scores      float64
 	Post_Test_Date        string
+	Total_Consultation    int
+	Total_Webinar         int
 	Is_Active             bool
 	Created_By            string
 	Created_Date          time.Time

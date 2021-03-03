@@ -12,6 +12,8 @@ type Package struct {
 	Price_Package  string
 	Price_Discount string
 	Duration       int
+	Webinar        int
+	Consultation   int
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time

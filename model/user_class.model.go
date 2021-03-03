@@ -17,6 +17,7 @@ type UserClass struct {
 	ClassRating         float64
 	TotalUser           int
 	PackageCode         string
+	PackageType         string
 	TypeCode            string
 	Type                string
 	StatusCode          string
@@ -33,6 +34,8 @@ type UserClass struct {
 	PreTestScores       sql.NullFloat64
 	PostTestScores      sql.NullFloat64
 	PostTestDate        sql.NullTime
+	TotalConsultation   sql.NullInt64
+	TotalWebinar        sql.NullInt64
 	IsActive            bool
 	CreatedBy           string
 	CreatedDate         time.Time
@@ -40,4 +43,9 @@ type UserClass struct {
 	ModifiedDate        sql.NullTime
 	DeletedBy           sql.NullString
 	DeletedDate         sql.NullTime
+}
+
+type TimeInterval struct {
+	Interval1 int
+	Interval2 int
 }
