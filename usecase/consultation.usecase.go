@@ -44,14 +44,23 @@ func InitConsultationUsecase(userRepository repository.UserRepository, enumRepos
 }
 
 func (consultationUsecase *consultationUsecase) GetAllConsultation(query model.Query) ([]shape.Consultation, int, error) {
-	var filterQuery, filterUser string
 	var consultations []model.Consultation
 	var consultationsResult []shape.Consultation
+	var filterQuery, filterUser, sorting, search string
+
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
+	if len(query.Search) > 0 {
+		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+	}
 
 	filterUser = fmt.Sprintf(``)
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
-	consultations, err := consultationUsecase.consultationRepository.GetAllConsultation(query.Skip, query.Take, filterQuery, filterUser)
+	consultations, err := consultationUsecase.consultationRepository.GetAllConsultation(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
 	count, errCount := consultationUsecase.consultationRepository.GetAllConsultationCount(filterQuery, filterUser)
 
 	if err == nil && errCount == nil {
@@ -139,14 +148,23 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationLimit(query mo
 }
 
 func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query model.Query, userObj model.UserInfo) ([]shape.Consultation, int, error) {
-	var filterQuery, filterUser string
 	var consultations []model.Consultation
 	var consultationsResult []shape.Consultation
+	var filterQuery, filterUser, sorting, search string
+
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
+	if len(query.Search) > 0 {
+		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 	filterUser = fmt.Sprintf(`AND (user_code=%d OR taken_code=%d)`, userObj.ID, userObj.ID)
 
-	consultations, err := consultationUsecase.consultationRepository.GetAllConsultation(query.Skip, query.Take, filterQuery, filterUser)
+	consultations, err := consultationUsecase.consultationRepository.GetAllConsultation(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
 	count, errCount := consultationUsecase.consultationRepository.GetAllConsultationCount(filterQuery, filterUser)
 
 	if err == nil && errCount == nil {
@@ -187,14 +205,22 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query mod
 }
 
 func (consultationUsecase *consultationUsecase) GetAllConsultationMentor(query model.Query, userObj model.Mentor) ([]shape.Consultation, int, error) {
-	var filterQuery, filterUser string
 	var consultations []model.Consultation
 	var consultationsResult []shape.Consultation
+	var filterQuery, filterUser, sorting, search string
 
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
+	if len(query.Search) > 0 {
+		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+	}
 	filterQuery = utils.GetFilterHandler(query.Filters)
 	filterUser = fmt.Sprintf(`AND (user_code=%d OR taken_code=%d)`, userObj.ID, userObj.ID)
 
-	consultations, err := consultationUsecase.consultationRepository.GetAllConsultation(query.Skip, query.Take, filterQuery, filterUser)
+	consultations, err := consultationUsecase.consultationRepository.GetAllConsultation(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
 	count, errCount := consultationUsecase.consultationRepository.GetAllConsultationCount(filterQuery, filterUser)
 
 	if err == nil && errCount == nil {

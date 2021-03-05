@@ -5,6 +5,7 @@ import (
 	"belajariah-main-service/repository"
 	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
+	"strings"
 )
 
 type mentorUsecase struct {
@@ -56,13 +57,22 @@ func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.Mentor, e
 }
 
 func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Mentor, int, error) {
-	var filterQuery string
 	var mentors []model.Mentor
 	var mentorResult []shape.Mentor
+	var filterQuery, sorting, search string
+
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
+	if len(query.Search) > 0 {
+		search = `AND (LOWER(full_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
-	mentors, err := mentorUsecase.mentorRepository.GetAllMentor(query.Skip, query.Take, filterQuery)
+	mentors, err := mentorUsecase.mentorRepository.GetAllMentor(query.Skip, query.Take, sorting, search, filterQuery)
 	count, errCount := mentorUsecase.mentorRepository.GetAllMentorCount(filterQuery)
 
 	if err == nil && errCount == nil {

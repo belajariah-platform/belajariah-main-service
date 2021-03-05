@@ -53,6 +53,7 @@ func GetConfig() *model.Config {
 			SMTPHost:     os.Getenv("SMTP_HOST"),
 			SMTPPort:     mailPort,
 			SenderName:   os.Getenv("SENDER_NAME"),
+			CopyRight:    os.Getenv("COPY_RIGHT"),
 		},
 	}
 

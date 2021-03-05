@@ -17,7 +17,7 @@ type consultationRepository struct {
 type ConsultationRepository interface {
 	GetConsultation(filter string) (model.Consultation, error)
 	GetAllConsultationCount(filter, filterUser string) (int, error)
-	GetAllConsultation(skip, take int, filter, filterUser string) ([]model.Consultation, error)
+	GetAllConsultation(skip, take int, sort, search, filter, filterUser string) ([]model.Consultation, error)
 	GetAllConsultationLimit(skip, take int, filter, filterUser string) ([]model.Consultation, error)
 
 	ReadConsultation(consultation model.Consultation) (bool, error)
@@ -154,7 +154,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 	return consultationList, sqlError
 }
 
-func (consultationRepository *consultationRepository) GetAllConsultation(skip, take int, filter, filterUser string) ([]model.Consultation, error) {
+func (consultationRepository *consultationRepository) GetAllConsultation(skip, take int, sort, search, filter, filterUser string) ([]model.Consultation, error) {
 	var consultationList []model.Consultation
 	query := fmt.Sprintf(`
 	SELECT
@@ -185,11 +185,10 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 	FROM v_t_consultation
 	WHERE 
 		deleted_by IS NULL
-		%s
-		%s
+		%s %s %s %s
 	OFFSET %d
 	LIMIT %d
-	`, filterUser, filter, skip, take)
+	`, filterUser, filter, search, sort, skip, take)
 
 	rows, sqlError := consultationRepository.db.Query(query)
 

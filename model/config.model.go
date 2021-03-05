@@ -38,4 +38,5 @@ type MailConfig struct {
 	SMTPHost     string
 	SMTPPort     int
 	SenderName   string
+	CopyRight    string
 }

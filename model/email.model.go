@@ -13,6 +13,7 @@ type EmailBody struct {
 	Count            int
 	ExpiredDate      time.Time
 	VerificationCode string
+	CopyRight        string
 
 	//Payment
 	InvoiceNumber     string
@@ -24,11 +25,20 @@ type EmailBody struct {
 	ClassCode         string
 	ClassName         string
 	ClassPrice        int
+	ClassImage        string
 	PromoCode         string
 	PromoTitle        string
 	PromoDiscount     string
 	PromoPrice        int
+	PromoImage        string
 	TotalTransfer     int
 	TotalConsultation int
 	TotalWebinar      int
+
+	//Social Media
+	Facebook   string
+	WhatsApp   string
+	Youtube    string
+	Instagram  string
+	GooglePLay string
 }

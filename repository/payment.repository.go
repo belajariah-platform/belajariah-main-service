@@ -17,7 +17,7 @@ type paymentsRepository struct {
 type PaymentsRepository interface {
 	GetPayment(filter string) (model.Payment, error)
 	GetAllPaymentCount(filter, filterUser string) (int, error)
-	GetAllPayment(skip, take int, filter, filterUser string) ([]model.Payment, error)
+	GetAllPayment(skip, take int, sort, search, filter, filterUser string) ([]model.Payment, error)
 
 	UploadPayment(payment model.Payment) (bool, error)
 	ConfirmPayment(payment model.Payment) (bool, error)
@@ -163,7 +163,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 	}
 }
 
-func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, filter, filterUser string) ([]model.Payment, error) {
+func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort, search, filter, filterUser string) ([]model.Payment, error) {
 	var paymentList []model.Payment
 	query := fmt.Sprintf(`
 	SELECT
@@ -193,11 +193,10 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, filt
 		modified_by,
 		modified_date
 	FROM v_t_payment
-		%s
-	%s
+		%s %s %s %s
 	OFFSET %d
 	LIMIT %d
-	`, filterUser, filter, skip, take)
+	`, filterUser, filter, search, sort, skip, take)
 
 	rows, sqlError := paymentsRepository.db.Query(query)
 

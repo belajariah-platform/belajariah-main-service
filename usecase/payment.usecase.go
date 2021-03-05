@@ -45,14 +45,24 @@ func InitPaymentUsecase(emailUsecase EmailUsecase, enumRepository repository.Enu
 }
 
 func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.Payment, int, error) {
-	var filterQuery, filterUser string
+	var filterQuery, filterUser, sorting, search string
 	var payments []model.Payment
 	var paymentResult []shape.Payment
+
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
+	if len(query.Search) > 0 {
+		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(invoice_number) LIKE LOWER('%` + query.Search + `%'))
+		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+	}
 
 	filterUser = fmt.Sprintf(``)
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
-	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, filterQuery, filterUser)
+	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
 	count, errCount := paymentUsecase.paymentsRepository.GetAllPaymentCount(filterQuery, filterUser)
 
 	if err == nil && errCount == nil {
@@ -93,14 +103,24 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 }
 
 func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, userObj model.UserInfo) ([]shape.Payment, int, error) {
-	var filterQuery, filterUser string
 	var payments []model.Payment
 	var paymentResult []shape.Payment
+	var filterQuery, filterUser, sorting, search string
+
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
+	if len(query.Search) > 0 {
+		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(invoice_number) LIKE LOWER('%` + query.Search + `%'))
+		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 	filterUser = fmt.Sprintf(`WHERE user_code=%d`, userObj.ID)
 
-	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, filterQuery, filterUser)
+	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
 	count, errCount := paymentUsecase.paymentsRepository.GetAllPaymentCount(filterQuery, filterUser)
 
 	if err == nil && errCount == nil {
@@ -141,6 +161,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, email string) (bool, error) {
 	var emailType string = "Waiting for Payment"
 	var paymentType string = "WaitingForPayment|Waiting for Payment|Menunggu"
+	var classImage string = "https://www.belajariah.com/img-assets/BannerEmailTahsin.png"
 
 	enum, err := paymentUsecase.enumRepository.GetEnum(paymentType)
 	dataPayment := model.Payment{
@@ -175,6 +196,7 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 			AccountNumber:     payments.AccountNumber.String,
 			ClassName:         payments.ClassInitial,
 			ClassPrice:        int(payments.PackageDiscount.Int64),
+			ClassImage:        classImage,
 			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
 			TotalConsultation: int(payments.TotalConsultation.Int64),
 			TotalWebinar:      int(payments.TotalWebinar.Int64),
@@ -225,11 +247,11 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, email string) (bool, error) {
 	var err error
 	var result bool
-	var date time.Time
 	var enum model.Enum
 	var class model.UserClass
 	var packages model.Package
 	var statusCode, paymentType, emailType string
+	var classImage string = "https://www.belajariah.com/img-assets/BannerEmailTahsin.png"
 	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
 		payment.User_Code,
 		payment.Class_Code,
@@ -299,23 +321,23 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 		paymentType = "WaitingForPayment|Waiting for Payment|Menunggu"
 		emailType = "Payment Revised"
 
-		if status.CurrentStatusValue == "Completed" {
-			dataUserClass := model.UserClass{
-				ClassCode: payment.Class_Code,
-				UserCode:  payment.User_Code,
-				DeletedBy: sql.NullString{
-					String: email,
-				},
-				DeletedDate: sql.NullTime{
-					Time: time.Now(),
-				},
-			}
-			date, result, err = paymentUsecase.userClassRepository.DeleteUserClass(dataUserClass)
-			if err == nil {
-				dataUserClass.ExpiredDate = date
-				result, err = paymentUsecase.userClassHistoryRepository.DeleteUserClassHistory(dataUserClass)
-			}
-		}
+		// if status.CurrentStatusValue == "Completed" {
+		// 	dataUserClass := model.UserClass{
+		// 		ClassCode: payment.Class_Code,
+		// 		UserCode:  payment.User_Code,
+		// 		DeletedBy: sql.NullString{
+		// 			String: email,
+		// 		},
+		// 		DeletedDate: sql.NullTime{
+		// 			Time: time.Now(),
+		// 		},
+		// 	}
+		// 	date, result, err = paymentUsecase.userClassRepository.DeleteUserClass(dataUserClass)
+		// 	if err == nil {
+		// 		dataUserClass.ExpiredDate = date
+		// 		result, err = paymentUsecase.userClassHistoryRepository.DeleteUserClassHistory(dataUserClass)
+		// 	}
+		// }
 	default:
 		statusCode = ""
 	}
@@ -349,6 +371,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 				AccountNumber:     payments.AccountNumber.String,
 				ClassName:         payments.ClassInitial,
 				ClassPrice:        int(payments.PackageDiscount.Int64),
+				ClassImage:        classImage,
 				PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
 				TotalConsultation: int(payments.TotalConsultation.Int64),
 				TotalWebinar:      int(payments.TotalWebinar.Int64),

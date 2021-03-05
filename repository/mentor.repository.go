@@ -16,7 +16,7 @@ type mentorRepository struct {
 
 type MentorRepository interface {
 	GetMentorInfo(email string) (model.Mentor, error)
-	GetAllMentor(skip, take int, filter string) ([]model.Mentor, error)
+	GetAllMentor(skip, take int, sort, search, filter string) ([]model.Mentor, error)
 	GetAllMentorCount(filter string) (int, error)
 }
 
@@ -124,7 +124,7 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 	}
 }
 
-func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, filter string) ([]model.Mentor, error) {
+func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, search, filter string) ([]model.Mentor, error) {
 	var mentorList []model.Mentor
 	query := fmt.Sprintf(`
 	SELECT

@@ -62,7 +62,7 @@ func main() {
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
 	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository)
-	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, emailRepository)
+	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, enumRepository, emailRepository)
 	userUsecase := usecase.InitUserUsecase(emailUsecase, userRepository)
 	testUsecase := usecase.InitTestUsecase(testRepository, userClassRepository)
 	paymentMethodUsecase := usecase.InitPaymentMethodUsecase(paymentMethodRepository)
