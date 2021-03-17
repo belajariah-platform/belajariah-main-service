@@ -109,7 +109,7 @@ func (exerciseRepository *exerciseRepository) GetAllExerciseCount(filter string)
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_exercise  
+		v_m_exercise  
 	WHERE 
 		deleted_by IS NULL AND
 		is_active=true

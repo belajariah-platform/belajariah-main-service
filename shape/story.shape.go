@@ -12,6 +12,7 @@ type Story struct {
 	Video_Code    string
 	Title         string
 	Content       string
+	Source        string
 	Is_Active     bool
 	Created_By    string
 	Created_Date  time.Time

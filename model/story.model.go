@@ -13,6 +13,7 @@ type Story struct {
 	VideoCode    sql.NullString
 	Title        string
 	Content      string
+	Source       sql.NullString
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time

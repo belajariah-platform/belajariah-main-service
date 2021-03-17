@@ -18,7 +18,7 @@ type userClassRepository struct {
 type UserClassRepository interface {
 	GetUserClass(filter string) (model.UserClass, error)
 	GetAllUserClassCount(filter, filterUser string) (int, error)
-	GetAllUserClass(skip, take int, filter, filterUser string) ([]model.UserClass, error)
+	GetAllUserClass(skip, take int, sorting, filter, filterUser string) ([]model.UserClass, error)
 
 	InsertUserClass(userClass model.UserClass) (bool, error)
 	UpdateUserClass(userClass model.UserClass) (bool, error)
@@ -41,16 +41,27 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	var userClassRow model.UserClass
 	query := fmt.Sprintf(`
 	SELECT
-		id,
+	id,
 		user_code,
 		class_code,
+		total_user,
 		type_code,
+		type,
 		status_code,
+		status,
+		package_code,
+		package_type,
 		is_expired,
 		start_date,
 		expired_date,
 		time_duration,
 		progress,
+		progress_index,
+		progress_cur_index,
+		progress_cur_subindex,
+		pre_test_scores,
+		post_test_scores,
+		post_test_date,
 		total_consultation,
 		total_webinar
 	FROM 
@@ -62,49 +73,73 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	row := userClassRepository.db.QueryRow(query)
 
 	var isExpired bool
-	var progress sql.NullFloat64
-	var id, userCode, timeDuration int
+	var postTestDate sql.NullTime
 	var startDate, expiredDate time.Time
-	var typeCode, statusCode, classCode string
-	var totalConsultation, totalWebinar sql.NullInt64
+	var id, userCode, totalUser, timeDuration int
+	var progress, preTestScores, postTestScores sql.NullFloat64
+	var packageCode, packageType, typeCode, types, status, statusCode, classCode string
+	var progressIndex, progressCurIndex, progressCurSubindex, totalConsultation, totalWebinar sql.NullInt64
 
 	sqlError := row.Scan(
 		&id,
 		&userCode,
 		&classCode,
+		&totalUser,
 		&typeCode,
+		&types,
 		&statusCode,
+		&status,
+		&packageCode,
+		&packageType,
 		&isExpired,
 		&startDate,
 		&expiredDate,
 		&timeDuration,
 		&progress,
+		&progressIndex,
+		&progressCurIndex,
+		&progressCurSubindex,
+		&preTestScores,
+		&postTestScores,
+		&postTestDate,
 		&totalConsultation,
 		&totalWebinar,
 	)
+
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetUserClass => ", sqlError)
 		return model.UserClass{}, nil
 	} else {
 		userClassRow = model.UserClass{
-			ID:                id,
-			UserCode:          userCode,
-			ClassCode:         classCode,
-			TypeCode:          typeCode,
-			StatusCode:        statusCode,
-			IsExpired:         isExpired,
-			StartDate:         startDate,
-			ExpiredDate:       expiredDate,
-			TimeDuration:      timeDuration,
-			Progress:          progress,
-			TotalConsultation: totalConsultation,
-			TotalWebinar:      totalWebinar,
+			ID:                  id,
+			UserCode:            userCode,
+			ClassCode:           classCode,
+			TotalUser:           totalUser,
+			TypeCode:            typeCode,
+			Type:                types,
+			StatusCode:          statusCode,
+			Status:              status,
+			PackageCode:         packageCode,
+			PackageType:         packageType,
+			IsExpired:           isExpired,
+			StartDate:           startDate,
+			ExpiredDate:         expiredDate,
+			TimeDuration:        timeDuration,
+			Progress:            progress,
+			ProgressIndex:       progressIndex,
+			ProgressCurIndex:    progressCurIndex,
+			ProgressCurSubindex: progressCurSubindex,
+			PreTestScores:       preTestScores,
+			PostTestScores:      postTestScores,
+			PostTestDate:        postTestDate,
+			TotalConsultation:   totalConsultation,
+			TotalWebinar:        totalWebinar,
 		}
 		return userClassRow, sqlError
 	}
 }
 
-func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, filter, filterUser string) ([]model.UserClass, error) {
+func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, sort, filter, filterUser string) ([]model.UserClass, error) {
 	var userClassList []model.UserClass
 	query := fmt.Sprintf(`
 	SELECT
@@ -148,10 +183,10 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 	WHERE 
 		deleted_by IS NULL
 		%s
-	%s
+	%s %s
 	OFFSET %d
 	LIMIT %d
-	`, filterUser, filter, skip, take)
+	`, filterUser, filter, sort, skip, take)
 
 	rows, sqlError := userClassRepository.db.Query(query)
 

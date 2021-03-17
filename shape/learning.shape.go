@@ -11,7 +11,8 @@ type Learning struct {
 	Title         string
 	SubTitles     []SubLearning
 	Exercises     ExerciseReading
-	Document      string
+	Document_Path string
+	Document_Name string
 	Sequence      int
 	Is_Active     bool
 	Created_By    string
@@ -33,6 +34,7 @@ type SubLearning struct {
 	Exercise_Image string
 	Exercises      []Exercise
 	Sequence       int
+	Is_Done        bool
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time

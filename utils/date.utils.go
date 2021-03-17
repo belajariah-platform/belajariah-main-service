@@ -40,6 +40,14 @@ func HandleNullableStringDate(date string) string {
 	}
 }
 
+func HandleAddDate(date time.Time, status string) string {
+	var dates string
+	if status == "Waiting for Payment" {
+		return HandleNullableDate(date.Add(24 * time.Hour))
+	}
+	return dates
+}
+
 func HandleNullableDate(date time.Time) string {
 	if date.IsZero() {
 		return ""

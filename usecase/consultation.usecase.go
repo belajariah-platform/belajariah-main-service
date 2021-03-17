@@ -20,9 +20,9 @@ type consultationUsecase struct {
 
 type ConsultationUsecase interface {
 	GetAllConsultation(query model.Query) ([]shape.Consultation, int, error)
-	GetAllConsultationLimit(query model.Query, userObj model.Mentor) ([]shape.Consultation, error)
-	GetAllConsultationUser(query model.Query, userObj model.UserInfo) ([]shape.Consultation, int, error)
-	GetAllConsultationMentor(query model.Query, userObj model.Mentor) ([]shape.Consultation, int, error)
+	GetAllConsultationLimit(query model.Query, userObj model.UserHeader) ([]shape.Consultation, error)
+	GetAllConsultationUser(query model.Query, userObj model.UserHeader) ([]shape.Consultation, int, error)
+	GetAllConsultationMentor(query model.Query, userObj model.UserHeader) ([]shape.Consultation, int, error)
 
 	ReadConsultation(consultation shape.ConsultationPost, email string) (bool, error)
 	InsertConsultation(consultation shape.ConsultationPost, email string) (bool, error)
@@ -54,7 +54,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultation(query model.Q
 	}
 	if len(query.Search) > 0 {
 		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
-		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+		OR LOWER(created_by) LIKE LOWER('%` + query.Search + `%'))`
 	}
 
 	filterUser = fmt.Sprintf(``)
@@ -100,7 +100,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultation(query model.Q
 	return consultationsResult, count, err
 }
 
-func (consultationUsecase *consultationUsecase) GetAllConsultationLimit(query model.Query, userObj model.Mentor) ([]shape.Consultation, error) {
+func (consultationUsecase *consultationUsecase) GetAllConsultationLimit(query model.Query, userObj model.UserHeader) ([]shape.Consultation, error) {
 	var filterQuery, filterUser string
 	var consultations []model.Consultation
 	var consultationsResult []shape.Consultation
@@ -147,7 +147,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationLimit(query mo
 	return consultationsResult, err
 }
 
-func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query model.Query, userObj model.UserInfo) ([]shape.Consultation, int, error) {
+func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query model.Query, userObj model.UserHeader) ([]shape.Consultation, int, error) {
 	var consultations []model.Consultation
 	var consultationsResult []shape.Consultation
 	var filterQuery, filterUser, sorting, search string
@@ -204,7 +204,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query mod
 	return consultationsResult, count, err
 }
 
-func (consultationUsecase *consultationUsecase) GetAllConsultationMentor(query model.Query, userObj model.Mentor) ([]shape.Consultation, int, error) {
+func (consultationUsecase *consultationUsecase) GetAllConsultationMentor(query model.Query, userObj model.UserHeader) ([]shape.Consultation, int, error) {
 	var consultations []model.Consultation
 	var consultationsResult []shape.Consultation
 	var filterQuery, filterUser, sorting, search string

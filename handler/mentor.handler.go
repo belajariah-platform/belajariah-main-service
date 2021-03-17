@@ -16,12 +16,30 @@ type mentorHandler struct {
 }
 
 type MentorHandler interface {
+	GetMentor(ctx *gin.Context)
 	GetAllMentor(ctx *gin.Context)
 }
 
 func InitMentorHandler(mentorUsecase usecase.MentorUsecase) MentorHandler {
 	return &mentorHandler{
 		mentorUsecase,
+	}
+}
+
+func (mentorHandler *mentorHandler) GetMentor(ctx *gin.Context) {
+	email := ctx.Param("email")
+
+	result, err := mentorHandler.mentorUsecase.GetMentorInfo(email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
 	}
 }
 

@@ -94,6 +94,7 @@ func main() {
 	userExerciseReadingHandler := handler.InitUserExerciseReadingHandler(userExerciseReadingUsecase)
 
 	//initiate router
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
@@ -116,8 +117,9 @@ func main() {
 
 	// router-user
 	router.POST("/login", userHandler.LoginUser)
+	router.PUT("/user", userHandler.UpdateProfile)
+	router.GET("/user/:email", userHandler.GetUser)
 	router.POST("/register", userHandler.RegisterUser)
-	router.POST("/check_email", userHandler.CheckEmail)
 	router.PUT("/verify_account", userHandler.VerifyUser)
 	router.PUT("/change_password", userHandler.ChangePassword)
 	router.PUT("/verifiy_password", userHandler.VerifyPasswordUser)
@@ -138,6 +140,7 @@ func main() {
 
 	// router-mentor
 	router.GET("/mentors", mentorHandler.GetAllMentor)
+	router.GET("/mentor/:email", mentorHandler.GetMentor)
 
 	// router-rating
 	router.POST("/rating_class", ratingHandler.GiveRatingClass)
@@ -177,6 +180,7 @@ func main() {
 
 	// router-userClass
 	router.GET("/user_class", userClassHandler.GetAllUserClass)
+	router.GET("/user_class/detail/:code", userClassHandler.GetUserClass)
 	router.PUT("/user_class/progress", userClassHandler.UpdateUserClassProgress)
 
 	// router-consultation

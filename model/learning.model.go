@@ -12,7 +12,8 @@ type Learning struct {
 	Title        string
 	SubTitles    []SubLearning
 	Exercises    ExerciseReading
-	Document     sql.NullString
+	DocumentPath sql.NullString
+	DocumentName sql.NullString
 	Sequence     sql.NullInt64
 	IsActive     bool
 	CreatedBy    string

@@ -22,6 +22,7 @@ type UserRepository interface {
 
 	LoginUser(users model.Users) (model.Users, error)
 	RegisterUser(users model.Users) (int, bool, error)
+	UpdateProfileUser(users model.UserInfo) (bool, error)
 	VerifyUser(users model.Users) (model.Users, bool, error)
 	ChangePasswordUser(users model.Users) (model.Users, bool, error)
 	ResetVerificationCode(users model.Users) (model.Users, bool, error)
@@ -138,6 +139,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 		profession,
 		gender,
 		age,
+		birth,
 		province,
 		city,
 		address,
@@ -158,7 +160,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 	var id int
 	var createdDate time.Time
 	var phone, age sql.NullInt64
-	var modifiedDate sql.NullTime
+	var modifiedDate, births sql.NullTime
 	var isVerified, isActive bool
 	var emailUsr, roleCode, role, createdBy string
 	var fullname, profession, gender, province, city, address, imageCode, imageFilename, imageFilepath, modifiedBy sql.NullString
@@ -173,6 +175,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 		&profession,
 		&gender,
 		&age,
+		&births,
 		&province,
 		&city,
 		&address,
@@ -200,6 +203,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 			Profession:    profession,
 			Gender:        gender,
 			Age:           age,
+			Birth:         births,
 			Province:      province,
 			City:          city,
 			Address:       address,
@@ -452,6 +456,66 @@ func insertUserDetail(tx *sql.Tx, email string, users model.Users) error {
 		users.CreatedDate,
 		users.ModifiedBy.String,
 		users.ModifiedDate.Time,
+	)
+	return err
+}
+
+func (userRepository *userRepository) UpdateProfileUser(users model.UserInfo) (bool, error) {
+	var err error
+	var result bool
+
+	tx, errTx := userRepository.db.Begin()
+	if errTx != nil {
+		utils.PushLogf("error in update profile", errTx)
+	} else {
+		err = updateProfile(tx, users)
+		if err != nil {
+			utils.PushLogf("err---", err)
+		}
+	}
+
+	if err == nil {
+		result = true
+		tx.Commit()
+	} else {
+		result = false
+		tx.Rollback()
+		utils.PushLogf(users.Email, "failed to update profile")
+	}
+
+	return result, err
+}
+
+func updateProfile(tx *sql.Tx, users model.UserInfo) error {
+
+	_, err := tx.Exec(`
+	UPDATE
+		private.user_detail
+	 SET
+		full_name=$1,
+		phone=$2,
+		profession=$3,
+		gender=$4,
+		birth=$5,
+		province=$6,
+		city=$7,
+		address=$8,
+		modified_by=$9,
+		modified_date=$10
+ 	WHERE
+ 		user_code=$11
+	`,
+		users.FullName.String,
+		users.Phone.Int64,
+		users.Profession.String,
+		users.Gender.String,
+		users.Birth.Time,
+		users.Province.String,
+		users.City.String,
+		users.Address.String,
+		users.ModifiedBy.String,
+		users.ModifiedDate.Time,
+		users.ID,
 	)
 	return err
 }

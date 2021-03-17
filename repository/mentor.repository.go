@@ -45,7 +45,10 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 		image_code,
 		image_filename,
 		image_filepath,
-		rating,
+		CASE
+			WHEN rating IS NULL THEN 0
+			ELSE rating
+		END AS rating,
 		task_completed,
 		task_inprogress,
 		is_active,
@@ -57,12 +60,12 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 		private.v_mentors
 	WHERE 
 		email = $1`, email)
-	var id, taskCompleted, taskInprogress int
 	var isActive bool
 	var rating float64
 	var createdDate time.Time
 	var phone, age sql.NullInt64
 	var modifiedDate sql.NullTime
+	var id, taskCompleted, taskInprogress int
 	var emailUsr, roleCode, role, createdBy string
 	var fullname, profession, gender, province, city, address, imageCode, imageFilename, imageFilepath, modifiedBy sql.NullString
 
@@ -84,7 +87,7 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 		&imageFilepath,
 		&rating,
 		&taskCompleted,
-		taskInprogress,
+		&taskInprogress,
 		&isActive,
 		&createdBy,
 		&createdDate,
@@ -143,7 +146,10 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 		image_code,
 		image_filename,
 		image_filepath,
-		rating,
+		CASE
+			WHEN rating IS NULL THEN 0
+			ELSE rating
+		END AS rating,
 		task_completed,
 		task_inprogress,
 		is_active,
@@ -155,10 +161,10 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 		private.v_mentors
 	WHERE 
 		is_active=true
-	%s
+	%s %s %s
 	OFFSET %d
 	LIMIT %d
-	`, filter, skip, take)
+	`, filter, search, sort, skip, take)
 
 	rows, sqlError := mentorRepository.db.Query(query)
 
@@ -194,7 +200,7 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 				&imageFilepath,
 				&rating,
 				&taskCompleted,
-				taskInprogress,
+				&taskInprogress,
 				&isActive,
 				&createdBy,
 				&createdDate,

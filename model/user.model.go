@@ -31,6 +31,7 @@ type UserInfo struct {
 	Profession    sql.NullString
 	Gender        sql.NullString
 	Age           sql.NullInt64
+	Birth         sql.NullTime
 	Province      sql.NullString
 	City          sql.NullString
 	Address       sql.NullString
@@ -43,4 +44,13 @@ type UserInfo struct {
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
+}
+
+type UserHeader struct {
+	ID        int
+	Role_Code string
+	Role      string
+	Email     string
+	Full_Name string
+	Phone     int
 }

@@ -17,7 +17,6 @@ type learningRepository struct {
 type LearningRepository interface {
 	GetAllLearning(skip, take int, filter string) ([]model.Learning, error)
 	GetAllSubLearning(titleCode string) ([]model.SubLearning, error)
-	GetAllSubLearningCount(filter string) (int, error)
 }
 
 func InitLearningRepository(db *sqlx.DB) LearningRepository {
@@ -34,7 +33,8 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 		code,
 		class_code,
 		title,
-		document,
+		document_path,
+		document_name,
 		sequence,	
 		is_active,
 		created_by,
@@ -64,7 +64,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 			var createdDate time.Time
 			var sequenced sql.NullInt64
 			var modifiedDate, deletedDate sql.NullTime
-			var document, modifiedBy, deletedBy sql.NullString
+			var documentPath, documentName, modifiedBy, deletedBy sql.NullString
 			var classCode, title, code, createdBy string
 
 			sqlError := rows.Scan(
@@ -72,7 +72,8 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 				&code,
 				&classCode,
 				&title,
-				&document,
+				&documentPath,
+				&documentName,
 				&sequenced,
 				&isActive,
 				&createdBy,
@@ -93,7 +94,8 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 						Code:         code,
 						ClassCode:    classCode,
 						Title:        title,
-						Document:     document,
+						DocumentPath: documentPath,
+						DocumentName: documentName,
 						Sequence:     sequenced,
 						IsActive:     isActive,
 						CreatedBy:    createdBy,
@@ -198,24 +200,4 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		}
 	}
 	return learningList, sqlError
-}
-
-func (learningRepository *learningRepository) GetAllSubLearningCount(filter string) (int, error) {
-	var count int
-	query := fmt.Sprintf(`
-	SELECT COUNT(*) FROM 
-		v_m_class_sub_learning  
-	WHERE 
-		deleted_by IS NULL AND
-		is_active=true
-	%s
-	`, filter)
-
-	row := learningRepository.db.QueryRow(query)
-	sqlError := row.Scan(&count)
-	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllSubLearningCount => ", sqlError)
-		count = 0
-	}
-	return count, sqlError
 }

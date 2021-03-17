@@ -47,15 +47,15 @@ func (storyHandler *storyHandler) GetAllStory(ctx *gin.Context) {
 		storyResult, count, err = storyHandler.storyUsecase.GetAllStory(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      storyResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  storyResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      storyResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  storyResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

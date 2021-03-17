@@ -16,7 +16,8 @@ type userUsecase struct {
 }
 
 type UserUsecase interface {
-	LoginUser(users shape.Users) (shape.UserInfo, error, string)
+	LoginUser(users shape.Users) (shape.UserInfo, bool, error, string)
+	UpdateProfileUser(users shape.UsersPost, email string) (bool, error)
 	ResetVerificationUser(users shape.Users) (bool, error)
 	RegisterUser(users shape.Users) (bool, error, string)
 	VerifyPasswordUser(users shape.Users) (bool, error)
@@ -32,7 +33,7 @@ func InitUserUsecase(emailUsecase EmailUsecase, userRepository repository.UserRe
 	}
 }
 
-func (userUsecase *userUsecase) LoginUser(users shape.Users) (shape.UserInfo, error, string) {
+func (userUsecase *userUsecase) LoginUser(users shape.Users) (shape.UserInfo, bool, error, string) {
 	var msg string
 
 	dataUser := model.Users{
@@ -44,15 +45,15 @@ func (userUsecase *userUsecase) LoginUser(users shape.Users) (shape.UserInfo, er
 		isPassword := utils.CheckPasswordHash(dataUser.Password, userLogin.Password)
 		if userLogin == (model.Users{}) || !isPassword {
 			msg = fmt.Sprintf(`Email dan kata sandi salah`)
-			return shape.UserInfo{}, err, msg
+			return shape.UserInfo{}, false, err, msg
 		}
 	}
 	user, err := userUsecase.GetUserInfo(dataUser.Email)
 	if !user.Is_Verified {
 		msg = fmt.Sprintf(`Akun kamu belum terverifikasi`)
-		return user, err, msg
+		return shape.UserInfo{}, false, err, msg
 	}
-	return user, err, msg
+	return user, true, err, msg
 }
 
 func (userUsecase *userUsecase) ResetVerificationUser(users shape.Users) (bool, error) {
@@ -142,6 +143,48 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 	return result, err, msg
 }
 
+func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email string) (bool, error) {
+	var result bool
+	var err error
+	fmt.Println(users)
+	dataUser := model.UserInfo{
+		ID: users.User_Code,
+		FullName: sql.NullString{
+			String: users.Full_Name,
+		},
+		Phone: sql.NullInt64{
+			Int64: users.Phone,
+		},
+		Profession: sql.NullString{
+			String: users.Profession,
+		},
+		Gender: sql.NullString{
+			String: users.Gender,
+		},
+		Birth: sql.NullTime{
+			Time: users.Birth,
+		},
+		Province: sql.NullString{
+			String: users.Province,
+		},
+		City: sql.NullString{
+			String: users.City,
+		},
+		Address: sql.NullString{
+			String: users.Address,
+		},
+		ModifiedBy: sql.NullString{
+			String: email,
+		},
+		ModifiedDate: sql.NullTime{
+			Time: time.Now(),
+		},
+	}
+
+	result, err = userUsecase.userRepository.UpdateProfileUser(dataUser)
+	return result, err
+}
+
 func (userUsecase *userUsecase) VerifyPasswordUser(users shape.Users) (bool, error) {
 	var err error
 	var result bool
@@ -209,7 +252,7 @@ func (userUsecase *userUsecase) ChangePasswordUser(users shape.Users) (bool, err
 			Time: time.Now(),
 		},
 	}
-	fmt.Println(dataUser)
+
 	user, result, err = userUsecase.userRepository.ChangePasswordUser(dataUser)
 	if err == nil {
 		dataEmail := model.EmailBody{
@@ -237,6 +280,7 @@ func (userUsecase *userUsecase) GetUserInfo(email string) (shape.UserInfo, error
 		Profession:     user.Profession.String,
 		Gender:         user.Gender.String,
 		Age:            int(user.Age.Int64),
+		Birth:          utils.HandleNullableDate(user.Birth.Time),
 		Province:       user.Province.String,
 		City:           user.City.String,
 		Address:        user.Address.String,

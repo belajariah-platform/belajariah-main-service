@@ -15,6 +15,8 @@ type Payment struct {
 	Package_Type        string
 	Payment_Method_Code string
 	Payment_Method      string
+	Account_Name        string
+	Account_Number      string
 	Invoice_Number      string
 	Status_Payment_Code string
 	Status_Payment      string
@@ -24,6 +26,7 @@ type Payment struct {
 	Image_Proof         string
 	Payment_Type_Code   string
 	Payment_Type        string
+	Expired_Date        string
 	Is_Active           bool
 	Created_By          string
 	Created_Date        time.Time

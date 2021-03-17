@@ -177,6 +177,8 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 		package_type,
 		payment_method_code,
 		payment_method,
+		account_name,
+		account_number,
 		invoice_number,
 		status_payment_code,
 		status_payment,
@@ -193,6 +195,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 		modified_by,
 		modified_date
 	FROM v_t_payment
+		WHERE is_active = true
 		%s %s %s %s
 	OFFSET %d
 	LIMIT %d
@@ -209,7 +212,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 			var createdDate time.Time
 			var modifiedDate sql.NullTime
 			var id, userCode, totalTransfer int
-			var remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
+			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
 			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy string
 
 			sqlError := rows.Scan(
@@ -223,6 +226,8 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 				&packageType,
 				&paymentMethodCode,
 				&paymentMethod,
+				&accounName,
+				&accountNumber,
 				&invoiceNumber,
 				&statusPaymentCode,
 				&statusPayment,
@@ -256,6 +261,8 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 						PackageType:       packageType,
 						PaymentMethodCode: paymentMethodCode,
 						PaymentMethod:     paymentMethod,
+						AccountName:       accounName,
+						AccountNumber:     accountNumber,
 						InvoiceNumber:     invoiceNumber,
 						StatusPaymentCode: statusPaymentCode,
 						StatusPayment:     statusPayment,
@@ -283,7 +290,9 @@ func (paymentsRepository *paymentsRepository) GetAllPaymentCount(filter, filterU
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM
-		v_t_payment
+		v_t_payment 
+	WHERE
+		is_active = true 
 		%s
 	%s
 	`, filterUser, filter)

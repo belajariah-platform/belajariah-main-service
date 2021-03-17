@@ -26,8 +26,8 @@ func InitLearningHandler(learningUsecase usecase.LearningUsecase) LearningHandle
 }
 
 func (learningHandler *learningHandler) GetAllLearning(ctx *gin.Context) {
-	var query model.Query
 	var count int
+	var query model.Query
 	err := ctx.BindQuery(&query)
 
 	if err == nil {
@@ -47,15 +47,15 @@ func (learningHandler *learningHandler) GetAllLearning(ctx *gin.Context) {
 		learningResult, count, err = learningHandler.learningUsecase.GetAllLearning(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      learningResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  learningResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      learningResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  learningResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

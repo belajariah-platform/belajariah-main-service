@@ -25,11 +25,11 @@ type PaymentUsecase interface {
 	CheckAllPaymentExpired()
 	CheckAllPayment2HourBeforeExpired()
 	GetAllPayment(query model.Query) ([]shape.Payment, int, error)
-	GetAllPaymentByUserID(query model.Query, userObj model.UserInfo) ([]shape.Payment, int, error)
+	GetAllPaymentByUserID(query model.Query, userObj model.UserHeader) ([]shape.Payment, int, error)
 
-	InsertPayment(payment shape.PaymentPost, email string) (bool, error)
 	UploadPayment(payment shape.PaymentPost, email string) (bool, error)
 	ConfirmPayment(payment shape.PaymentPost, email string) (bool, error)
+	InsertPayment(payment shape.PaymentPost, email string) (shape.Payment, bool, error)
 }
 
 func InitPaymentUsecase(emailUsecase EmailUsecase, enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
@@ -45,18 +45,18 @@ func InitPaymentUsecase(emailUsecase EmailUsecase, enumRepository repository.Enu
 }
 
 func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.Payment, int, error) {
-	var filterQuery, filterUser, sorting, search string
 	var payments []model.Payment
 	var paymentResult []shape.Payment
+	var filterQuery, filterUser, sorting, search string
 
 	if len(query.Order) > 0 {
 		sorting = strings.Replace(query.Order, "|", " ", 1)
 		sorting = "ORDER BY " + sorting
 	}
 	if len(query.Search) > 0 {
-		search = `AND (LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
-		OR LOWER(invoice_number) LIKE LOWER('%` + query.Search + `%'))
-		OR LOWER(email) LIKE LOWER('%` + query.Search + `%'))`
+		search = `AND LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
+		OR LOWER(invoice_number) LIKE LOWER('%` + query.Search + `%')
+		OR LOWER(created_by) LIKE LOWER('%` + query.Search + `%')`
 	}
 
 	filterUser = fmt.Sprintf(``)
@@ -78,6 +78,8 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 				Package_Type:        value.PackageType,
 				Payment_Method_Code: value.PaymentMethodCode,
 				Payment_Method:      value.PaymentMethod,
+				Account_Name:        value.AccountName.String,
+				Account_Number:      value.AccountNumber.String,
 				Invoice_Number:      value.InvoiceNumber,
 				Status_Payment_Code: value.StatusPaymentCode,
 				Status_Payment:      value.StatusPayment,
@@ -99,10 +101,11 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 	if len(paymentResult) == 0 {
 		return paymentEmpty, count, err
 	}
+	fmt.Println(paymentResult)
 	return paymentResult, count, err
 }
 
-func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, userObj model.UserInfo) ([]shape.Payment, int, error) {
+func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, userObj model.UserHeader) ([]shape.Payment, int, error) {
 	var payments []model.Payment
 	var paymentResult []shape.Payment
 	var filterQuery, filterUser, sorting, search string
@@ -118,7 +121,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
-	filterUser = fmt.Sprintf(`WHERE user_code=%d`, userObj.ID)
+	filterUser = fmt.Sprintf(`AND user_code=%d`, userObj.ID)
 
 	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
 	count, errCount := paymentUsecase.paymentsRepository.GetAllPaymentCount(filterQuery, filterUser)
@@ -136,6 +139,10 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 				Package_Type:        value.PackageType,
 				Payment_Method_Code: value.PaymentMethodCode,
 				Payment_Method:      value.PaymentMethod,
+				Payment_Type_Code:   value.PaymentTypeCode,
+				Payment_Type:        value.PaymentType,
+				Account_Name:        value.AccountName.String,
+				Account_Number:      value.AccountNumber.String,
 				Invoice_Number:      value.InvoiceNumber,
 				Status_Payment_Code: value.StatusPaymentCode,
 				Status_Payment:      value.StatusPayment,
@@ -148,6 +155,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 				Created_Date:        value.CreatedDate,
 				Modified_By:         value.ModifiedBy.String,
 				Modified_Date:       value.ModifiedDate.Time,
+				Expired_Date:        utils.HandleAddDate(value.ModifiedDate.Time, value.StatusPayment),
 			})
 		}
 	}
@@ -158,7 +166,8 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 	return paymentResult, count, err
 }
 
-func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, email string) (bool, error) {
+func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, email string) (shape.Payment, bool, error) {
+	var dataPayments shape.Payment
 	var emailType string = "Waiting for Payment"
 	var paymentType string = "WaitingForPayment|Waiting for Payment|Menunggu"
 	var classImage string = "https://www.belajariah.com/img-assets/BannerEmailTahsin.png"
@@ -187,6 +196,14 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 	if err == nil && data != (model.Payment{}) {
 		filter := fmt.Sprintf(`WHERE id = %d`, data.ID)
 		payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+		dataPayments = shape.Payment{
+			ID:             payments.ID,
+			Total_Transfer: payments.TotalTransfer,
+			Payment_Method: payments.PaymentMethod,
+			Account_Name:   payments.AccountName.String,
+			Account_Number: payments.AccountNumber.String,
+			Expired_Date:   utils.HandleAddDate(payments.ModifiedDate.Time, payments.StatusPayment),
+		}
 		dataEmail := model.EmailBody{
 			BodyTemp:          emailType,
 			UserCode:          payments.UserCode,
@@ -204,7 +221,8 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 		}
 		paymentUsecase.emailUsecase.SendEmail(dataEmail)
 	}
-	return result, err
+
+	return dataPayments, result, err
 }
 
 func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, email string) (bool, error) {

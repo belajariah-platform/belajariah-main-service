@@ -36,6 +36,7 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 		video_code,
 		title,
 		content,
+		source,
 		is_active,
 		created_by,
 		created_date,
@@ -65,7 +66,7 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 			var createdDate time.Time
 			var modifiedDate, deletedDate sql.NullTime
 			var code, categoryCode, title, content, createdBy string
-			var imageCode, videoCode, modifiedBy, deletedBy sql.NullString
+			var source, imageCode, videoCode, modifiedBy, deletedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -75,6 +76,7 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 				&videoCode,
 				&title,
 				&content,
+				&source,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -97,6 +99,7 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 						VideoCode:    videoCode,
 						Title:        title,
 						Content:      content,
+						Source:       source,
 						IsActive:     isActive,
 						CreatedBy:    createdBy,
 						CreatedDate:  createdDate,
@@ -116,7 +119,7 @@ func (storyRepository *storyRepository) GetAllStoryCount(filter string) (int, er
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_promotion  
+		master_story  
 	WHERE 
 		deleted_by IS NULL AND
 		is_active=true

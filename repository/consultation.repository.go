@@ -189,9 +189,8 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 	OFFSET %d
 	LIMIT %d
 	`, filterUser, filter, search, sort, skip, take)
-
+	fmt.Println(query)
 	rows, sqlError := consultationRepository.db.Query(query)
-
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllConsultation => ", sqlError)
 	} else {
@@ -232,7 +231,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 				&deletedBy,
 				&deletedDate,
 			)
-
+			fmt.Println(sqlError)
 			if sqlError != nil {
 				utils.PushLogf("SQL error on GetAllConsultation => ", sqlError)
 			} else {
@@ -648,7 +647,7 @@ func (consultationRepository *consultationRepository) CheckAllConsultationExpire
 				&expiredDate,
 				&statusCode,
 			)
-
+			fmt.Println(sqlError)
 			if sqlError != nil {
 				utils.PushLogf("SQL error on CheckAllConsultationExpired => ", sqlError)
 			} else {

@@ -16,6 +16,7 @@ type userClassHandler struct {
 }
 
 type UserClassHandler interface {
+	GetUserClass(ctx *gin.Context)
 	GetAllUserClass(ctx *gin.Context)
 	UpdateUserClassProgress(ctx *gin.Context)
 }
@@ -26,21 +27,45 @@ func InitUserClassHandler(userClassUsecase usecase.UserClassUsecase) UserClassHa
 	}
 }
 
-func (userClassHandler *userClassHandler) GetAllUserClass(ctx *gin.Context) {
-	var query model.Query
-	var count int
-	err := ctx.BindQuery(&query)
+func (userClassHandler *userClassHandler) GetUserClass(ctx *gin.Context) {
+	code := ctx.Param("code")
 
-	var userObj model.UserInfo
+	var userObj model.UserHeader
 	for _, valueUser := range ctx.Request.Header["User"] {
 		itemInfoBytes := []byte(valueUser)
-
 		er := json.Unmarshal(itemInfoBytes, &userObj)
 		if er != nil {
 			utils.PushLogf("[Error Unmarshal] :", er)
 		}
 	}
 
+	result, err := userClassHandler.userClassUsecase.GetUserClass(code, userObj)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (userClassHandler *userClassHandler) GetAllUserClass(ctx *gin.Context) {
+	var query model.Query
+	var count int
+	err := ctx.BindQuery(&query)
+
+	var userObj model.UserHeader
+	for _, valueUser := range ctx.Request.Header["User"] {
+		itemInfoBytes := []byte(valueUser)
+		er := json.Unmarshal(itemInfoBytes, &userObj)
+		if er != nil {
+			utils.PushLogf("[Error Unmarshal] :", er)
+		}
+	}
 	if err == nil {
 		var array []map[string]interface{}
 		if err := json.Unmarshal([]byte(query.Filter), &array); err != nil {

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"belajariah-main-service/model"
 	"belajariah-main-service/shape"
 	"belajariah-main-service/usecase"
 	"belajariah-main-service/utils"
@@ -18,10 +17,11 @@ type userHandler struct {
 }
 
 type UserHandler interface {
+	GetUser(ctx *gin.Context)
 	LoginUser(ctx *gin.Context)
 	VerifyUser(ctx *gin.Context)
-	CheckEmail(ctx *gin.Context)
 	RegisterUser(ctx *gin.Context)
+	UpdateProfile(ctx *gin.Context)
 	ChangePassword(ctx *gin.Context)
 	VerifyPasswordUser(ctx *gin.Context)
 	ResetVerificationUser(ctx *gin.Context)
@@ -34,14 +34,15 @@ func InitUserHandler(userUsecase usecase.UserUsecase) UserHandler {
 }
 
 func (userHandler *userHandler) LoginUser(ctx *gin.Context) {
-	var token, message string
 	var err error
+	var result bool
+	var token, message string
 	var loginJSON shape.Users
 	var userInfo shape.UserInfo
 
 	if err := ctx.ShouldBindJSON(&loginJSON); err == nil {
 		if loginJSON.Email != "" && loginJSON.Password != "" {
-			userInfo, err, message = userHandler.userUsecase.LoginUser(loginJSON)
+			userInfo, result, err, message = userHandler.userUsecase.LoginUser(loginJSON)
 			if err == nil && userInfo.Is_Verified {
 				token, err = getAuthToken(loginJSON.Email)
 				if err != nil {
@@ -62,7 +63,8 @@ func (userHandler *userHandler) LoginUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"error":   err,
 		"token":   token,
-		"result":  userInfo,
+		"result":  result,
+		"data":    userInfo,
 		"message": message,
 	})
 }
@@ -128,12 +130,10 @@ func (userHandler *userHandler) VerifyPasswordUser(ctx *gin.Context) {
 	}
 }
 
-func (userHandler *userHandler) CheckEmail(ctx *gin.Context) {
-	var users model.Users
-	if err := ctx.ShouldBindJSON(&users); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	}
-	result, err := userHandler.userUsecase.GetUserInfo(users.Email)
+func (userHandler *userHandler) GetUser(ctx *gin.Context) {
+	email := ctx.Param("email")
+
+	result, err := userHandler.userUsecase.GetUserInfo(email)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
 			"result": result,
@@ -159,6 +159,31 @@ func (userHandler *userHandler) RegisterUser(ctx *gin.Context) {
 			"result": result,
 			"error":  "",
 			"mesage": msg,
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (userHandler *userHandler) UpdateProfile(ctx *gin.Context) {
+	var users shape.UsersPost
+	var email string
+	for _, value := range ctx.Request.Header["Email"] {
+		email = value
+		break
+	}
+	if err := ctx.ShouldBindJSON(&users); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	result, err := userHandler.userUsecase.UpdateProfileUser(users, email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{

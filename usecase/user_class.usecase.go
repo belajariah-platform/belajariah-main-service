@@ -7,6 +7,7 @@ import (
 	"belajariah-main-service/utils"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -24,7 +25,8 @@ type UserClassUsecase interface {
 	CheckAllUserClass2DaysBeforeExpired()
 	CheckAllUserClass5DaysBeforeExpired()
 	CheckAllUserClass7DaysBeforeExpired()
-	GetAllUserClass(query model.Query, userObj model.UserInfo) ([]shape.UserClass, int, error)
+	GetUserClass(code string, userObj model.UserHeader) (shape.UserClass, error)
+	GetAllUserClass(query model.Query, userObj model.UserHeader) ([]shape.UserClass, int, error)
 	UpdateUserClassProgress(userClass shape.UserClassPost, email string) (bool, error)
 }
 
@@ -38,15 +40,55 @@ func InitUserClassUsecase(emailUsecase EmailUsecase, enumRepository repository.E
 	}
 }
 
-func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, userObj model.UserInfo) ([]shape.UserClass, int, error) {
-	var filterQuery, filterUser string
+func (userClassUsecase *userClassUsecase) GetUserClass(code string, userObj model.UserHeader) (shape.UserClass, error) {
+
+	filter := fmt.Sprintf(`AND user_code=%d AND class_code='%s'`, userObj.ID, code)
+	value, err := userClassUsecase.userClassRepository.GetUserClass(filter)
+	if value == (model.UserClass{}) {
+		return shape.UserClass{}, nil
+	}
+	userClassResult := shape.UserClass{
+		ID:                    value.ID,
+		User_Code:             value.UserCode,
+		Class_Code:            value.ClassCode,
+		Total_User:            value.TotalUser,
+		Type_Code:             value.TypeCode,
+		Type:                  value.Type,
+		Status_Code:           value.StatusCode,
+		Status:                value.Status,
+		Package_Code:          value.PackageCode,
+		Package_Type:          value.PackageType,
+		Is_Expired:            value.IsExpired,
+		Start_Date:            utils.HandleNullableDate(value.StartDate),
+		Expired_Date:          utils.HandleNullableDate(value.ExpiredDate),
+		Time_Duration:         value.TimeDuration,
+		Progress:              value.Progress.Float64,
+		Progress_Index:        int(value.ProgressIndex.Int64),
+		Progress_Cur_Index:    int(value.ProgressCurIndex.Int64),
+		Progress_Cur_Subindex: int(value.ProgressCurSubindex.Int64),
+		Pre_Test_Scores:       value.PreTestScores.Float64,
+		Post_Test_Scores:      value.PostTestScores.Float64,
+		Post_Test_Date:        utils.HandleNullableDate(value.PostTestDate.Time),
+		Total_Consultation:    int(value.TotalConsultation.Int64),
+		Total_Webinar:         int(value.TotalWebinar.Int64),
+	}
+	return userClassResult, err
+}
+
+func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, userObj model.UserHeader) ([]shape.UserClass, int, error) {
 	var userClass []model.UserClass
 	var userClassResult []shape.UserClass
+	var filterQuery, filterUser, sorting string
+
+	if len(query.Order) > 0 {
+		sorting = strings.Replace(query.Order, "|", " ", 1)
+		sorting = "ORDER BY " + sorting
+	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 	filterUser = fmt.Sprintf(`AND user_code=%d`, userObj.ID)
 
-	userClass, err := userClassUsecase.userClassRepository.GetAllUserClass(query.Skip, query.Take, filterQuery, filterUser)
+	userClass, err := userClassUsecase.userClassRepository.GetAllUserClass(query.Skip, query.Take, sorting, filterQuery, filterUser)
 	count, errCount := userClassUsecase.userClassRepository.GetAllUserClassCount(filterQuery, filterUser)
 
 	if err == nil && errCount == nil {

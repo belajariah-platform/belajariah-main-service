@@ -51,15 +51,15 @@ func (paymentHandler *paymentHandler) GetAllPayment(ctx *gin.Context) {
 		paymentResult, count, err = paymentHandler.paymentUsecase.GetAllPayment(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      paymentResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  paymentResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      paymentResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  paymentResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 
@@ -73,7 +73,7 @@ func (paymentHandler *paymentHandler) GetAllPaymentByUserID(ctx *gin.Context) {
 	var count int
 	err := ctx.BindQuery(&query)
 
-	var userObj model.UserInfo
+	var userObj model.UserHeader
 	for _, valueUser := range ctx.Request.Header["User"] {
 		itemInfoBytes := []byte(valueUser)
 
@@ -100,15 +100,15 @@ func (paymentHandler *paymentHandler) GetAllPaymentByUserID(ctx *gin.Context) {
 		paymentResult, count, err = paymentHandler.paymentUsecase.GetAllPaymentByUserID(query, userObj)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      paymentResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  paymentResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      paymentResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  paymentResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 
@@ -128,15 +128,17 @@ func (paymentHandler *paymentHandler) InsertPayment(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	result, err := paymentHandler.paymentUsecase.InsertPayment(payment, email)
+	payments, result, err := paymentHandler.paymentUsecase.InsertPayment(payment, email)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
 			"result": result,
+			"data":   payments,
 			"error":  "",
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"result": result,
+			"data":   payments,
 			"error":  err.Error(),
 		})
 	}

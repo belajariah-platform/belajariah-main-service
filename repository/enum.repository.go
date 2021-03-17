@@ -50,7 +50,6 @@ func (enumRepository *enumRepository) GetAllEnum(skip, take int, filter string) 
 	OFFSET %d
 	LIMIT %d
 	`, filter, skip, take)
-
 	rows, sqlError := enumRepository.db.Query(query)
 
 	if sqlError != nil {

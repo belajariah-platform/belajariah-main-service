@@ -24,6 +24,8 @@ func InitLearningUsecase(learningRepository repository.LearningRepository, exerc
 }
 
 func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]shape.Learning, int, error) {
+	var count int
+	var isDone bool
 	var filterQuery string
 	var learnings []model.Learning
 	var learningResult []shape.Learning
@@ -31,9 +33,8 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
 	learnings, err := learningUsecase.learningRepository.GetAllLearning(query.Skip, query.Take, filterQuery)
-	count, errCount := learningUsecase.learningRepository.GetAllSubLearningCount(filterQuery)
 
-	if err == nil && errCount == nil {
+	if err == nil {
 		for _, value := range learnings {
 
 			var subLearning []model.SubLearning
@@ -51,6 +52,7 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 						Document:       sublearn.Document.String,
 						Exercise_Image: sublearn.ExerciseImage.String,
 						Sequence:       int(sublearn.Sequence.Int64),
+						Is_Done:        isDone,
 						Is_Active:      sublearn.IsActive,
 						Created_By:     sublearn.CreatedBy,
 						Created_Date:   sublearn.CreatedDate,
@@ -60,6 +62,7 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 						Deleted_Date:   sublearn.DeletedDate.Time,
 					})
 				}
+				count = count + len(subLearning)
 			}
 			var exerciseResult shape.ExerciseReading
 			exercise, err := learningUsecase.exerciseReadingRepository.GetExerciseReading(value.Code)
@@ -85,7 +88,8 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 				Code:          value.Code,
 				Class_Code:    value.ClassCode,
 				Title:         value.Title,
-				Document:      value.Document.String,
+				Document_Path: value.DocumentPath.String,
+				Document_Name: value.DocumentName.String,
 				Sequence:      int(value.Sequence.Int64),
 				SubTitles:     subLearningResult,
 				Exercises:     exerciseResult,
@@ -103,5 +107,6 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 	if len(learningResult) == 0 {
 		return learningEmpty, count, err
 	}
+
 	return learningResult, count, err
 }

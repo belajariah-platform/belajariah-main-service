@@ -57,15 +57,15 @@ func (consultationHandler *consultationHandler) GetAllConsultation(ctx *gin.Cont
 		consultationResult, count, err := consultationHandler.consultationUsecase.GetAllConsultation(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      consultationResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  consultationResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      consultationResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  consultationResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 
@@ -78,7 +78,7 @@ func (consultationHandler *consultationHandler) GetAllConsultationUser(ctx *gin.
 	var query model.Query
 	err := ctx.BindQuery(&query)
 
-	var userObj model.UserInfo
+	var userObj model.UserHeader
 	for _, valueUser := range ctx.Request.Header["User"] {
 		itemInfoBytes := []byte(valueUser)
 
@@ -105,15 +105,15 @@ func (consultationHandler *consultationHandler) GetAllConsultationUser(ctx *gin.
 		consultationResult, count, err := consultationHandler.consultationUsecase.GetAllConsultationUser(query, userObj)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      consultationResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  consultationResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      consultationResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  consultationResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 
@@ -126,7 +126,7 @@ func (consultationHandler *consultationHandler) GetAllConsultationLimit(ctx *gin
 	var query model.Query
 	err := ctx.BindQuery(&query)
 
-	var userObj model.Mentor
+	var userObj model.UserHeader
 	for _, valueUser := range ctx.Request.Header["User"] {
 		itemInfoBytes := []byte(valueUser)
 
@@ -172,7 +172,7 @@ func (consultationHandler *consultationHandler) GetAllConsultationMentor(ctx *gi
 	var query model.Query
 	err := ctx.BindQuery(&query)
 
-	var userObj model.Mentor
+	var userObj model.UserHeader
 	for _, valueUser := range ctx.Request.Header["User"] {
 		itemInfoBytes := []byte(valueUser)
 
@@ -199,15 +199,15 @@ func (consultationHandler *consultationHandler) GetAllConsultationMentor(ctx *gi
 		consultationResult, count, err := consultationHandler.consultationUsecase.GetAllConsultationMentor(query, userObj)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      consultationResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  consultationResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      consultationResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  consultationResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 
@@ -230,13 +230,13 @@ func (consultationHandler *consultationHandler) CheckConsultationSpamUser(ctx *g
 	count, err := consultationHandler.consultationUsecase.CheckConsultationSpamUser(userObj)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
-			"dataCount": count,
-			"error":     "",
+			"count": count,
+			"error": "",
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"dataCount": count,
-			"error":     err.Error(),
+			"count": count,
+			"error": err.Error(),
 		})
 	}
 }
@@ -255,13 +255,13 @@ func (consultationHandler *consultationHandler) CheckConsultationSpamMentor(ctx 
 	count, err := consultationHandler.consultationUsecase.CheckConsultationSpamMentor(userObj)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
-			"dataCount": count,
-			"error":     "",
+			"count": count,
+			"error": "",
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"dataCount": count,
-			"error":     err.Error(),
+			"count": count,
+			"error": err.Error(),
 		})
 	}
 }
