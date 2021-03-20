@@ -47,7 +47,7 @@ func (quranRepository *quranRepository) GetAllQuran(skip, take int, filter strin
 		deleted_by,
 		deleted_date
 	FROM 
-		master_alquran
+		v_m_alquran
 	WHERE 
 		deleted_by IS NULL
 	%s
@@ -116,7 +116,7 @@ func (quranRepository *quranRepository) GetAllQuranCount(filter string) (int, er
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_alquran  
+		v_m_alquran  
 	WHERE 
 		deleted_by IS NULL
 	%s
@@ -137,7 +137,6 @@ func (quranRepository *quranRepository) GetAllAyatQuran(skip, take int, filter s
 	SELECT
 		id,
 		code,
-		surat_code,
 		ayat_number,
 		ayat_text,
 		ayat_translate,
@@ -151,7 +150,7 @@ func (quranRepository *quranRepository) GetAllAyatQuran(skip, take int, filter s
 		deleted_by,
 		deleted_date
 	FROM 
-		master_ayat_alquran
+		master_alquran
 	WHERE 
 		deleted_by IS NULL
 	%s
@@ -171,12 +170,11 @@ func (quranRepository *quranRepository) GetAllAyatQuran(skip, take int, filter s
 			var modifiedBy, deletedBy sql.NullString
 			var modifiedDate, deletedDate sql.NullTime
 			var id, juzNUmber, pageNumber, ayatNumber int
-			var code, suratCode, ayatText, ayatTranslate, createdBy string
+			var code, ayatText, ayatTranslate, createdBy string
 
 			sqlError := rows.Scan(
 				&id,
 				&code,
-				&suratCode,
 				&ayatNumber,
 				&ayatText,
 				&ayatTranslate,
@@ -199,7 +197,6 @@ func (quranRepository *quranRepository) GetAllAyatQuran(skip, take int, filter s
 					model.Quran{
 						ID:            id,
 						Code:          code,
-						SuratCode:     suratCode,
 						AyatNumber:    ayatNumber,
 						AyatText:      ayatText,
 						AyatTranslate: ayatTranslate,
@@ -224,7 +221,7 @@ func (quranRepository *quranRepository) GetAllAyatQuranCount(filter string) (int
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_ayat_alquran  
+		master_alquran  
 	WHERE 
 		deleted_by IS NULL
 	%s
@@ -262,7 +259,7 @@ func (quranRepository *quranRepository) GetAllQuranView(skip, take int, filter s
 		deleted_by,
 		deleted_date
 	FROM 
-		v_m_alquran
+		master_alquran
 	WHERE 
 		deleted_by IS NULL
 	%s
@@ -341,7 +338,7 @@ func (quranRepository *quranRepository) GetAllQuranViewCount(filter string) (int
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_ayat_alquran  
+		master_alquran  
 	WHERE 
 		deleted_by IS NULL
 	%s

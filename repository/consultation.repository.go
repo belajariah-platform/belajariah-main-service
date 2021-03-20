@@ -42,6 +42,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 		DISTINCT ON (user_code) user_code,
 		id,
 		user_name,
+		user_image,
 		class_code,
 		class_name,
 		recording_code,
@@ -82,17 +83,18 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 		for rows.Next() {
 			var isActive bool
 			var id, userCode int
-			var isPlay, isRead, isActionTaken sql.NullBool
 			var createdDate time.Time
 			var modifiedDate, deletedDate sql.NullTime
+			var isPlay, isRead, isActionTaken sql.NullBool
 			var recordingCode, recordingDuration, takenCode sql.NullInt64
-			var recordingPath, recordingName, description, takenName, modifiedBy, deletedBy sql.NullString
 			var userName, statusCode, status, classCode, className, createdBy string
+			var userImage, recordingPath, recordingName, description, takenName, modifiedBy, deletedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&userCode,
 				&id,
 				&userName,
+				&userImage,
 				&classCode,
 				&className,
 				&recordingCode,
@@ -125,6 +127,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 						UserCode:          userCode,
 						ID:                id,
 						UserName:          userName,
+						UserImage:         userImage,
 						ClassCode:         classCode,
 						ClassName:         className,
 						RecordingCode:     recordingCode,
@@ -161,6 +164,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 		id,
 		user_code,
 		user_name,
+		user_image,
 		class_code,
 		class_name,
 		recording_code,
@@ -189,7 +193,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 	OFFSET %d
 	LIMIT %d
 	`, filterUser, filter, search, sort, skip, take)
-	fmt.Println(query)
+
 	rows, sqlError := consultationRepository.db.Query(query)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllConsultation => ", sqlError)
@@ -202,13 +206,14 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 			var createdDate time.Time
 			var modifiedDate, deletedDate sql.NullTime
 			var recordingCode, recordingDuration, takenCode sql.NullInt64
-			var recordingPath, recordingName, description, takenName, modifiedBy, deletedBy sql.NullString
 			var userName, statusCode, status, classCode, className, createdBy string
+			var userImage, recordingPath, recordingName, description, takenName, modifiedBy, deletedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
 				&userCode,
 				&userName,
+				&userImage,
 				&classCode,
 				&className,
 				&recordingCode,
@@ -231,7 +236,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 				&deletedBy,
 				&deletedDate,
 			)
-			fmt.Println(sqlError)
+
 			if sqlError != nil {
 				utils.PushLogf("SQL error on GetAllConsultation => ", sqlError)
 			} else {
@@ -241,6 +246,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 						ID:                id,
 						UserCode:          userCode,
 						UserName:          userName,
+						UserImage:         userImage,
 						ClassCode:         classCode,
 						ClassName:         className,
 						RecordingCode:     recordingCode,
@@ -647,7 +653,7 @@ func (consultationRepository *consultationRepository) CheckAllConsultationExpire
 				&expiredDate,
 				&statusCode,
 			)
-			fmt.Println(sqlError)
+
 			if sqlError != nil {
 				utils.PushLogf("SQL error on CheckAllConsultationExpired => ", sqlError)
 			} else {

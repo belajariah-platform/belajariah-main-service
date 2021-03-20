@@ -17,6 +17,7 @@ type paymentHandler struct {
 
 type PaymentHandler interface {
 	GetAllPayment(ctx *gin.Context)
+	GetAllPaymentRejected(ctx *gin.Context)
 	GetAllPaymentByUserID(ctx *gin.Context)
 	InsertPayment(ctx *gin.Context)
 	UploadPayment(ctx *gin.Context)
@@ -49,6 +50,45 @@ func (paymentHandler *paymentHandler) GetAllPayment(ctx *gin.Context) {
 
 		var paymentResult []shape.Payment
 		paymentResult, count, err = paymentHandler.paymentUsecase.GetAllPayment(query)
+		if err == nil {
+			ctx.JSON(http.StatusOK, gin.H{
+				"data":  paymentResult,
+				"count": count,
+				"error": "",
+			})
+		} else {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"data":  paymentResult,
+				"count": count,
+				"error": err.Error(),
+			})
+		}
+
+	} else {
+		utils.PushLogf("err", err)
+	}
+}
+
+func (paymentHandler *paymentHandler) GetAllPaymentRejected(ctx *gin.Context) {
+	var query model.Query
+	var count int
+	err := ctx.BindQuery(&query)
+
+	if err == nil {
+		var array []map[string]interface{}
+		if err := json.Unmarshal([]byte(query.Filter), &array); err != nil {
+			panic(err)
+		}
+		for _, arr := range array {
+			query.Filters = append(query.Filters, model.Filter{
+				Type:  arr["type"].(string),
+				Field: arr["field"].(string),
+				Value: arr["value"].(string),
+			})
+		}
+
+		var paymentResult []shape.Payment
+		paymentResult, count, err = paymentHandler.paymentUsecase.GetAllPaymentRejected(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
 				"data":  paymentResult,

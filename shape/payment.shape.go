@@ -24,6 +24,7 @@ type Payment struct {
 	Sender_Bank         string
 	Sender_Name         string
 	Image_Proof         string
+	Image_Filename      string
 	Payment_Type_Code   string
 	Payment_Type        string
 	Expired_Date        string

@@ -50,7 +50,6 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 						Video_Duration: sublearn.VideoDuration.Float64,
 						Video:          sublearn.Video.String,
 						Document:       sublearn.Document.String,
-						Exercise_Image: sublearn.ExerciseImage.String,
 						Sequence:       int(sublearn.Sequence.Int64),
 						Is_Done:        isDone,
 						Is_Active:      sublearn.IsActive,
@@ -83,6 +82,7 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 					Deleted_Date:  exercise.DeletedDate.Time,
 				}
 			}
+
 			learningResult = append(learningResult, shape.Learning{
 				ID:            value.ID,
 				Code:          value.Code,

@@ -61,7 +61,7 @@ func main() {
 	ratingUsecase := usecase.InitRatingUsecase(ratingRepository)
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
-	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository)
+	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository, userClassRepository, paymentRepository)
 	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, enumRepository, emailRepository)
 	userUsecase := usecase.InitUserUsecase(emailUsecase, userRepository)
 	testUsecase := usecase.InitTestUsecase(testRepository, userClassRepository)
@@ -157,6 +157,7 @@ func main() {
 
 	// router-payment
 	router.GET("/payments", paymentHandler.GetAllPayment)
+	router.GET("/payments_reject", paymentHandler.GetAllPaymentRejected)
 	router.GET("/payment", paymentHandler.GetAllPaymentByUserID)
 	router.POST("/payment", paymentHandler.InsertPayment)
 	router.PUT("/payment/confirm", paymentHandler.ConfirmPayment)
@@ -177,6 +178,7 @@ func main() {
 	// router-promotion
 	router.GET("/promotions", promotionHandler.GetAllPromotion)
 	router.GET("/promotion/:code", promotionHandler.GetPromotion)
+	router.POST("/promotion/claim", promotionHandler.ClaimPromotion)
 
 	// router-userClass
 	router.GET("/user_class", userClassHandler.GetAllUserClass)

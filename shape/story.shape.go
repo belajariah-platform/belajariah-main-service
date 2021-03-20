@@ -8,7 +8,8 @@ type Story struct {
 	ID            int
 	Code          string
 	Category_Code string
-	Image_Code    string
+	Header_Image  string
+	Banner_Image  string
 	Video_Code    string
 	Title         string
 	Content       string

@@ -32,7 +32,8 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 		id,
 		code,
 		category_code,
-		image_code,
+		header_image,
+		banner_image,
 		video_code,
 		title,
 		content,
@@ -66,13 +67,14 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 			var createdDate time.Time
 			var modifiedDate, deletedDate sql.NullTime
 			var code, categoryCode, title, content, createdBy string
-			var source, imageCode, videoCode, modifiedBy, deletedBy sql.NullString
+			var source, headerImg, bannerImg, videoCode, modifiedBy, deletedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
 				&code,
 				&categoryCode,
-				&imageCode,
+				&headerImg,
+				&bannerImg,
 				&videoCode,
 				&title,
 				&content,
@@ -95,7 +97,8 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 						ID:           id,
 						Code:         code,
 						CategoryCode: categoryCode,
-						ImageCode:    imageCode,
+						HeaderImage:  headerImg,
+						BannerImage:  bannerImg,
 						VideoCode:    videoCode,
 						Title:        title,
 						Content:      content,

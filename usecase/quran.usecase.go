@@ -74,7 +74,6 @@ func (quranUsecase *quranUsecase) GetAllAyatQuran(query model.Query) ([]shape.Qu
 			quranResult = append(quranResult, shape.Quran{
 				ID:             value.ID,
 				Code:           value.Code,
-				Surat_Code:     value.SuratCode,
 				Ayat_Number:    value.AyatNumber,
 				Ayat_Text:      value.AyatText,
 				Ayat_Translate: value.AyatTranslate,

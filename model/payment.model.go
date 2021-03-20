@@ -17,8 +17,8 @@ type Payment struct {
 	PackageDiscount   sql.NullInt64
 	TotalConsultation sql.NullInt64
 	TotalWebinar      sql.NullInt64
-	PromoCode         string
-	PromoTitle        string
+	PromoCode         sql.NullString
+	PromoTitle        sql.NullString
 	PromoDiscount     sql.NullFloat64
 	PaymentMethodCode string
 	PaymentMethod     string
@@ -32,6 +32,7 @@ type Payment struct {
 	SenderName        sql.NullString
 	ImageCode         sql.NullInt64
 	ImageProof        sql.NullString
+	ImageFilename     sql.NullString
 	PaymentTypeCode   string
 	PaymentType       string
 	Remarks           sql.NullString

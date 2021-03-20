@@ -116,16 +116,18 @@ func (userHandler *userHandler) VerifyPasswordUser(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&users); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	result, err := userHandler.userUsecase.VerifyPasswordUser(users)
+	result, err, message := userHandler.userUsecase.VerifyPasswordUser(users)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
-			"result": result,
-			"error":  "",
+			"result":  result,
+			"error":   "",
+			"message": message,
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"result": result,
-			"error":  err.Error(),
+			"result":  result,
+			"error":   err.Error(),
+			"message": message,
 		})
 	}
 }

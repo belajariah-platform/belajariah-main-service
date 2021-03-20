@@ -41,7 +41,7 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	var userClassRow model.UserClass
 	query := fmt.Sprintf(`
 	SELECT
-	id,
+		id,
 		user_code,
 		class_code,
 		total_user,
@@ -57,11 +57,12 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		time_duration,
 		progress,
 		progress_index,
-		progress_cur_index,
-		progress_cur_subindex,
+		progress_subindex,
 		pre_test_scores,
 		post_test_scores,
 		post_test_date,
+		pre_test_total,
+		post_test_total,
 		total_consultation,
 		total_webinar
 	FROM 
@@ -75,10 +76,11 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	var isExpired bool
 	var postTestDate sql.NullTime
 	var startDate, expiredDate time.Time
+	var preTestTotal, postTestTotal sql.NullInt64
 	var id, userCode, totalUser, timeDuration int
 	var progress, preTestScores, postTestScores sql.NullFloat64
 	var packageCode, packageType, typeCode, types, status, statusCode, classCode string
-	var progressIndex, progressCurIndex, progressCurSubindex, totalConsultation, totalWebinar sql.NullInt64
+	var progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 
 	sqlError := row.Scan(
 		&id,
@@ -97,11 +99,12 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		&timeDuration,
 		&progress,
 		&progressIndex,
-		&progressCurIndex,
-		&progressCurSubindex,
+		&progressSubindex,
 		&preTestScores,
 		&postTestScores,
 		&postTestDate,
+		&preTestTotal,
+		&postTestTotal,
 		&totalConsultation,
 		&totalWebinar,
 	)
@@ -111,29 +114,30 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		return model.UserClass{}, nil
 	} else {
 		userClassRow = model.UserClass{
-			ID:                  id,
-			UserCode:            userCode,
-			ClassCode:           classCode,
-			TotalUser:           totalUser,
-			TypeCode:            typeCode,
-			Type:                types,
-			StatusCode:          statusCode,
-			Status:              status,
-			PackageCode:         packageCode,
-			PackageType:         packageType,
-			IsExpired:           isExpired,
-			StartDate:           startDate,
-			ExpiredDate:         expiredDate,
-			TimeDuration:        timeDuration,
-			Progress:            progress,
-			ProgressIndex:       progressIndex,
-			ProgressCurIndex:    progressCurIndex,
-			ProgressCurSubindex: progressCurSubindex,
-			PreTestScores:       preTestScores,
-			PostTestScores:      postTestScores,
-			PostTestDate:        postTestDate,
-			TotalConsultation:   totalConsultation,
-			TotalWebinar:        totalWebinar,
+			ID:                id,
+			UserCode:          userCode,
+			ClassCode:         classCode,
+			TotalUser:         totalUser,
+			TypeCode:          typeCode,
+			Type:              types,
+			StatusCode:        statusCode,
+			Status:            status,
+			PackageCode:       packageCode,
+			PackageType:       packageType,
+			IsExpired:         isExpired,
+			StartDate:         startDate,
+			ExpiredDate:       expiredDate,
+			TimeDuration:      timeDuration,
+			Progress:          progress,
+			ProgressIndex:     progressIndex,
+			ProgressSubindex:  progressSubindex,
+			PreTestScores:     preTestScores,
+			PostTestScores:    postTestScores,
+			PostTestDate:      postTestDate,
+			PreTestTotal:      preTestTotal,
+			PostTestTotal:     postTestTotal,
+			TotalConsultation: totalConsultation,
+			TotalWebinar:      totalWebinar,
 		}
 		return userClassRow, sqlError
 	}
@@ -165,11 +169,12 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		time_duration,
 		progress,
 		progress_index,
-		progress_cur_index,
-		progress_cur_subindex,
+		progress_subindex,
 		pre_test_scores,
 		post_test_scores,
 		post_test_date,
+		pre_test_total,
+		post_test_total,
 		total_consultation,
 		total_webinar,
 		is_active,
@@ -197,12 +202,13 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		for rows.Next() {
 			var classRating float64
 			var isExpired, isActive bool
+			var preTestTotal, postTestTotal sql.NullInt64
 			var id, userCode, totalUser, timeDuration int
 			var startDate, expiredDate, createdDate time.Time
 			var postTestDate, modifiedDate, deletedDate sql.NullTime
 			var progress, preTestScores, postTestScores sql.NullFloat64
 			var classInitial, classDescription, classImage, modifiedBy, deletedBy sql.NullString
-			var progressIndex, progressCurIndex, progressCurSubindex, totalConsultation, totalWebinar sql.NullInt64
+			var progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 			var packageCode, packageType, typeCode, types, status, statusCode, classCode, className, classCategory, createdBy string
 
 			sqlError := rows.Scan(
@@ -228,11 +234,12 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 				&timeDuration,
 				&progress,
 				&progressIndex,
-				&progressCurIndex,
-				&progressCurSubindex,
+				&progressSubindex,
 				&preTestScores,
 				&postTestScores,
 				&postTestDate,
+				&preTestTotal,
+				&postTestTotal,
 				&totalConsultation,
 				&totalWebinar,
 				&isActive,
@@ -250,42 +257,43 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 				userClassList = append(
 					userClassList,
 					model.UserClass{
-						ID:                  id,
-						UserCode:            userCode,
-						ClassCode:           classCode,
-						ClassName:           className,
-						ClassInitial:        classInitial,
-						ClassCategory:       classCategory,
-						ClassDescription:    classDescription,
-						ClassImage:          classImage,
-						ClassRating:         classRating,
-						TotalUser:           totalUser,
-						TypeCode:            typeCode,
-						Type:                types,
-						StatusCode:          statusCode,
-						Status:              status,
-						PackageCode:         packageCode,
-						PackageType:         packageType,
-						IsExpired:           isExpired,
-						StartDate:           startDate,
-						ExpiredDate:         expiredDate,
-						TimeDuration:        timeDuration,
-						Progress:            progress,
-						ProgressIndex:       progressIndex,
-						ProgressCurIndex:    progressCurIndex,
-						ProgressCurSubindex: progressCurSubindex,
-						PreTestScores:       preTestScores,
-						PostTestScores:      postTestScores,
-						PostTestDate:        postTestDate,
-						TotalConsultation:   totalConsultation,
-						TotalWebinar:        totalWebinar,
-						IsActive:            isActive,
-						CreatedBy:           createdBy,
-						CreatedDate:         createdDate,
-						ModifiedBy:          modifiedBy,
-						ModifiedDate:        modifiedDate,
-						DeletedBy:           deletedBy,
-						DeletedDate:         deletedDate,
+						ID:                id,
+						UserCode:          userCode,
+						ClassCode:         classCode,
+						ClassName:         className,
+						ClassInitial:      classInitial,
+						ClassCategory:     classCategory,
+						ClassDescription:  classDescription,
+						ClassImage:        classImage,
+						ClassRating:       classRating,
+						TotalUser:         totalUser,
+						TypeCode:          typeCode,
+						Type:              types,
+						StatusCode:        statusCode,
+						Status:            status,
+						PackageCode:       packageCode,
+						PackageType:       packageType,
+						IsExpired:         isExpired,
+						StartDate:         startDate,
+						ExpiredDate:       expiredDate,
+						TimeDuration:      timeDuration,
+						Progress:          progress,
+						ProgressIndex:     progressIndex,
+						ProgressSubindex:  progressSubindex,
+						PreTestScores:     preTestScores,
+						PostTestScores:    postTestScores,
+						PostTestDate:      postTestDate,
+						PreTestTotal:      preTestTotal,
+						PostTestTotal:     postTestTotal,
+						TotalConsultation: totalConsultation,
+						TotalWebinar:      totalWebinar,
+						IsActive:          isActive,
+						CreatedBy:         createdBy,
+						CreatedDate:       createdDate,
+						ModifiedBy:        modifiedBy,
+						ModifiedDate:      modifiedDate,
+						DeletedBy:         deletedBy,
+						DeletedDate:       deletedDate,
 					},
 				)
 			}
@@ -489,7 +497,9 @@ func updateUserClass(tx *sql.Tx, userClass model.UserClass) error {
 		modified_by=$5,
 		modified_date=$6,
 		total_consultation=$7,
-		total_webinar=$8
+		total_webinar=$8,
+		pre_test_total=0,
+		post_test_total=0
  	WHERE
  		class_code=$9 AND
 		user_code=$10 
@@ -589,18 +599,16 @@ func updateUserClassProgress(tx *sql.Tx, userClass model.UserClass) error {
 		modified_by=$2,
 		modified_date=$3,
 		progress_index=$4,
-		progress_cur_index=$5,
-		progress_cur_subindex=$6
+		progress_subindex=$5
  	WHERE
- 		id=$7 AND
-		user_code=$8 
+ 		id=$6 AND
+		user_code=$7 
 	`,
 		userClass.Progress.Float64,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
 		userClass.ProgressIndex.Int64,
-		userClass.ProgressCurIndex.Int64,
-		userClass.ProgressCurSubindex.Int64,
+		userClass.ProgressSubindex.Int64,
 		userClass.ID,
 		userClass.UserCode,
 	)
@@ -646,6 +654,7 @@ func updateUserClassPreTest(tx *sql.Tx, userClass model.UserClass) error {
 		transact_user_class
 	 SET
 		pre_test_scores=$1,
+		pre_test_total=pre_test_total+1,
 		modified_by=$2,
 		modified_date=$3
  	WHERE
@@ -661,15 +670,16 @@ func updateUserClassPreTest(tx *sql.Tx, userClass model.UserClass) error {
 
 func updateUserClassPostTest(tx *sql.Tx, userClass model.UserClass) error {
 	_, err := tx.Exec(`
-	UPDATE
-		transact_user_class
-	 SET
-		post_test_scores=$1,
-		post_test_date=$2,
-		modified_by=$3,
-		modified_date=$4
- 	WHERE
- 		id=$5
+		UPDATE
+			transact_user_class
+		SET
+			post_test_scores=$1,
+			post_test_date=$2,
+			post_test_total=post_test_total+1,
+			modified_by=$3,
+			modified_date=$4
+		WHERE
+			id=$5
 	`,
 		userClass.PostTestScores.Float64,
 		userClass.PostTestDate.Time,

@@ -9,7 +9,8 @@ type Story struct {
 	ID           int
 	Code         string
 	CategoryCode string
-	ImageCode    sql.NullString
+	HeaderImage  sql.NullString
+	BannerImage  sql.NullString
 	VideoCode    sql.NullString
 	Title        string
 	Content      string

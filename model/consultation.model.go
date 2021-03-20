@@ -9,6 +9,7 @@ type Consultation struct {
 	ID                int
 	UserCode          int
 	UserName          string
+	UserImage         sql.NullString
 	ClassCode         string
 	ClassName         string
 	RecordingCode     sql.NullInt64

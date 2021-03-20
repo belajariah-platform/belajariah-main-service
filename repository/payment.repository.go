@@ -82,8 +82,8 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 	var promoDiscount sql.NullFloat64
 	var id, userCode, totalTransfer int
 	var totalConsultation, totalWebinar, packageDiscount sql.NullInt64
-	var accountName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
-	var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, promoCode, promoTitle, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy string
+	var promoCode, promoTitle, accountName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
+	var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy string
 
 	sqlError := row.Scan(
 		&id,
@@ -120,6 +120,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 		&modifiedBy,
 		&modifiedDate,
 	)
+
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetPayment => ", sqlError)
 		return model.Payment{}, nil
@@ -186,6 +187,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 		sender_bank,
 		sender_name,
 		image_proof,
+		image_filename,
 		payment_type_code,
 		payment_type,
 		remarks,
@@ -212,8 +214,8 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 			var createdDate time.Time
 			var modifiedDate sql.NullTime
 			var id, userCode, totalTransfer int
-			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
 			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy string
+			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, imageFilename, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -235,6 +237,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 				&senderBank,
 				&senderName,
 				&imageProof,
+				&imageFilename,
 				&paymentTypeCode,
 				&paymentType,
 				&remarks,
@@ -270,6 +273,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 						SenderBank:        senderBank,
 						SenderName:        senderName,
 						ImageProof:        imageProof,
+						ImageFilename:     imageFilename,
 						PaymentTypeCode:   paymentTypeCode,
 						PaymentType:       paymentType,
 						Remarks:           remarks,

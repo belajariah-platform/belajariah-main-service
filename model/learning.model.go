@@ -32,7 +32,6 @@ type SubLearning struct {
 	VideoDuration sql.NullFloat64
 	Video         sql.NullString
 	Document      sql.NullString
-	ExerciseImage sql.NullString
 	Exercises     []Exercise
 	Sequence      sql.NullInt64
 	IsActive      bool

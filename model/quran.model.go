@@ -8,7 +8,6 @@ import (
 type Quran struct {
 	ID             int
 	Code           string
-	SuratCode      string
 	SuratName      string
 	SuratText      string
 	SuratTranslate string

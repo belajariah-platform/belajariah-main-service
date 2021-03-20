@@ -17,6 +17,7 @@ type promotionHandler struct {
 
 type PromotionHandler interface {
 	GetAllPromotion(ctx *gin.Context)
+	ClaimPromotion(ctx *gin.Context)
 	GetPromotion(ctx *gin.Context)
 }
 
@@ -78,6 +79,39 @@ func (promotionHandler *promotionHandler) GetPromotion(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"result": result,
 			"error":  err.Error(),
+		})
+	}
+}
+
+func (promotionHandler *promotionHandler) ClaimPromotion(ctx *gin.Context) {
+	var promotion shape.PromotionClaim
+	var userObj model.UserHeader
+
+	for _, valueUser := range ctx.Request.Header["User"] {
+		itemInfoBytes := []byte(valueUser)
+
+		er := json.Unmarshal(itemInfoBytes, &userObj)
+		if er != nil {
+			utils.PushLogf("[Error Unmarshal] :", er)
+		}
+	}
+
+	if err := ctx.ShouldBindJSON(&promotion); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	var promotions shape.Promotion
+	promotions, message, err := promotionHandler.promotionUsecase.ClaimPromotion(promotion, userObj)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": message,
+			"error":   "",
+			"data":    promotions,
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": message,
+			"error":   err.Error(),
+			"data":    promotions,
 		})
 	}
 }

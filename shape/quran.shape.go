@@ -5,7 +5,6 @@ import "time"
 type Quran struct {
 	ID              int
 	Code            string
-	Surat_Code      string
 	Surat_Name      string
 	Surat_Text      string
 	Surat_Translate string

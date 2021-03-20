@@ -20,7 +20,7 @@ type UserUsecase interface {
 	UpdateProfileUser(users shape.UsersPost, email string) (bool, error)
 	ResetVerificationUser(users shape.Users) (bool, error)
 	RegisterUser(users shape.Users) (bool, error, string)
-	VerifyPasswordUser(users shape.Users) (bool, error)
+	VerifyPasswordUser(users shape.Users) (bool, error, string)
 	VerifyUser(users shape.Users) (bool, error, string)
 	ChangePasswordUser(users shape.Users) (bool, error)
 	GetUserInfo(email string) (shape.UserInfo, error)
@@ -146,7 +146,6 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email string) (bool, error) {
 	var result bool
 	var err error
-	fmt.Println(users)
 	dataUser := model.UserInfo{
 		ID: users.User_Code,
 		FullName: sql.NullString{
@@ -185,8 +184,9 @@ func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email s
 	return result, err
 }
 
-func (userUsecase *userUsecase) VerifyPasswordUser(users shape.Users) (bool, error) {
+func (userUsecase *userUsecase) VerifyPasswordUser(users shape.Users) (bool, error, string) {
 	var err error
+	var msg string
 	var result bool
 	var user model.Users
 
@@ -196,10 +196,14 @@ func (userUsecase *userUsecase) VerifyPasswordUser(users shape.Users) (bool, err
 			String: users.Verified_Code,
 		},
 	}
-
+	count, err := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+	if count == 0 {
+		msg = fmt.Sprintf(`Kode verifikasi salah`)
+		return result, err, msg
+	}
 	user, result, err = userUsecase.userRepository.VerifyUser(dataUser)
 	utils.PushLogf(user.Email)
-	return result, err
+	return result, err, msg
 }
 
 func (userUsecase *userUsecase) VerifyUser(users shape.Users) (bool, error, string) {

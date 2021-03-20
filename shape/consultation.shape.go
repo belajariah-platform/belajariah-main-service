@@ -8,6 +8,7 @@ type Consultation struct {
 	ID                 int
 	User_Code          int
 	User_Name          string
+	User_Image         string
 	Class_Code         string
 	Class_Name         string
 	Recording_Code     int
