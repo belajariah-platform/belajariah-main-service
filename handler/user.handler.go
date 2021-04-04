@@ -19,11 +19,14 @@ type userHandler struct {
 type UserHandler interface {
 	GetUser(ctx *gin.Context)
 	LoginUser(ctx *gin.Context)
-	VerifyUser(ctx *gin.Context)
+	CheckEmail(ctx *gin.Context)
+	VerifyEmail(ctx *gin.Context)
+	VerifyAccount(ctx *gin.Context)
+	GoogleLogin(ctx *gin.Context)
 	RegisterUser(ctx *gin.Context)
 	UpdateProfile(ctx *gin.Context)
-	ChangePassword(ctx *gin.Context)
-	VerifyPasswordUser(ctx *gin.Context)
+	ChangePasswordPublic(ctx *gin.Context)
+	ChangePasswordPrivate(ctx *gin.Context)
 	ResetVerificationUser(ctx *gin.Context)
 }
 
@@ -69,6 +72,35 @@ func (userHandler *userHandler) LoginUser(ctx *gin.Context) {
 	})
 }
 
+func (userHandler *userHandler) GoogleLogin(ctx *gin.Context) {
+	var err error
+	var result bool
+	var token string
+	var loginJSON shape.Users
+	var userInfo shape.UserInfo
+
+	if err := ctx.ShouldBindJSON(&loginJSON); err == nil {
+		userInfo, result, err = userHandler.userUsecase.GoogleLogin(loginJSON)
+		if err == nil && userInfo != (shape.UserInfo{}) {
+			token, err = getAuthToken(loginJSON.Email)
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"Error generate token ": err,
+				})
+			}
+		}
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"error":  err,
+		"token":  token,
+		"result": result,
+		"data":   userInfo,
+	})
+}
+
 func (userHandler *userHandler) ResetVerificationUser(ctx *gin.Context) {
 	var users shape.Users
 
@@ -89,18 +121,40 @@ func (userHandler *userHandler) ResetVerificationUser(ctx *gin.Context) {
 	}
 }
 
-func (userHandler *userHandler) VerifyUser(ctx *gin.Context) {
+func (userHandler *userHandler) VerifyEmail(ctx *gin.Context) {
 	var users shape.Users
 
 	if err := ctx.ShouldBindJSON(&users); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	result, err, msg := userHandler.userUsecase.VerifyUser(users)
+	email, count, err := userHandler.userUsecase.VerifyEmail(users)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
-			"result": result,
+			"count":  count,
+			"result": email,
 			"error":  "",
-			"mesage": msg,
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"count":  count,
+			"result": email,
+			"error":  err.Error(),
+		})
+	}
+}
+
+func (userHandler *userHandler) VerifyAccount(ctx *gin.Context) {
+	var users shape.Users
+
+	if err := ctx.ShouldBindJSON(&users); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+	result, err, msg := userHandler.userUsecase.VerifyAccount(users)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result":  result,
+			"error":   "",
+			"message": msg,
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -110,13 +164,13 @@ func (userHandler *userHandler) VerifyUser(ctx *gin.Context) {
 	}
 }
 
-func (userHandler *userHandler) VerifyPasswordUser(ctx *gin.Context) {
+func (userHandler *userHandler) ChangePasswordPrivate(ctx *gin.Context) {
 	var users shape.Users
 
 	if err := ctx.ShouldBindJSON(&users); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	result, err, message := userHandler.userUsecase.VerifyPasswordUser(users)
+	result, err, message := userHandler.userUsecase.ChangePasswordPrivate(users)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
 			"result":  result,
@@ -149,18 +203,36 @@ func (userHandler *userHandler) GetUser(ctx *gin.Context) {
 	}
 }
 
+func (userHandler *userHandler) CheckEmail(ctx *gin.Context) {
+	email := ctx.Param("email")
+
+	result, err := userHandler.userUsecase.CheckEmail(email)
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result": result,
+			"error":  "",
+		})
+	} else {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"result": result,
+			"error":  err.Error(),
+		})
+	}
+}
+
 func (userHandler *userHandler) RegisterUser(ctx *gin.Context) {
 	var users shape.Users
 
 	if err := ctx.ShouldBindJSON(&users); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
+
 	result, err, msg := userHandler.userUsecase.RegisterUser(users)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
-			"result": result,
-			"error":  "",
-			"mesage": msg,
+			"result":  result,
+			"error":   "",
+			"message": msg,
 		})
 	} else {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -195,13 +267,13 @@ func (userHandler *userHandler) UpdateProfile(ctx *gin.Context) {
 	}
 }
 
-func (userHandler *userHandler) ChangePassword(ctx *gin.Context) {
+func (userHandler *userHandler) ChangePasswordPublic(ctx *gin.Context) {
 	var users shape.Users
 
 	if err := ctx.ShouldBindJSON(&users); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
-	result, err := userHandler.userUsecase.ChangePasswordUser(users)
+	result, err := userHandler.userUsecase.ChangePasswordPublic(users)
 	if err == nil {
 		ctx.JSON(http.StatusOK, gin.H{
 			"result": result,

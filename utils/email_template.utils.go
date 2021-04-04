@@ -54,7 +54,7 @@ func TemplateChangePassword(email model.EmailBody) string {
                                                             <tr>
                                                                 <td style="padding:8px 0">
                                                                      <a href="%s" style="text-decoration:none">
-                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
                                                                     </a>
                                                                 </td>
                                                             </tr>
@@ -200,7 +200,7 @@ func TemplateRegisterSuccess(email model.EmailBody) string {
 														<tr>
 															<td style="padding:8px 0">
 																<a href="%s" style="text-decoration:none">
-																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
 																</a>
 															</td>
 														</tr>
@@ -289,7 +289,7 @@ func TemplateAccountVerification(email model.EmailBody) string {
                                 </tr>
                                 <tr style="margin:0px 20px 0px 20px;padding:0">
                                     <td style="margin:0px 20px 0px 20px;padding:0">
-                                        <h5 style="line-height:1.4;color:black;font-weight:100;margin:10px 20px 20px 20px;padding:0;font-size: 14px;">Terima kasih telah mendaftar menjadi santri di kelas tahsin Belajariah . Aktifkan layanan kelas tahsinmu dengan kode di bawah ini:</h5>  
+                                        <h5 style="line-height:1.4;color:black;font-weight:100;margin:10px 20px 20px 20px;padding:0;font-size: 14px;">Aktifkan akunmu dengan kode di bawah ini:</h5>  
                                     </td>
                                 </tr>
                         </tbody>
@@ -335,7 +335,7 @@ func TemplateAccountVerification(email model.EmailBody) string {
                                                             <tr>
                                                                 <td style="padding:8px 0">
                                                                      <a href="%s" style="text-decoration:none">
-                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
                                                                     </a>
                                                                 </td>
                                                             </tr>
@@ -400,6 +400,7 @@ func TemplateAccountVerification(email model.EmailBody) string {
 		email.Facebook, email.Youtube, email.Instagram,
 		"100%", email.CopyRight,
 	)
+
 	return bodyTemp
 }
 
@@ -503,7 +504,7 @@ func TemplateBeforeClassExpired(email model.EmailBody) string {
 														<tr>
 															<td style="padding:8px 0">
 																<a href="%s" style="text-decoration:none">
-																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
 																</a>
 															</td>
 														</tr>
@@ -670,7 +671,7 @@ func TemplateClassHasBeenExpired(email model.EmailBody) string {
 														<tr>
 															<td style="padding:8px 0">
 																<a href="%s" style="text-decoration:none">
-																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
 																</a>
 															</td>
 														</tr>
@@ -906,7 +907,7 @@ func TemplateWaitingPayment(email model.EmailBody) string {
                                                             <tr>
                                                                 <td style="padding:8px 0">
                                                                     <a href="%s" style="text-decoration:none">
-                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
                                                                     </a>
                                                                 </td>
                                                             </tr>
@@ -1161,7 +1162,7 @@ func TemplatePayment2HoursBeforeExpired(email model.EmailBody) string {
                                                             <tr>
                                                                 <td style="padding:8px 0">
                                                                     <a href="%s" style="text-decoration:none">
-                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
                                                                     </a>
                                                                 </td>
                                                             </tr>
@@ -1418,7 +1419,7 @@ func TemplatePaymentSuccess(email model.EmailBody) string {
                                                             <tr>
                                                                 <td style="padding:8px 0">
                                                                     <a href="%s" style="text-decoration:none">
-                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
                                                                     </a>
                                                                 </td>
                                                             </tr>
@@ -1611,7 +1612,7 @@ func TemplatePaymentFailed(email model.EmailBody) string {
                                                             <tr>
                                                                 <td style="padding:8px 0">
                                                                     <a href="%s" style="text-decoration:none">
-                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+                                                                        <img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
                                                                     </a>
                                                                 </td>
                                                             </tr>
@@ -1783,7 +1784,7 @@ func TemplatePaymentRevised(email model.EmailBody) string {
 														<tr>
 															<td style="padding:8px 0">
 																<a href="%s" style="text-decoration:none">
-																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:%s;height:40px;max-width:135px;margin:auto" class="CToWUd">
+																	<img src="https://www.belajariah.com/email-assets/img/IconGooglePlayStore.jpg" width="135" height="40" alt="banner" style="display:inline-block;width:"%s";height:40px;max-width:135px;margin:auto" class="CToWUd">
 																</a>
 															</td>
 														</tr>

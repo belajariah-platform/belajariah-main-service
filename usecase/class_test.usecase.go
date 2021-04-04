@@ -48,7 +48,6 @@ func (testUsecase *testUsecase) GetAllTest(query model.Query) ([]shape.ClassTest
 				Option_B:       value.OptionB,
 				Option_C:       value.OptionC,
 				Option_D:       value.OptionD,
-				Answer:         value.Answer,
 				Test_Image:     value.TestImage.String,
 				Is_Active:      value.IsActive,
 				Created_By:     value.CreatedBy,
@@ -78,7 +77,6 @@ func (testUsecase *testUsecase) CorrectionTest(test shape.ClassTestPost, email s
 		}
 	}
 	testResult = float64(countResult / len(test.Answers))
-
 	dataTest := model.UserClass{
 		ID: test.ID,
 		PreTestScores: sql.NullFloat64{
@@ -98,7 +96,7 @@ func (testUsecase *testUsecase) CorrectionTest(test shape.ClassTestPost, email s
 		},
 	}
 	result, err := testUsecase.userClassRepository.UpdateUserClassTest(dataTest, test.Test_Type)
-	if err != nil {
+	if err != nil && !result {
 		testResult = 0
 	}
 	return result, testResult, err

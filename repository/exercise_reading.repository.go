@@ -61,10 +61,10 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 		for rows.Next() {
 			var isActive bool
 			var createdDate time.Time
-			var id, ayatStart, ayatEnd int
+			var titleCode, code, createdBy string
 			var modifiedBy, deletedBy sql.NullString
 			var modifiedDate, deletedDate sql.NullTime
-			var titleCode, suratCode, code, createdBy string
+			var id, ayatStart, ayatEnd, suratCode int
 
 			sqlError := rows.Scan(
 				&id,
@@ -135,10 +135,10 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetExerciseReading(t
 
 	var isActive bool
 	var createdDate time.Time
-	var id, ayatStart, ayatEnd int
+	var id, suratCode, ayatStart, ayatEnd int
 	var modifiedBy, deletedBy sql.NullString
 	var modifiedDate, deletedDate sql.NullTime
-	var titleCode, suratCode, code, createdBy string
+	var titleCode, code, createdBy string
 
 	sqlError := row.Scan(
 		&id,

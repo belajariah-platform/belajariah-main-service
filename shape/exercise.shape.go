@@ -23,7 +23,7 @@ type ExerciseReading struct {
 	ID            int
 	Code          string
 	Title_Code    string
-	Surat_Code    string
+	Surat_Code    int
 	Ayat_Start    int
 	Ayat_End      int
 	Is_Active     bool
@@ -41,7 +41,8 @@ type UserExerciseReading struct {
 	Class_Code     string
 	Recording_Code int
 	Duration       int
-	Expired_Date   string
+	Expired_Date   time.Time
+	Title_Code     string
 	Max_Recording  int
 	Is_Active      bool
 	Created_By     string

@@ -14,6 +14,7 @@ type Learning struct {
 	Document_Path string
 	Document_Name string
 	Sequence      int
+	Is_Exercise   bool
 	Is_Active     bool
 	Created_By    string
 	Created_Date  time.Time
@@ -33,6 +34,7 @@ type SubLearning struct {
 	Document       string
 	Sequence       int
 	Is_Done        bool
+	Is_Exercise    bool
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time

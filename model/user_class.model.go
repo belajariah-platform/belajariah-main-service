@@ -28,6 +28,7 @@ type UserClass struct {
 	ExpiredDate       time.Time
 	TimeDuration      int
 	Progress          sql.NullFloat64
+	ProgressCount     sql.NullInt64
 	ProgressIndex     sql.NullInt64
 	ProgressSubindex  sql.NullInt64
 	PreTestScores     sql.NullFloat64

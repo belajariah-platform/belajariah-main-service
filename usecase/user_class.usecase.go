@@ -63,6 +63,7 @@ func (userClassUsecase *userClassUsecase) GetUserClass(code string, userObj mode
 		Expired_Date:       utils.HandleNullableDate(value.ExpiredDate),
 		Time_Duration:      value.TimeDuration,
 		Progress:           value.Progress.Float64,
+		Progress_Count:     int(value.ProgressCount.Int64),
 		Progress_Index:     int(value.ProgressIndex.Int64),
 		Progress_Subindex:  int(value.ProgressSubindex.Int64),
 		Pre_Test_Scores:    value.PreTestScores.Float64,
@@ -116,6 +117,7 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate),
 				Time_Duration:      value.TimeDuration,
 				Progress:           value.Progress.Float64,
+				Progress_Count:     int(value.ProgressCount.Int64),
 				Progress_Index:     int(value.ProgressIndex.Int64),
 				Progress_Subindex:  int(value.ProgressSubindex.Int64),
 				Pre_Test_Scores:    value.PreTestScores.Float64,
@@ -147,8 +149,12 @@ func (userClassUsecase *userClassUsecase) UpdateUserClassProgress(userClass shap
 	dataUserClass := model.UserClass{
 		ID:       userClass.ID,
 		UserCode: userClass.User_Code,
+		Status:   userClass.Status,
 		Progress: sql.NullFloat64{
 			Float64: userClass.Progress,
+		},
+		ProgressCount: sql.NullInt64{
+			Int64: userClass.Progress_Count,
 		},
 		ProgressIndex: sql.NullInt64{
 			Int64: userClass.Progress_Index,

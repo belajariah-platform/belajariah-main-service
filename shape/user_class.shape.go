@@ -27,6 +27,7 @@ type UserClass struct {
 	Expired_Date       string
 	Time_Duration      int
 	Progress           float64
+	Progress_Count     int
 	Progress_Index     int
 	Progress_Subindex  int
 	Pre_Test_Scores    float64
@@ -63,6 +64,7 @@ type UserClassPost struct {
 	Expired_Date      string
 	Time_Duration     int
 	Progress          float64
+	Progress_Count    int64
 	Progress_Index    int64
 	Progress_Subindex int64
 	Pre_Test_Scores   float64

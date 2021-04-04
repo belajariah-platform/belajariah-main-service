@@ -58,6 +58,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 		is_read,
 		is_action_taken,
 		is_active,
+		expired_date,
 		created_by,
 		created_date,
 		modified_by,
@@ -84,7 +85,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 			var isActive bool
 			var id, userCode int
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
+			var expiredDate, modifiedDate, deletedDate sql.NullTime
 			var isPlay, isRead, isActionTaken sql.NullBool
 			var recordingCode, recordingDuration, takenCode sql.NullInt64
 			var userName, statusCode, status, classCode, className, createdBy string
@@ -110,6 +111,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 				&isRead,
 				&isActionTaken,
 				&isActive,
+				&expiredDate,
 				&createdBy,
 				&createdDate,
 				&modifiedBy,
@@ -143,6 +145,7 @@ func (consultationRepository *consultationRepository) GetAllConsultationLimit(sk
 						IsRead:            isRead,
 						IsActionTaken:     isActionTaken,
 						IsActive:          isActive,
+						ExpiredDate:       expiredDate,
 						CreatedBy:         createdBy,
 						CreatedDate:       createdDate,
 						ModifiedBy:        modifiedBy,
@@ -180,6 +183,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 		is_read,
 		is_action_taken,
 		is_active,
+		expired_date,
 		created_by,
 		created_date,
 		modified_by,
@@ -204,7 +208,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 			var id, userCode int
 			var isPlay, isRead, isActionTaken sql.NullBool
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
+			var expiredDate, modifiedDate, deletedDate sql.NullTime
 			var recordingCode, recordingDuration, takenCode sql.NullInt64
 			var userName, statusCode, status, classCode, className, createdBy string
 			var userImage, recordingPath, recordingName, description, takenName, modifiedBy, deletedBy sql.NullString
@@ -229,6 +233,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 				&isRead,
 				&isActionTaken,
 				&isActive,
+				&expiredDate,
 				&createdBy,
 				&createdDate,
 				&modifiedBy,
@@ -262,6 +267,7 @@ func (consultationRepository *consultationRepository) GetAllConsultation(skip, t
 						IsRead:            isRead,
 						IsActionTaken:     isActionTaken,
 						IsActive:          isActive,
+						ExpiredDate:       expiredDate,
 						CreatedBy:         createdBy,
 						CreatedDate:       createdDate,
 						ModifiedBy:        modifiedBy,
@@ -463,12 +469,14 @@ func readConsultation(tx *sql.Tx, consultation model.Consultation) error {
 	UPDATE
 		transact_consultation
 	SET
-		is_read=true,
+		is_read=true
 	WHERE
-		id=$1
-	);
+		user_code=$1 AND
+		taken_code=$2 AND
+		is_read=false
 	`,
-		consultation.ID,
+		consultation.UserCode,
+		consultation.TakenCode.Int64,
 	)
 	return err
 }

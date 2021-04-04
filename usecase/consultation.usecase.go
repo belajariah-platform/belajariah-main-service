@@ -85,6 +85,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultation(query model.Q
 				Is_Read:            value.IsPlay.Bool,
 				Is_Action_Taken:    value.IsActionTaken.Bool,
 				Is_Active:          value.IsActive,
+				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate.Time),
 				Created_By:         value.CreatedBy,
 				Created_Date:       value.CreatedDate,
 				Modified_By:        value.ModifiedBy.String,
@@ -133,6 +134,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationLimit(query mo
 				Is_Read:            value.IsPlay.Bool,
 				Is_Action_Taken:    value.IsActionTaken.Bool,
 				Is_Active:          value.IsActive,
+				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate.Time),
 				Created_By:         value.CreatedBy,
 				Created_Date:       value.CreatedDate,
 				Modified_By:        value.ModifiedBy.String,
@@ -191,6 +193,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationUser(query mod
 				Is_Read:            value.IsPlay.Bool,
 				Is_Action_Taken:    value.IsActionTaken.Bool,
 				Is_Active:          value.IsActive,
+				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate.Time),
 				Created_By:         value.CreatedBy,
 				Created_Date:       value.CreatedDate,
 				Modified_By:        value.ModifiedBy.String,
@@ -248,6 +251,7 @@ func (consultationUsecase *consultationUsecase) GetAllConsultationMentor(query m
 				Is_Read:            value.IsPlay.Bool,
 				Is_Action_Taken:    value.IsActionTaken.Bool,
 				Is_Active:          value.IsActive,
+				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate.Time),
 				Created_By:         value.CreatedBy,
 				Created_Date:       value.CreatedDate,
 				Modified_By:        value.ModifiedBy.String,
@@ -392,7 +396,10 @@ func (consultationUsecase *consultationUsecase) InsertConsultation(consultation 
 func (consultationUsecase *consultationUsecase) ReadConsultation(consultation shape.ConsultationPost, email string) (bool, error) {
 
 	dataConsultation := model.Consultation{
-		ID: consultation.ID,
+		UserCode: consultation.User_Code,
+		TakenCode: sql.NullInt64{
+			Int64: consultation.Taken_Code,
+		},
 	}
 	result, err := consultationUsecase.consultationRepository.ReadConsultation(dataConsultation)
 	return result, err

@@ -120,9 +120,12 @@ func main() {
 	router.PUT("/user", userHandler.UpdateProfile)
 	router.GET("/user/:email", userHandler.GetUser)
 	router.POST("/register", userHandler.RegisterUser)
-	router.PUT("/verify_account", userHandler.VerifyUser)
-	router.PUT("/change_password", userHandler.ChangePassword)
-	router.PUT("/verifiy_password", userHandler.VerifyPasswordUser)
+	router.POST("/google_login", userHandler.GoogleLogin)
+	router.PUT("/verify_email", userHandler.VerifyEmail)
+	router.PUT("/verify_account", userHandler.VerifyAccount)
+	router.GET("/check_email/:email", userHandler.CheckEmail)
+	router.PUT("/change_password_public", userHandler.ChangePasswordPublic)
+	router.PUT("/change_password_private", userHandler.ChangePasswordPrivate)
 	router.PUT("/reset_verification", userHandler.ResetVerificationUser)
 
 	// router-test

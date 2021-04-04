@@ -36,6 +36,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 		document_path,
 		document_name,
 		sequence,	
+		is_exercise,
 		is_active,
 		created_by,
 		created_date,
@@ -59,8 +60,9 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var id int
+			var isActive bool
+			var isExercise sql.NullBool
 			var createdDate time.Time
 			var sequenced sql.NullInt64
 			var modifiedDate, deletedDate sql.NullTime
@@ -75,6 +77,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 				&documentPath,
 				&documentName,
 				&sequenced,
+				&isExercise,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -97,6 +100,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 						DocumentPath: documentPath,
 						DocumentName: documentName,
 						Sequence:     sequenced,
+						IsExercise:   isExercise,
 						IsActive:     isActive,
 						CreatedBy:    createdBy,
 						CreatedDate:  createdDate,
@@ -124,6 +128,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		video,
 		document,
 		sequence,	
+		is_exercise,
 		is_active,
 		created_by,
 		created_date,
@@ -146,6 +151,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		for rows.Next() {
 			var id int
 			var isActive bool
+			var isExercise sql.NullBool
 			var createdDate time.Time
 			var sequenced sql.NullInt64
 			var videoDuration sql.NullFloat64
@@ -162,6 +168,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 				&video,
 				&document,
 				&sequenced,
+				&isExercise,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -184,6 +191,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 						Video:         video,
 						Document:      document,
 						Sequence:      sequenced,
+						IsExercise:    isExercise,
 						IsActive:      isActive,
 						CreatedBy:     createdBy,
 						CreatedDate:   createdDate,

@@ -32,8 +32,11 @@ func (userExerciseReadingUsecase *userExerciseReadingUsecase) InserteUserExercis
 		RecordingCode: userExercise.Recording_Code,
 		Duration:      userExercise.Duration,
 		ExpiredDate:   userExercise.Expired_Date,
-		CreatedBy:     email,
-		CreatedDate:   time.Now(),
+		TitleCode: sql.NullString{
+			String: userExercise.Title_Code,
+		},
+		CreatedBy:   email,
+		CreatedDate: time.Now(),
 		ModifiedBy: sql.NullString{
 			String: email,
 		},
@@ -42,16 +45,18 @@ func (userExerciseReadingUsecase *userExerciseReadingUsecase) InserteUserExercis
 		},
 	}
 
-	filter := fmt.Sprintf(`user_code=%d AND class_code='%s' AND expired_date='%s'`,
+	filter := fmt.Sprintf(`AND user_code=%d AND class_code='%s' AND title_code='%s' AND expired_date='%s'`,
 		userExercise.User_Code,
 		userExercise.Class_Code,
+		userExercise.Title_Code,
 		userExercise.Expired_Date,
 	)
 
 	count, err := userExerciseReadingUsecase.userExerciseReadingRepository.GetAllUserExerciseReadingCount(filter)
-	if count >= userExercise.Max_Recording {
+	if count != 0 {
 		return result, err
 	}
+
 	result, err = userExerciseReadingUsecase.userExerciseReadingRepository.InsertUserExerciseReading(dataUserExercise)
 	return result, err
 }

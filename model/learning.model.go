@@ -15,6 +15,7 @@ type Learning struct {
 	DocumentPath sql.NullString
 	DocumentName sql.NullString
 	Sequence     sql.NullInt64
+	IsExercise   sql.NullBool
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time
@@ -34,6 +35,7 @@ type SubLearning struct {
 	Document      sql.NullString
 	Exercises     []Exercise
 	Sequence      sql.NullInt64
+	IsExercise    sql.NullBool
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time

@@ -10,6 +10,8 @@ type Users struct {
 	RoleCode     string
 	Email        string
 	Password     string
+	NewPassword  string
+	OldPassword  string
 	FullName     sql.NullString
 	Phone        sql.NullInt64
 	VerifiedCode sql.NullString

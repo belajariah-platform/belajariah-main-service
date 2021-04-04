@@ -56,6 +56,7 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		expired_date,
 		time_duration,
 		progress,
+		progress_count,
 		progress_index,
 		progress_subindex,
 		pre_test_scores,
@@ -80,7 +81,7 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	var id, userCode, totalUser, timeDuration int
 	var progress, preTestScores, postTestScores sql.NullFloat64
 	var packageCode, packageType, typeCode, types, status, statusCode, classCode string
-	var progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
+	var progressCount, progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 
 	sqlError := row.Scan(
 		&id,
@@ -98,6 +99,7 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		&expiredDate,
 		&timeDuration,
 		&progress,
+		&progressCount,
 		&progressIndex,
 		&progressSubindex,
 		&preTestScores,
@@ -129,6 +131,7 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 			ExpiredDate:       expiredDate,
 			TimeDuration:      timeDuration,
 			Progress:          progress,
+			ProgressCount:     progressCount,
 			ProgressIndex:     progressIndex,
 			ProgressSubindex:  progressSubindex,
 			PreTestScores:     preTestScores,
@@ -168,6 +171,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		expired_date,
 		time_duration,
 		progress,
+		progress_count,
 		progress_index,
 		progress_subindex,
 		pre_test_scores,
@@ -208,8 +212,8 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 			var postTestDate, modifiedDate, deletedDate sql.NullTime
 			var progress, preTestScores, postTestScores sql.NullFloat64
 			var classInitial, classDescription, classImage, modifiedBy, deletedBy sql.NullString
-			var progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 			var packageCode, packageType, typeCode, types, status, statusCode, classCode, className, classCategory, createdBy string
+			var progressCount, progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 
 			sqlError := rows.Scan(
 				&id,
@@ -233,6 +237,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 				&expiredDate,
 				&timeDuration,
 				&progress,
+				&progressCount,
 				&progressIndex,
 				&progressSubindex,
 				&preTestScores,
@@ -278,6 +283,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 						ExpiredDate:       expiredDate,
 						TimeDuration:      timeDuration,
 						Progress:          progress,
+						ProgressCount:     progressCount,
 						ProgressIndex:     progressIndex,
 						ProgressSubindex:  progressSubindex,
 						PreTestScores:     preTestScores,
@@ -596,19 +602,25 @@ func updateUserClassProgress(tx *sql.Tx, userClass model.UserClass) error {
 		transact_user_class
 	 SET
 		progress=$1,
-		modified_by=$2,
-		modified_date=$3,
-		progress_index=$4,
-		progress_subindex=$5
+		status_code=(SELECT code 
+			FROM master_enum me 
+			WHERE value=$2 LIMIT 1),
+		modified_by=$3,
+		modified_date=$4,
+		progress_index=$5,
+		progress_subindex=$6,
+		progress_count=$7
  	WHERE
- 		id=$6 AND
-		user_code=$7 
+ 		id=$8 AND
+		user_code=$9
 	`,
 		userClass.Progress.Float64,
+		userClass.Status,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
 		userClass.ProgressIndex.Int64,
 		userClass.ProgressSubindex.Int64,
+		userClass.ProgressCount.Int64,
 		userClass.ID,
 		userClass.UserCode,
 	)

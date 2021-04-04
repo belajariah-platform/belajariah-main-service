@@ -124,7 +124,7 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 		subject = "Pembayaran dibatalkan"
 	case "payment revised":
 		bodyTemp = utils.TemplatePaymentRevised(dataEmail)
-		subject = "Perbaiki pembayarnmu"
+		subject = "Perbaiki pembayaranmu"
 	}
 	mail := gomail.NewMessage()
 	mail.SetHeader("From", emailUsecase.mailConfig.Mail.SenderName)

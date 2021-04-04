@@ -78,6 +78,7 @@ func insertUserExerciseReading(tx *sql.Tx, userExercise model.UserExerciseReadin
 		recording_code,
 		duration,
 		expired_date,
+		title_code,
 		created_by,
 		created_date,
 		modified_by,
@@ -92,14 +93,16 @@ func insertUserExerciseReading(tx *sql.Tx, userExercise model.UserExerciseReadin
 		$6,
 		$7,
 		$8,
-		$9
+		$9,
+		$10
 	);
 	`,
 		userExercise.UserCode,
 		userExercise.ClassCode,
 		userExercise.RecordingCode,
 		userExercise.Duration,
-		userExercise.ExpiredDate,
+		utils.CurrentDateStringCustom(userExercise.ExpiredDate),
+		userExercise.TitleCode.String,
 		userExercise.CreatedBy,
 		userExercise.CreatedDate,
 		userExercise.ModifiedBy.String,

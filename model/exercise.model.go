@@ -24,7 +24,7 @@ type ExerciseReading struct {
 	ID           int
 	Code         string
 	TitleCode    string
-	SuratCode    string
+	SuratCode    int
 	AyatStart    int
 	AyatEnd      int
 	IsActive     bool
@@ -42,7 +42,8 @@ type UserExerciseReading struct {
 	ClassCode     string
 	RecordingCode int
 	Duration      int
-	ExpiredDate   string
+	ExpiredDate   time.Time
+	TitleCode     sql.NullString
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time

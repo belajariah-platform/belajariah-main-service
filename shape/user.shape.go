@@ -9,6 +9,8 @@ type Users struct {
 	Role_Code     string
 	Email         string
 	Password      string
+	Old_Password  string
+	New_Password  string
 	Full_Name     string
 	Phone         int64
 	Verified_Code string
