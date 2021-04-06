@@ -16,7 +16,7 @@ func ConnectDB(config *model.Config) *sqlx.DB {
 
 func getDBConnection(config *model.Config) *sqlx.DB {
 	dbConnectionStr := fmt.Sprintf(
-		"host=%s port=%d dbname=%s user=%s password=%s sslmode=enable",
+		"host=%s port=%d dbname=%s user=%s password=%s sslmode=verify-full sslcert=ca-certificate.crt",
 		config.Database.Host,
 		config.Database.Port,
 		config.Database.DbName,
