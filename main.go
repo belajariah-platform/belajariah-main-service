@@ -74,6 +74,7 @@ func main() {
 	userClassUsecase := usecase.InitUserClassUsecase(emailUsecase, enumRepository, promotionRepository, userClassRepository, notificationRepository)
 
 	//initiate handler
+	mainHandler := handler.InitMainHandler(configModel)
 	userHandler := handler.InitUserHandler(userUsecase)
 	testHandler := handler.InitTestHandler(testUsecase)
 	enumHandler := handler.InitEnumHandler(enumUsecase)
@@ -114,6 +115,10 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORSMiddleware())
 	// router.Use(middleware.AuthMiddleware(configModel))
+
+	//router mapping request
+	router.GET("/", mainHandler.NoRoute)
+	router.GET("/log", mainHandler.Log)
 
 	// router-user
 	router.POST("/login", userHandler.LoginUser)
