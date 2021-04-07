@@ -20,6 +20,8 @@ type DatabaseConfig struct {
 	DbName   string
 	Username string
 	Password string
+	SSLMode  string
+	SSLRoot  string
 }
 
 // LogConfig ...

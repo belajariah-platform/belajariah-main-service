@@ -16,12 +16,14 @@ func ConnectDB(config *model.Config) *sqlx.DB {
 
 func getDBConnection(config *model.Config) *sqlx.DB {
 	dbConnectionStr := fmt.Sprintf(
-		"host=%s port=%d dbname=%s user=%s password=%s sslmode=verify-full sslrootcert=ca-certificate.crt",
+		"host=%s port=%d dbname=%s user=%s password=%s sslmode=%s sslrootcert=%s",
 		config.Database.Host,
 		config.Database.Port,
 		config.Database.DbName,
 		config.Database.Username,
 		config.Database.Password,
+		config.Database.SSLMode,
+		config.Database.SSLRoot,
 	)
 
 	db, err := sqlx.Open("postgres", dbConnectionStr)

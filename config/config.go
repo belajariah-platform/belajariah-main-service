@@ -39,6 +39,8 @@ func GetConfig() *model.Config {
 			DbName:   os.Getenv("DB_NAME"),
 			Username: os.Getenv("DB_USERNAME"),
 			Password: os.Getenv("DB_PASSWORD"),
+			SSLMode:  os.Getenv("DB_SSL_MODE"),
+			SSLRoot:  os.Getenv("DB_SSL_ROOT"),
 		},
 		Log: model.LogConfig{
 			Filename:   os.Getenv("LOG_FILENAME"),
