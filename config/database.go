@@ -34,7 +34,7 @@ func getDBConnection(config *model.Config) *sqlx.DB {
 
 	err = db.Ping()
 	if err != nil {
-		log.Panicln("Error connecting to *port main* database", err)
+		log.Panicln("Error connecting to *belajariah dev* database", err)
 		panic(err)
 	}
 
