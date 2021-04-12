@@ -48,6 +48,7 @@ func (testUsecase *testUsecase) GetAllTest(query model.Query) ([]shape.ClassTest
 				Option_B:       value.OptionB,
 				Option_C:       value.OptionC,
 				Option_D:       value.OptionD,
+				Answer:         value.Answer,
 				Test_Image:     value.TestImage.String,
 				Is_Active:      value.IsActive,
 				Created_By:     value.CreatedBy,
