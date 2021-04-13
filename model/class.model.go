@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+//
 type Class struct {
 	ID                    int
 	Code                  string
