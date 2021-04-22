@@ -27,7 +27,7 @@ func TemplateChangePassword(email model.EmailBody) string {
                                 </tr>
                                 <tr style="margin:0px 20px 0px 20px;padding:0">
                                     <td style="margin:0px 20px 0px 20px;padding:0">
-                                        <h5 style="line-height:1.4;color:black;font-weight:100;margin:10px 20px 20px 20px;padding:0;font-size: 14px;">Password belajariahmu dengan akun herryheryanto22@gmail.com berhasil di ubah.</h5>  
+                                        <h5 style="line-height:1.4;color:black;font-weight:100;margin:10px 20px 20px 20px;padding:0;font-size: 14px;">Password belajariahmu berhasil di ubah.</h5>  
                                          <h5 style="line-height:1.4;color:black;font-weight:100;margin:10px 20px 20px 20px;padding:0;font-size: 14px;">Jika kamu punya pertanyaan silahkan hubungin kontak customer service belajariah di bawah.</h5>  
                                     </td>
                                 </tr>
