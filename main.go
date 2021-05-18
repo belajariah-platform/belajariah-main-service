@@ -32,6 +32,7 @@ func main() {
 	userRepository := repository.InitUserRepository(db)
 	testRepository := repository.InitTestRepository(db)
 	enumRepository := repository.InitEnumRepository(db)
+	excelizeRepository := repository.InitExcelizeRepository(db)
 	emailRepository := repository.InitEmailRepository(db)
 	classRepository := repository.InitClassRepository(db)
 	quranRepository := repository.InitQuranRepository(db)
@@ -54,6 +55,7 @@ func main() {
 
 	//initiate usecase
 	enumUsecase := usecase.InitEnumUsecase(enumRepository)
+	excelizeUsecase := usecase.InitExcelizeUsecase(excelizeRepository)
 	quranUsecase := usecase.InitQuranUsecase(quranRepository)
 	storyUsecase := usecase.InitStoryUsecase(storyRepository)
 	classUsecase := usecase.InitClassUsecase(classRepository)
@@ -78,6 +80,7 @@ func main() {
 	userHandler := handler.InitUserHandler(userUsecase)
 	testHandler := handler.InitTestHandler(testUsecase)
 	enumHandler := handler.InitEnumHandler(enumUsecase)
+	excelizeHandler := handler.InitExcelizeHandler(excelizeUsecase)
 	quranHandler := handler.InitQuranHandler(quranUsecase)
 	storyHandler := handler.InitStoryHandler(storyUsecase)
 	classHandler := handler.InitClassHandler(classUsecase)
@@ -119,6 +122,9 @@ func main() {
 	//router mapping request
 	router.GET("/", mainHandler.NoRoute)
 	router.GET("/log", mainHandler.Log)
+
+	//exel
+	router.GET("/report", excelizeHandler.GetAllExcelize)
 
 	// router-user
 	router.POST("/login", userHandler.LoginUser)
@@ -182,6 +188,8 @@ func main() {
 
 	// router-learning
 	router.GET("/learnings", learningHandler.GetAllLearning)
+
+	//
 
 	// router-promotion
 	router.GET("/promotions", promotionHandler.GetAllPromotion)

@@ -446,6 +446,7 @@ func (consultationUsecase *consultationUsecase) UpdateConsultation(consultation 
 
 func (consultationUsecase *consultationUsecase) ConfirmConsultation(consultation shape.ConsultationPost, email string) (bool, error) {
 	var statusCode string
+	var isActionTaken = true
 
 	status, err := consultationUsecase.approvalStatusRepository.GetApprovalStatus(consultation.Status_Code)
 	switch strings.ToLower(consultation.Action) {
@@ -453,6 +454,38 @@ func (consultationUsecase *consultationUsecase) ConfirmConsultation(consultation
 		statusCode = status.ApprovedStatus.String
 	case "rejected":
 		statusCode = status.RejectStatus.String
+	case "revised":
+		statusCode = status.ReviseStatus.String
+		user, _ := consultationUsecase.userRepository.GetUserInfo(email)
+		dataConsultationAdmin := model.Consultation{
+			UserCode:   user.ID,
+			ClassCode:  consultation.Class_Code,
+			StatusCode: statusCode,
+			Description: sql.NullString{
+				String: consultation.Description,
+			},
+			TakenCode: sql.NullInt64{
+				Int64: int64(consultation.User_Code),
+			},
+			IsActionTaken: sql.NullBool{
+				Bool: isActionTaken,
+			},
+			ExpiredDate: sql.NullTime{
+				Time: consultation.Expired_Date,
+			},
+			CreatedBy:   email,
+			CreatedDate: time.Now(),
+			ModifiedBy: sql.NullString{
+				String: email,
+			},
+			ModifiedDate: sql.NullTime{
+				Time: time.Now(),
+			},
+		}
+		result, err := consultationUsecase.consultationRepository.InsertConsultation(dataConsultationAdmin)
+		if err != nil {
+			utils.PushLogf("ERROR", result, err)
+		}
 	default:
 		statusCode = ""
 	}
@@ -471,6 +504,7 @@ func (consultationUsecase *consultationUsecase) ConfirmConsultation(consultation
 			Time: time.Now(),
 		},
 	}
+
 	result, err := consultationUsecase.consultationRepository.ConfirmConsultation(dataConsultation, consultation.Status_Code)
 	return result, err
 }

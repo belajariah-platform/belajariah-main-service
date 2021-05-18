@@ -507,6 +507,7 @@ func (consultationRepository *consultationRepository) UpdateConsultation(consult
 }
 
 func updateConsultation(tx *sql.Tx, consultation model.Consultation, status string) error {
+
 	_, err := tx.Exec(`
 	UPDATE
 		transact_consultation
@@ -519,8 +520,7 @@ func updateConsultation(tx *sql.Tx, consultation model.Consultation, status stri
 	WHERE
 		user_code=$6 AND 
 		class_code=$7 AND
-		expired_date=$8 AND
-		status_code=$9
+		status_code=$8
 	`,
 		consultation.StatusCode,
 		consultation.TakenCode.Int64,
@@ -529,9 +529,10 @@ func updateConsultation(tx *sql.Tx, consultation model.Consultation, status stri
 		consultation.ModifiedDate.Time,
 		consultation.UserCode,
 		consultation.ClassCode,
-		utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
+		// utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
 		status,
 	)
+	// expired_date=$8 AND
 	return err
 }
 
@@ -572,15 +573,14 @@ func confirmConsultation(tx *sql.Tx, consultation model.Consultation, status str
 	WHERE
 		user_code=$4 AND 
 		class_code=$5 AND
-		expired_date=$6 AND
-		status_code=$7
+		status_code=$6
 	`,
 		consultation.StatusCode,
 		consultation.ModifiedBy.String,
 		consultation.ModifiedDate.Time,
 		consultation.UserCode,
 		consultation.ClassCode,
-		utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
+		// utils.CurrentDateStringCustom(consultation.ExpiredDate.Time),
 		status,
 	)
 	return err
