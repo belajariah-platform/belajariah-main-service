@@ -21,7 +21,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		verifyBytes, err := ioutil.ReadFile(pubKeyPath)
 		if err == nil {
 			verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
-			jwtToken := c.Request.Header.Get("Token")
+			jwtToken := c.Request.Header.Get("token-auth")
+			fmt.Println(jwtToken)
 
 			// validate the token
 			token, err = jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {

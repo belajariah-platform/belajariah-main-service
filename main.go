@@ -117,7 +117,7 @@ func main() {
 	router.Use()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORSMiddleware())
-	// router.Use(middleware.AuthMiddleware(configModel))
+	// router.Use(middleware.AuthMiddleware())
 
 	//router mapping request
 	router.GET("/", mainHandler.NoRoute)
