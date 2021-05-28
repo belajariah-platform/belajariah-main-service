@@ -11,6 +11,7 @@ type Payment struct {
 	UserName          string
 	ClassCode         string
 	ClassName         string
+	ClassImage        sql.NullString
 	ClassInitial      string
 	PackageCode       string
 	PackageType       string

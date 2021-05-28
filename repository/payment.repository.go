@@ -42,6 +42,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 		user_name,
 		class_code,
 		class_name,
+		class_image,
 		class_initial,
 		package_code,
 		package_type,
@@ -82,7 +83,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 	var promoDiscount sql.NullFloat64
 	var id, userCode, totalTransfer int
 	var totalConsultation, totalWebinar, packageDiscount sql.NullInt64
-	var promoCode, promoTitle, accountName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy sql.NullString
+	var promoCode, promoTitle, accountName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy, classImage sql.NullString
 	var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy string
 
 	sqlError := row.Scan(
@@ -91,6 +92,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 		&userName,
 		&classCode,
 		&className,
+		&classImage,
 		&classInitial,
 		&packageCode,
 		&packageType,
@@ -131,6 +133,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 			UserName:          userName,
 			ClassCode:         classCode,
 			ClassName:         className,
+			ClassImage:        classImage,
 			ClassInitial:      classInitial,
 			PackageCode:       packageCode,
 			PackageType:       packageType,

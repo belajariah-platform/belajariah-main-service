@@ -116,6 +116,9 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 	case "payment success":
 		bodyTemp = utils.TemplatePaymentSuccess(dataEmail)
 		subject = "Pembayaran berhasil"
+	case "payment upload":
+		bodyTemp = utils.TemplateUploadPayment(dataEmail)
+		subject = "Bukti pembayaran terkirim"
 	case "payment failed":
 		bodyTemp = utils.TemplatePaymentFailed(dataEmail)
 		subject = "Pembayaran gagal"

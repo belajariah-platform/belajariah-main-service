@@ -233,7 +233,6 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 	var dataPayments shape.Payment
 	var emailType string = "Waiting for Payment"
 	var paymentType string = "WaitingForPayment|Waiting for Payment|Menunggu"
-	var classImage string = "https://www.belajariah.com/img-assets/BannerEmailTahsin.png"
 
 	enum, err := paymentUsecase.enumRepository.GetEnum(paymentType)
 	dataPayment := model.Payment{
@@ -280,7 +279,7 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 			AccountNumber:     payments.AccountNumber.String,
 			ClassName:         payments.ClassInitial,
 			ClassPrice:        int(payments.PackageDiscount.Int64),
-			ClassImage:        classImage,
+			ClassImage:        payments.ClassImage.String,
 			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
 			TotalConsultation: int(payments.TotalConsultation.Int64),
 			TotalWebinar:      int(payments.TotalWebinar.Int64),
@@ -293,12 +292,18 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 }
 
 func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, email string) (bool, error) {
-	var statusCode string
+	var statusCode, emailType string
+	var filter = fmt.Sprintf(`AND id=%d AND user_code=%d AND class_code='%s'`,
+		payment.ID,
+		payment.User_Code,
+		payment.Class_Code,
+	)
 
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	switch strings.ToLower(payment.Action) {
 	case "approved":
 		statusCode = status.ApprovedStatus.String
+		emailType = "Payment Upload"
 	case "rejected":
 		statusCode = status.RejectStatus.String
 	default:
@@ -326,6 +331,25 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 		},
 	}
 	result, err := paymentUsecase.paymentsRepository.UploadPayment(dataPayment)
+	if err == nil {
+		payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+		dataEmail := model.EmailBody{
+			BodyTemp:          emailType,
+			UserCode:          payments.UserCode,
+			InvoiceNumber:     payments.InvoiceNumber,
+			PaymentMethod:     payments.PaymentMethod,
+			AccountName:       payments.AccountName.String,
+			AccountNumber:     payments.AccountNumber.String,
+			ClassName:         payments.ClassInitial,
+			ClassPrice:        int(payments.PackageDiscount.Int64),
+			ClassImage:        payments.ClassImage.String,
+			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
+			TotalConsultation: int(payments.TotalConsultation.Int64),
+			TotalWebinar:      int(payments.TotalWebinar.Int64),
+			TotalTransfer:     payments.TotalTransfer,
+		}
+		paymentUsecase.emailUsecase.SendEmail(dataEmail)
+	}
 	return result, err
 }
 
@@ -336,8 +360,8 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 	var class model.UserClass
 	var packages model.Package
 	var statusCode, paymentType, emailType string
-	var classImage string = "https://www.belajariah.com/img-assets/BannerEmailTahsin.png"
-	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
+	var filter = fmt.Sprintf(`AND id=%d AND user_code=%d AND class_code='%s'`,
+		payment.ID,
 		payment.User_Code,
 		payment.Class_Code,
 	)
@@ -456,7 +480,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 				AccountNumber:     payments.AccountNumber.String,
 				ClassName:         payments.ClassInitial,
 				ClassPrice:        int(payments.PackageDiscount.Int64),
-				ClassImage:        classImage,
+				ClassImage:        payments.ClassImage.String,
 				PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
 				TotalConsultation: int(payments.TotalConsultation.Int64),
 				TotalWebinar:      int(payments.TotalWebinar.Int64),
