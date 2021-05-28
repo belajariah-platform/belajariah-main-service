@@ -122,7 +122,6 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 		&modifiedBy,
 		&modifiedDate,
 	)
-
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetPayment => ", sqlError)
 		return model.Payment{}, nil

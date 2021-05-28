@@ -293,11 +293,6 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 
 func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, email string) (bool, error) {
 	var statusCode, emailType string
-	var filter = fmt.Sprintf(`AND id=%d AND user_code=%d AND class_code='%s'`,
-		payment.ID,
-		payment.User_Code,
-		payment.Class_Code,
-	)
 
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	switch strings.ToLower(payment.Action) {
@@ -332,10 +327,11 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 	}
 	result, err := paymentUsecase.paymentsRepository.UploadPayment(dataPayment)
 	if err == nil {
-		payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+		filters := fmt.Sprintf(`WHERE id = %d`, dataPayment.ID)
+		payments, _ := paymentUsecase.paymentsRepository.GetPayment(filters)
 		dataEmail := model.EmailBody{
 			BodyTemp:          emailType,
-			UserCode:          payments.UserCode,
+			UserCode:          payment.User_Code,
 			InvoiceNumber:     payments.InvoiceNumber,
 			PaymentMethod:     payments.PaymentMethod,
 			AccountName:       payments.AccountName.String,
@@ -469,8 +465,8 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 		}
 		result, err = paymentUsecase.paymentsRepository.ConfirmPayment(dataPayment)
 		if err == nil && status.CurrentStatusValue == "Has been Payment" && payment.Action != "Rejected" {
-			filter := fmt.Sprintf(`WHERE id = %d`, dataPayment.ID)
-			payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
+			filters := fmt.Sprintf(`WHERE id = %d`, dataPayment.ID)
+			payments, _ := paymentUsecase.paymentsRepository.GetPayment(filters)
 			dataEmail := model.EmailBody{
 				BodyTemp:          emailType,
 				UserCode:          payments.UserCode,

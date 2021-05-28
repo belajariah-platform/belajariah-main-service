@@ -1278,15 +1278,7 @@ func TemplateUploadPayment(email model.EmailBody) string {
                                 </tr>
                         </tbody>
                     </table>
-                    <table style="padding:0 20px;margin-bottom:30px;margin: 0px auto 30px auto;width: %s;" cellspacing="0" cellpadding="0">
-                        <tbody>
-                            <tr>
-                                <td style="width:%s;padding-right:5px">
-                                    <a href="#" style="background: linear-gradient(#542f91, #3f1c78, #835bc2);color: #fff;display:block;border: 2.5px solid #552b9c;border-radius:20px;padding:10px 10px;text-align:center;font-weight:600;text-decoration:none;font-size:14px">Bayar Sekarang</a> 
-                                 </td>  
-                            </tr>
-                        </tbody>
-                    </table>
+                   
                     <table style="padding:0 20px;width:%s;margin-bottom:20px" cellspacing="0" cellpadding="0">
                         <tbody>
                             <tr>
@@ -1478,8 +1470,7 @@ func TemplateUploadPayment(email model.EmailBody) string {
 		email.UserName,
 		email.ClassName,
 		email.InvoiceNumber,
-		"30%", "30%", "100%",
-		"100%", "30%", "30%", "70%",
+		"100%", "100%", "30%", "30%", "70%",
 		email.PaymentMethod,
 		email.AccountName,
 		"30%", "70%",

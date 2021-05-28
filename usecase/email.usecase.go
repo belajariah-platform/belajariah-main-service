@@ -36,7 +36,6 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 	var filter = "AND type = 'social_media'"
 	query.Take = 10
 	query.Skip = 0
-
 	user, _ := emailUsecase.userRepository.GetUserData(email.UserCode)
 	dataEmail := model.EmailBody{
 		//general
