@@ -50,6 +50,7 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 						Video_Duration: sublearn.VideoDuration.Float64,
 						Video:          sublearn.Video.String,
 						Document:       sublearn.Document.String,
+						Poster:         sublearn.Poster.String,
 						Sequence:       int(sublearn.Sequence.Int64),
 						Is_Done:        isDone,
 						Is_Exercise:    sublearn.IsExercise.Bool,

@@ -32,6 +32,7 @@ type SubLearning struct {
 	Video_Duration float64
 	Video          string
 	Document       string
+	Poster         string
 	Sequence       int
 	Is_Done        bool
 	Is_Exercise    bool

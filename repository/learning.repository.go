@@ -127,6 +127,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		video_duration,
 		video,
 		document,
+		poster,
 		sequence,	
 		is_exercise,
 		is_active,
@@ -157,7 +158,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 			var videoDuration sql.NullFloat64
 			var titleCode, code, createdBy string
 			var modifiedDate, deletedDate sql.NullTime
-			var subTitle, document, video, modifiedBy, deletedBy sql.NullString
+			var poster, subTitle, document, video, modifiedBy, deletedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -167,6 +168,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 				&videoDuration,
 				&video,
 				&document,
+				&poster,
 				&sequenced,
 				&isExercise,
 				&isActive,
@@ -190,6 +192,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 						VideoDuration: videoDuration,
 						Video:         video,
 						Document:      document,
+						Poster:        poster,
 						Sequence:      sequenced,
 						IsExercise:    isExercise,
 						IsActive:      isActive,
