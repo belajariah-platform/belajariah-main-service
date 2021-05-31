@@ -142,6 +142,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		deleted_by IS NULL AND
 		is_active=true AND
 		title_code='%s'
+	ORDER BY id ASC
 	`, titleCode)
 
 	rows, sqlError := learningRepository.db.Query(query)
