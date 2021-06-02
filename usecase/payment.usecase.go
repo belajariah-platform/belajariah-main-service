@@ -356,8 +356,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 	var class model.UserClass
 	var packages model.Package
 	var statusCode, paymentType, emailType string
-	var filter = fmt.Sprintf(`AND id=%d AND user_code=%d AND class_code='%s'`,
-		payment.ID,
+	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
 		payment.User_Code,
 		payment.Class_Code,
 	)
