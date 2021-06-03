@@ -1,6 +1,8 @@
 package shape
 
-import "time"
+import (
+	"time"
+)
 
 type Class struct {
 	ID                     int
@@ -27,4 +29,8 @@ type Class struct {
 	Modified_Date          time.Time
 	Deleted_By             string
 	Deleted_Date           time.Time
+	Price_Start            string
+	Price_Start_Discount   string
+	Price_End              string
+	Price_End_Discount     string
 }

@@ -58,7 +58,7 @@ func main() {
 	excelizeUsecase := usecase.InitExcelizeUsecase(excelizeRepository)
 	quranUsecase := usecase.InitQuranUsecase(quranRepository)
 	storyUsecase := usecase.InitStoryUsecase(storyRepository)
-	classUsecase := usecase.InitClassUsecase(classRepository)
+	classUsecase := usecase.InitClassUsecase(classRepository, packageRepository)
 	mentorUsecase := usecase.InitMentorUsecase(mentorRepository)
 	ratingUsecase := usecase.InitRatingUsecase(ratingRepository)
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
