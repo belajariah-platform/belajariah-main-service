@@ -37,7 +37,6 @@ func (classUsecase *classUsecase) GetAllClass(query model.Query) ([]shape.Class,
 	if err == nil && errCount == nil {
 		for _, value := range classes {
 			var packages []model.Package
-			// var packageResult []shape.Package
 
 			filterQuery = fmt.Sprintf(`AND class_code = '%s'`, value.Code)
 			packages, err := classUsecase.packageRepository.GetAllPackage(query.Skip, query.Take, filterQuery)
