@@ -23,6 +23,7 @@ type Class struct {
 	InstructorDescription sql.NullString
 	InstructorBiografi    sql.NullString
 	InstructorImage       sql.NullString
+	IsDirect              bool
 	IsActive              bool
 	CreatedBy             string
 	CreatedDate           time.Time

@@ -46,6 +46,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 		instructor_description,
 		instructor_biografi,
 		instrcutor_image,
+		is_direct,
 		is_active,
 		created_by,
 		created_date,
@@ -69,8 +70,8 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var createdDate time.Time
+			var isActive, isDirect bool
 			var id, totalReview, totalVideo int
 			var modifiedDate, deletedDate sql.NullTime
 			var classRating, totalVideoDuration float64
@@ -95,6 +96,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 				&instructorDescription,
 				&instructorBiografi,
 				&instructorImage,
+				&isDirect,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -126,6 +128,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 						InstructorDescription: instructorDescription,
 						InstructorBiografi:    instructorBiografi,
 						InstructorImage:       instructorImage,
+						IsDirect:              isDirect,
 						IsActive:              isActive,
 						CreatedBy:             createdBy,
 						CreatedDate:           createdDate,
