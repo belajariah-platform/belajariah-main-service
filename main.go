@@ -169,6 +169,9 @@ func main() {
 	// router-package
 	router.GET("/packages", packageHandler.GetAllPackage)
 
+	//router-benefit
+	router.GET("/benefits", packageHandler.GetAllBenefit)
+
 	// router-payment
 	router.GET("/payments", paymentHandler.GetAllPayment)
 	router.GET("/payments_reject", paymentHandler.GetAllPaymentRejected)

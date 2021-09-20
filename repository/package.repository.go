@@ -18,6 +18,7 @@ type PackageRepository interface {
 	GetPackage(code string) (model.Package, error)
 	GetAllPackage(skip, take int, filter string) ([]model.Package, error)
 	GetAllPackageCount(filter string) (int, error)
+	GetAllBenefit(skip, take int, filter string) ([]model.Benefit, error)
 }
 
 func InitPackageRepository(db *sqlx.DB) PackageRepository {
@@ -115,6 +116,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 		type,
 		price_package,
 		price_discount,
+		description,
 		is_active,
 		created_by,
 		created_date,
@@ -146,7 +148,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 			var createdDate time.Time
 			var consultation, webinar sql.NullInt64
 			var modifiedDate, deletedDate sql.NullTime
-			var PriceDiscount, modifiedBy, deletedBy sql.NullString
+			var PriceDiscount, modifiedBy, deletedBy, description sql.NullString
 			var types, classCode, pricePackage, code, createdBy string
 
 			sqlError := rows.Scan(
@@ -156,6 +158,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 				&types,
 				&pricePackage,
 				&PriceDiscount,
+				&description,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -180,6 +183,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 						Type:          types,
 						PricePackage:  pricePackage,
 						PriceDiscount: PriceDiscount,
+						Description:   description,
 						IsActive:      isActive,
 						CreatedBy:     createdBy,
 						CreatedDate:   createdDate,
@@ -216,4 +220,84 @@ func (packageRepository *packageRepository) GetAllPackageCount(filter string) (i
 		count = 0
 	}
 	return count, sqlError
+}
+
+func (packageRepository *packageRepository) GetAllBenefit(skip, take int, filter string) ([]model.Benefit, error) {
+	var packageList []model.Benefit
+	query := fmt.Sprintf(`
+	SELECT
+		id,
+		code,
+		class_code,
+		value,
+		benefit_image,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		deleted_by,
+		deleted_date
+	FROM master_benefit
+	WHERE 
+		deleted_by IS NULL AND
+		is_active=true
+	%s
+	OFFSET %d
+	LIMIT %d
+	`, filter, skip, take)
+
+	rows, sqlError := packageRepository.db.Query(query)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetAllBenefit => ", sqlError)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var isActive bool
+			var id int
+			var createdDate time.Time
+			var modifiedDate, deletedDate sql.NullTime
+			var code, value, classCode, createdBy string
+			var benefitImage, modifiedBy, deletedBy sql.NullString
+
+			sqlError := rows.Scan(
+				&id,
+				&code,
+				&classCode,
+				&value,
+				&benefitImage,
+				&isActive,
+				&createdBy,
+				&createdDate,
+				&modifiedBy,
+				&modifiedDate,
+				&deletedBy,
+				&deletedDate,
+			)
+
+			if sqlError != nil {
+				utils.PushLogf("SQL error on GetAllPackage => ", sqlError)
+			} else {
+				packageList = append(
+					packageList,
+					model.Benefit{
+						ID:           id,
+						Code:         code,
+						ClassCode:    classCode,
+						Value:        value,
+						BenefitImage: benefitImage,
+						IsActive:     isActive,
+						CreatedBy:    createdBy,
+						CreatedDate:  createdDate,
+						ModifiedBy:   modifiedBy,
+						ModifiedDate: modifiedDate,
+						DeletedBy:    deletedBy,
+						DeletedDate:  deletedDate,
+					},
+				)
+			}
+		}
+	}
+	return packageList, sqlError
 }

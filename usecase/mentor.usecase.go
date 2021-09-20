@@ -32,6 +32,7 @@ func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.Mentor, e
 		ID:              mentor.ID,
 		Role_Code:       mentor.RoleCode,
 		Role:            mentor.Role,
+		Class_Code:      mentor.ClassCode,
 		Email:           mentor.Email,
 		Full_Name:       mentor.FullName.String,
 		Phone:           int(mentor.Phone.Int64),
@@ -41,6 +42,7 @@ func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.Mentor, e
 		Province:        mentor.Province.String,
 		City:            mentor.City.String,
 		Address:         mentor.Address.String,
+		Description:     mentor.Description.String,
 		Image_Code:      mentor.ImageCode.String,
 		Image_Filename:  mentor.ImageFilename.String,
 		Image_Filepath:  mentor.ImageFilepath.String,
@@ -77,30 +79,57 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 
 	if err == nil && errCount == nil {
 		for _, value := range mentors {
+
+			var mentorSchedule []model.MentorSchedule
+			var mentorScheduleResult []shape.MentorSchedule
+			mentorSchedule, err := mentorUsecase.mentorRepository.GetAllMentorSchedule(value.MentorCode)
+			if err == nil {
+				for _, schedule := range mentorSchedule {
+					mentorScheduleResult = append(mentorScheduleResult, shape.MentorSchedule{
+						ID:            schedule.ID,
+						Mentor_Code:   schedule.MentorCode,
+						Shift_Name:    schedule.ShiftName,
+						Start_At:      schedule.StartAt,
+						End_At:        schedule.EndAt,
+						Is_Active:     schedule.IsActive,
+						Created_By:    schedule.CreatedBy,
+						Created_Date:  schedule.CreatedDate,
+						Modified_By:   schedule.ModifiedBy.String,
+						Modified_Date: schedule.ModifiedDate.Time,
+					})
+				}
+			}
+
 			mentorResult = append(mentorResult, shape.Mentor{
-				ID:              value.ID,
-				Role_Code:       value.RoleCode,
-				Role:            value.Role,
-				Email:           value.Email,
-				Full_Name:       value.FullName.String,
-				Phone:           int(value.Phone.Int64),
-				Profession:      value.Profession.String,
-				Gender:          value.Gender.String,
-				Age:             int(value.Age.Int64),
-				Province:        value.Province.String,
-				City:            value.City.String,
-				Address:         value.Address.String,
-				Image_Code:      value.ImageCode.String,
-				Image_Filename:  value.ImageFilename.String,
-				Image_Filepath:  value.ImageFilepath.String,
-				Rating:          value.Rating,
-				Task_Completed:  value.TaskCompleted,
-				Task_Inprogress: value.TaskInprogress,
-				Is_Active:       value.IsActive,
-				Created_By:      value.CreatedBy,
-				Created_Date:    value.CreatedDate,
-				Modified_By:     value.ModifiedBy.String,
-				Modified_Date:   value.ModifiedDate.Time,
+				ID:                   value.ID,
+				Role_Code:            value.RoleCode,
+				Role:                 value.Role,
+				Mentor_Code:          value.MentorCode,
+				Class_Code:           value.ClassCode,
+				Email:                value.Email,
+				Full_Name:            value.FullName.String,
+				Phone:                int(value.Phone.Int64),
+				Profession:           value.Profession.String,
+				Gender:               value.Gender.String,
+				Age:                  int(value.Age.Int64),
+				Province:             value.Province.String,
+				City:                 value.City.String,
+				Address:              value.Address.String,
+				Description:          value.Description.String,
+				Image_Code:           value.ImageCode.String,
+				Image_Filename:       value.ImageFilename.String,
+				Image_Filepath:       value.ImageFilepath.String,
+				Rating:               value.Rating,
+				Learning_Method:      value.LearningMethod.String,
+				Learning_Method_Text: value.LearningMethodText.String,
+				Task_Completed:       value.TaskCompleted,
+				Task_Inprogress:      value.TaskInprogress,
+				Is_Active:            value.IsActive,
+				Created_By:           value.CreatedBy,
+				Created_Date:         value.CreatedDate,
+				Modified_By:          value.ModifiedBy.String,
+				Modified_Date:        value.ModifiedDate.Time,
+				Schedule:             mentorScheduleResult,
 			})
 		}
 	}

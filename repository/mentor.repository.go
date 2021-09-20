@@ -17,6 +17,7 @@ type mentorRepository struct {
 type MentorRepository interface {
 	GetMentorInfo(email string) (model.Mentor, error)
 	GetAllMentor(skip, take int, sort, search, filter string) ([]model.Mentor, error)
+	GetAllMentorSchedule(code int) ([]model.MentorSchedule, error)
 	GetAllMentorCount(filter string) (int, error)
 }
 
@@ -134,6 +135,8 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 		id,
 		role_code,
 		role, 
+		mentor_code,
+		class_code,
 		email,
 		full_name,
 		phone,
@@ -150,8 +153,11 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 			WHEN rating IS NULL THEN 0
 			ELSE rating
 		END AS rating,
+		learning_method,
+		learning_method_text,
 		task_completed,
 		task_inprogress,
+		description,
 		is_active,
 		created_by,
 		created_date,
@@ -173,19 +179,21 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var id, taskCompleted, taskInprogress int
+			var id, taskCompleted, taskInprogress, mentorCode int
 			var isActive bool
 			var rating float64
 			var createdDate time.Time
 			var phone, age sql.NullInt64
 			var modifiedDate sql.NullTime
-			var emailUsr, roleCode, role, createdBy string
-			var fullname, profession, gender, province, city, address, imageCode, imageFilename, imageFilepath, modifiedBy sql.NullString
+			var emailUsr, roleCode, role, createdBy, classCode string
+			var fullname, profession, gender, province, city, address, imageCode, imageFilename, imageFilepath, modifiedBy, description, learningMethodText, learningMethod sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
 				&roleCode,
 				&role,
+				&mentorCode,
+				&classCode,
 				&emailUsr,
 				&fullname,
 				&phone,
@@ -199,8 +207,11 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 				&imageFilename,
 				&imageFilepath,
 				&rating,
+				&learningMethod,
+				&learningMethodText,
 				&taskCompleted,
 				&taskInprogress,
+				&description,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -213,29 +224,106 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 			} else {
 				mentorList = append(mentorList,
 					model.Mentor{
-						ID:             id,
-						RoleCode:       roleCode,
-						Role:           role,
-						Email:          emailUsr,
-						FullName:       fullname,
-						Phone:          phone,
-						Profession:     profession,
-						Gender:         gender,
-						Age:            age,
-						Province:       province,
-						City:           city,
-						Address:        address,
-						ImageCode:      imageCode,
-						ImageFilename:  imageFilename,
-						ImageFilepath:  imageFilepath,
-						Rating:         rating,
-						TaskCompleted:  taskCompleted,
-						TaskInprogress: taskInprogress,
-						IsActive:       isActive,
-						CreatedBy:      createdBy,
-						CreatedDate:    createdDate,
-						ModifiedBy:     modifiedBy,
-						ModifiedDate:   modifiedDate,
+						ID:                 id,
+						RoleCode:           roleCode,
+						Role:               role,
+						MentorCode:         mentorCode,
+						ClassCode:          classCode,
+						Email:              emailUsr,
+						FullName:           fullname,
+						Phone:              phone,
+						Profession:         profession,
+						Gender:             gender,
+						Age:                age,
+						Province:           province,
+						City:               city,
+						Address:            address,
+						ImageCode:          imageCode,
+						ImageFilename:      imageFilename,
+						ImageFilepath:      imageFilepath,
+						Rating:             rating,
+						LearningMethod:     learningMethod,
+						LearningMethodText: learningMethodText,
+						TaskCompleted:      taskCompleted,
+						TaskInprogress:     taskInprogress,
+						Description:        description,
+						IsActive:           isActive,
+						CreatedBy:          createdBy,
+						CreatedDate:        createdDate,
+						ModifiedBy:         modifiedBy,
+						ModifiedDate:       modifiedDate,
+					},
+				)
+			}
+		}
+	}
+	return mentorList, sqlError
+}
+
+func (mentorRepository *mentorRepository) GetAllMentorSchedule(code int) ([]model.MentorSchedule, error) {
+	var mentorList []model.MentorSchedule
+	query := fmt.Sprintf(`
+	SELECT
+		id,
+		mentor_code,
+		shift_name,
+		start_at,
+		end_at,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date
+	FROM 
+		public.master_mentor_schedule
+	WHERE 
+		is_active=true and 
+		deleted_by is null and
+		mentor_code=%d
+	`, code)
+
+	rows, sqlError := mentorRepository.db.Query(query)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetAllMentorSchedule => ", sqlError)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var isActive bool
+			var id, mentorCode int
+			var modifiedDate sql.NullTime
+			var modifiedBy sql.NullString
+			var createdBy, shiftName string
+			var startAt, endAt, createdDate time.Time
+
+			sqlError := rows.Scan(
+				&id,
+				&mentorCode,
+				&shiftName,
+				&startAt,
+				&endAt,
+				&isActive,
+				&createdBy,
+				&createdDate,
+				&modifiedBy,
+				&modifiedDate,
+			)
+
+			if sqlError != nil {
+				utils.PushLogf("SQL error on GetAllMentorSchedule => ", sqlError)
+			} else {
+				mentorList = append(mentorList,
+					model.MentorSchedule{
+						ID:           id,
+						MentorCode:   mentorCode,
+						ShiftName:    shiftName,
+						StartAt:      startAt,
+						EndAt:        endAt,
+						IsActive:     isActive,
+						CreatedBy:    createdBy,
+						CreatedDate:  createdDate,
+						ModifiedBy:   modifiedBy,
+						ModifiedDate: modifiedDate,
 					},
 				)
 			}

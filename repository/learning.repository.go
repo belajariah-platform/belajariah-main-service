@@ -37,6 +37,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 		document_name,
 		sequence,	
 		is_exercise,
+		is_direct_learning,
 		is_active,
 		created_by,
 		created_date,
@@ -61,7 +62,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 		defer rows.Close()
 		for rows.Next() {
 			var id int
-			var isActive bool
+			var isActive, isDirectLearning bool
 			var isExercise sql.NullBool
 			var createdDate time.Time
 			var sequenced sql.NullInt64
@@ -78,6 +79,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 				&documentName,
 				&sequenced,
 				&isExercise,
+				&isDirectLearning,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -93,21 +95,22 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 				learningList = append(
 					learningList,
 					model.Learning{
-						ID:           id,
-						Code:         code,
-						ClassCode:    classCode,
-						Title:        title,
-						DocumentPath: documentPath,
-						DocumentName: documentName,
-						Sequence:     sequenced,
-						IsExercise:   isExercise,
-						IsActive:     isActive,
-						CreatedBy:    createdBy,
-						CreatedDate:  createdDate,
-						ModifiedBy:   modifiedBy,
-						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						ID:               id,
+						Code:             code,
+						ClassCode:        classCode,
+						Title:            title,
+						DocumentPath:     documentPath,
+						DocumentName:     documentName,
+						Sequence:         sequenced,
+						IsExercise:       isExercise,
+						IsDirectLearning: isDirectLearning,
+						IsActive:         isActive,
+						CreatedBy:        createdBy,
+						CreatedDate:      createdDate,
+						ModifiedBy:       modifiedBy,
+						ModifiedDate:     modifiedDate,
+						DeletedBy:        deletedBy,
+						DeletedDate:      deletedDate,
 					},
 				)
 			}

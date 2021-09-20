@@ -12,6 +12,7 @@ type Package struct {
 	Type          string
 	PricePackage  string
 	PriceDiscount sql.NullString
+	Description   sql.NullString
 	Duration      int
 	Webinar       sql.NullInt64
 	Consultation  sql.NullInt64
@@ -22,4 +23,19 @@ type Package struct {
 	ModifiedDate  sql.NullTime
 	DeletedBy     sql.NullString
 	DeletedDate   sql.NullTime
+}
+
+type Benefit struct {
+	ID           int
+	Code         string
+	ClassCode    string
+	Value        string
+	BenefitImage sql.NullString
+	IsActive     bool
+	CreatedBy    string
+	CreatedDate  time.Time
+	ModifiedBy   sql.NullString
+	ModifiedDate sql.NullTime
+	DeletedBy    sql.NullString
+	DeletedDate  sql.NullTime
 }

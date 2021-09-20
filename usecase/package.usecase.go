@@ -13,6 +13,7 @@ type packageUsecase struct {
 
 type PackageUsecase interface {
 	GetAllPackage(query model.Query) ([]shape.Package, int, error)
+	GetAllBenefit(query model.Query) ([]shape.Benefit, error)
 }
 
 func InitPackageUsecase(packageRepository repository.PackageRepository) PackageUsecase {
@@ -43,6 +44,7 @@ func (packageUsecase *packageUsecase) GetAllPackage(query model.Query) ([]shape.
 				Duration:       value.Duration,
 				Consultation:   int(value.Consultation.Int64),
 				Webinar:        int(value.Webinar.Int64),
+				Description:    value.Description.String,
 				Is_Active:      value.IsActive,
 				Created_By:     value.CreatedBy,
 				Created_Date:   value.CreatedDate,
@@ -58,4 +60,38 @@ func (packageUsecase *packageUsecase) GetAllPackage(query model.Query) ([]shape.
 		return packageEmpty, count, err
 	}
 	return packageResult, count, err
+}
+
+func (packageUsecase *packageUsecase) GetAllBenefit(query model.Query) ([]shape.Benefit, error) {
+	var filterQuery string
+	var benefits []model.Benefit
+	var benefitResult []shape.Benefit
+
+	filterQuery = utils.GetFilterHandler(query.Filters)
+
+	benefits, err := packageUsecase.packageRepository.GetAllBenefit(query.Skip, query.Take, filterQuery)
+
+	if err == nil {
+		for _, value := range benefits {
+			benefitResult = append(benefitResult, shape.Benefit{
+				ID:            value.ID,
+				Code:          value.Code,
+				Class_Code:    value.ClassCode,
+				Value:         value.Value,
+				Benefit_Image: value.BenefitImage.String,
+				Is_Active:     value.IsActive,
+				Created_By:    value.CreatedBy,
+				Created_Date:  value.CreatedDate,
+				Modified_By:   value.ModifiedBy.String,
+				Modified_Date: value.ModifiedDate.Time,
+				Deleted_By:    value.DeletedBy.String,
+				Deleted_Date:  value.DeletedDate.Time,
+			})
+		}
+	}
+	benefitEmpty := make([]shape.Benefit, 0)
+	if len(benefitResult) == 0 {
+		return benefitEmpty, err
+	}
+	return benefitResult, err
 }
