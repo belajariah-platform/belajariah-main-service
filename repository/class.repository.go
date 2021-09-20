@@ -41,7 +41,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 		class_rating,
 		total_review,
 		total_video,
-		total_video_duration,
+		coalesce(total_video_duration, 0),
 		instructor_name,
 		instructor_description,
 		instructor_biografi,
@@ -66,7 +66,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 	rows, sqlError := classRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllClass => ", sqlError)
+		utils.PushLogf("SQL error on GetAllClass => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
@@ -106,7 +106,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 				&deletedDate,
 			)
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllClass => ", sqlError)
+				utils.PushLogf("SQL error on GetAllClass => ", sqlError.Error())
 			} else {
 				classList = append(
 					classList,
