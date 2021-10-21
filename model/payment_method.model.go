@@ -12,12 +12,11 @@ type PaymentMethod struct {
 	Value         string
 	AccountName   sql.NullString
 	AccountNumber sql.NullString
-	MethodImage   sql.NullString
+	IconAccount   sql.NullString
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
-	DeletedBy     sql.NullString
-	DeletedDate   sql.NullTime
+	IsDeleted     bool
 }

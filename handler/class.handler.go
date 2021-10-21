@@ -47,15 +47,15 @@ func (classHandler *classHandler) GetAllClass(ctx *gin.Context) {
 		classResult, count, err = classHandler.classUsecase.GetAllClass(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      classResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  classResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      classResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  classResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

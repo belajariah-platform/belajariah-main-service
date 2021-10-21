@@ -41,11 +41,10 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM master_exercise_reading
+		is_deleted
+	FROM master.master_exercise_reading
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -55,15 +54,15 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 	rows, sqlError := exerciseReadingRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllExerciseReading => ", sqlError)
+		utils.PushLogf("SQL error on GetAllExerciseReading => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var createdDate time.Time
+			var isActive, isDeleted bool
+			var modifiedBy sql.NullString
+			var modifiedDate sql.NullTime
 			var titleCode, code, createdBy string
-			var modifiedBy, deletedBy sql.NullString
-			var modifiedDate, deletedDate sql.NullTime
 			var id, ayatStart, ayatEnd, suratCode int
 
 			sqlError := rows.Scan(
@@ -78,12 +77,11 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllExerciseReading => ", sqlError)
+				utils.PushLogf("SQL error on GetAllExerciseReading => ", sqlError.Error())
 			} else {
 				exerciseReadingList = append(
 					exerciseReadingList,
@@ -99,8 +97,7 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 						CreatedDate:  createdDate,
 						ModifiedBy:   modifiedBy,
 						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						IsDeleted:    isDeleted,
 					},
 				)
 			}
@@ -124,21 +121,20 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetExerciseReading(t
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM master_exercise_reading
+		is_deleted
+	FROM master.master_exercise_reading
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true AND
 		title_code=$1
 	`, titleCodes)
 
-	var isActive bool
 	var createdDate time.Time
-	var id, suratCode, ayatStart, ayatEnd int
-	var modifiedBy, deletedBy sql.NullString
-	var modifiedDate, deletedDate sql.NullTime
+	var isActive, isDeleted bool
+	var modifiedBy sql.NullString
+	var modifiedDate sql.NullTime
 	var titleCode, code, createdBy string
+	var id, suratCode, ayatStart, ayatEnd int
 
 	sqlError := row.Scan(
 		&id,
@@ -152,12 +148,11 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetExerciseReading(t
 		&createdDate,
 		&modifiedBy,
 		&modifiedDate,
-		&deletedBy,
-		&deletedDate,
+		&isDeleted,
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetExerciseReading => ", sqlError)
+		utils.PushLogf("SQL error on GetExerciseReading => ", sqlError.Error())
 		return model.ExerciseReading{}, nil
 	} else {
 		exerciseReadRow = model.ExerciseReading{
@@ -172,8 +167,7 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetExerciseReading(t
 			CreatedDate:  createdDate,
 			ModifiedBy:   modifiedBy,
 			ModifiedDate: modifiedDate,
-			DeletedBy:    deletedBy,
-			DeletedDate:  deletedDate,
+			IsDeleted:    isDeleted,
 		}
 		return exerciseReadRow, sqlError
 	}
@@ -183,9 +177,9 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_exercise_reading  
+		master.master_exercise_reading  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)
@@ -193,7 +187,7 @@ func (exerciseReadingRepository *exerciseReadingRepository) GetAllExerciseReadin
 	row := exerciseReadingRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllExerciseReadingCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllExerciseReadingCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError

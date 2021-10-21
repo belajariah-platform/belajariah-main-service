@@ -43,11 +43,10 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM v_m_class_learning
+		is_deleted
+	FROM master.v_m_learning
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -57,18 +56,17 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 	rows, sqlError := learningRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllLearning => ", sqlError)
+		utils.PushLogf("SQL error on GetAllLearning => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var id int
-			var isActive, isDirectLearning bool
-			var isExercise sql.NullBool
+			var id, sequenced int
+			var isExercise bool
 			var createdDate time.Time
-			var sequenced sql.NullInt64
-			var modifiedDate, deletedDate sql.NullTime
-			var documentPath, documentName, modifiedBy, deletedBy sql.NullString
+			var modifiedDate sql.NullTime
 			var classCode, title, code, createdBy string
+			var isActive, isDirectLearning, isDeleted bool
+			var documentPath, documentName, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -85,12 +83,11 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllLearning => ", sqlError)
+				utils.PushLogf("SQL error on GetAllLearning => ", sqlError.Error())
 			} else {
 				learningList = append(
 					learningList,
@@ -109,8 +106,7 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 						CreatedDate:      createdDate,
 						ModifiedBy:       modifiedBy,
 						ModifiedDate:     modifiedDate,
-						DeletedBy:        deletedBy,
-						DeletedDate:      deletedDate,
+						IsDeleted:        isDeleted,
 					},
 				)
 			}
@@ -138,11 +134,10 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM v_m_class_sub_learning
+		is_deleted
+	FROM master.v_m_sublearning
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true AND
 		title_code='%s'
 	ORDER BY id ASC
@@ -154,15 +149,13 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var id int
-			var isActive bool
-			var isExercise sql.NullBool
+			var id, sequenced int
 			var createdDate time.Time
-			var sequenced sql.NullInt64
+			var isActive, isDeleted, isExercise bool
+			var modifiedDate sql.NullTime
 			var videoDuration sql.NullFloat64
 			var titleCode, code, createdBy string
-			var modifiedDate, deletedDate sql.NullTime
-			var poster, subTitle, document, video, modifiedBy, deletedBy sql.NullString
+			var poster, subTitle, document, video, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -180,8 +173,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 			if sqlError != nil {
 				utils.PushLogf("SQL error on GetAllSubLearning => ", sqlError)
@@ -204,8 +196,7 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 						CreatedDate:   createdDate,
 						ModifiedBy:    modifiedBy,
 						ModifiedDate:  modifiedDate,
-						DeletedBy:     deletedBy,
-						DeletedDate:   deletedDate,
+						IsDeleted:     isDeleted,
 					},
 				)
 			}

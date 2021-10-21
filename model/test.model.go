@@ -22,6 +22,5 @@ type ClassTest struct {
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
-	DeletedBy    sql.NullString
-	DeletedDate  sql.NullTime
+	IsDeleted    bool
 }

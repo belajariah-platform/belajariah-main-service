@@ -17,7 +17,7 @@ type Class struct {
 	Class_Rating           float64
 	Total_Review           int
 	Total_Video            int
-	Total_Video_Duration   float64
+	Total_Video_Duration   int
 	Instructor_Name        string
 	Instructor_Description string
 	Instructor_Biografi    string
@@ -28,10 +28,11 @@ type Class struct {
 	Created_Date           time.Time
 	Modified_By            string
 	Modified_Date          time.Time
-	Deleted_By             string
-	Deleted_Date           time.Time
-	Price_Start            string
-	Price_Start_Discount   string
-	Price_End              string
-	Price_End_Discount     string
+	Is_Deleted             bool
+
+	//additional
+	Price_Start          string
+	Price_Start_Discount string
+	Price_End            string
+	Price_End_Discount   string
 }

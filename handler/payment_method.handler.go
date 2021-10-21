@@ -47,15 +47,15 @@ func (paymentMethodHandler *paymentMethodHandler) GetAllPaymentMethod(ctx *gin.C
 		paymentMethodResult, count, err = paymentMethodHandler.paymentMethodUsecase.GetAllPaymentMethod(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      paymentMethodResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  paymentMethodResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      paymentMethodResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  paymentMethodResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

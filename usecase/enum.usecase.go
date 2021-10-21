@@ -43,8 +43,7 @@ func (enumUsecase *enumUsecase) GetAllEnum(query model.Query) ([]shape.Enum, int
 				Created_Date:  value.CreatedDate,
 				Modified_By:   value.ModifiedBy.String,
 				Modified_Date: value.ModifiedDate.Time,
-				Deleted_By:    value.DeletedBy.String,
-				Deleted_Date:  value.DeletedDate.Time,
+				Is_Deleted:    value.IsDeleted,
 			})
 		}
 	}

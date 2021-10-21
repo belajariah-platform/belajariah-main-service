@@ -47,15 +47,15 @@ func (exerciseReadingHandler *exerciseReadingHandler) GetAllExerciseReading(ctx 
 		exerciseReadingResult, count, err = exerciseReadingHandler.exerciseReadingUsecase.GetAllExerciseReading(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      exerciseReadingResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  exerciseReadingResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      exerciseReadingResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  exerciseReadingResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

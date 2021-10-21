@@ -19,8 +19,7 @@ type ClassTest struct {
 	Created_Date   time.Time
 	Modified_By    string
 	Modified_Date  time.Time
-	Deleted_By     string
-	Deleted_Date   time.Time
+	Is_Deleted     bool
 }
 
 type ClassTestPost struct {

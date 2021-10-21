@@ -83,15 +83,15 @@ func (userClassHandler *userClassHandler) GetAllUserClass(ctx *gin.Context) {
 		userClassResult, count, err = userClassHandler.userClassUsecase.GetAllUserClass(query, userObj)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      userClassResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  userClassResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      userClassResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  userClassResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

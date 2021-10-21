@@ -49,15 +49,15 @@ func (promotionHandler *promotionHandler) GetAllPromotion(ctx *gin.Context) {
 		promotionResult, count, err = promotionHandler.promotionUsecase.GetAllPromotion(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      promotionResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  promotionResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      promotionResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  promotionResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

@@ -8,15 +8,13 @@ type Exercise struct {
 	ID             int
 	Code           string
 	Subtitle_Code  string
-	Image_Code     int
-	Exercise_Image string
+	Image_Exercise string
 	Is_Active      bool
 	Created_By     string
 	Created_Date   time.Time
 	Modified_By    string
 	Modified_Date  time.Time
-	Deleted_By     string
-	Deleted_Date   time.Time
+	Is_Deleted     bool
 }
 
 type ExerciseReading struct {
@@ -31,8 +29,7 @@ type ExerciseReading struct {
 	Created_Date  time.Time
 	Modified_By   string
 	Modified_Date time.Time
-	Deleted_By    string
-	Deleted_Date  time.Time
+	Is_Deleted    bool
 }
 
 type UserExerciseReading struct {
@@ -49,6 +46,5 @@ type UserExerciseReading struct {
 	Created_Date   time.Time
 	Modified_By    string
 	Modified_Date  time.Time
-	Deleted_By     string
-	Deleted_Date   time.Time
+	Is_Deleted     bool
 }

@@ -46,11 +46,10 @@ func (testRepository *testRepository) GetAllTest(skip, take int, filter string) 
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM v_m_class_test
+		is_deleted
+	FROM master.v_m_test
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -64,11 +63,11 @@ func (testRepository *testRepository) GetAllTest(skip, take int, filter string) 
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var id, Answer int
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
-			var TestImage, modifiedBy, deletedBy sql.NullString
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
+			var TestImage, modifiedBy sql.NullString
 			var code, ClassCode, TestTypeCode, Question, OptionA, OptionB, OptionC, OptionD, createdBy string
 
 			sqlError := rows.Scan(
@@ -88,8 +87,7 @@ func (testRepository *testRepository) GetAllTest(skip, take int, filter string) 
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
@@ -114,8 +112,7 @@ func (testRepository *testRepository) GetAllTest(skip, take int, filter string) 
 						CreatedDate:  createdDate,
 						ModifiedBy:   modifiedBy,
 						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						IsDeleted:    isDeleted,
 					},
 				)
 			}
@@ -128,9 +125,9 @@ func (testRepository *testRepository) GetAllTestCount(filter string) (int, error
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_class_test  
+		master.v_m_test  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)
@@ -148,7 +145,7 @@ func (testRepository *testRepository) CorrectionTest(code string, answer int) (i
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_class_test vmct
+		master.v_m_test vmct
 	WHERE 
 		code = '%s' AND answer = %d
 	`, code, answer)

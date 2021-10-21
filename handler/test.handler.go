@@ -48,15 +48,15 @@ func (testHandler *testHandler) GetAllTest(ctx *gin.Context) {
 		testResult, count, err = testHandler.testUsecase.GetAllTest(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      testResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  testResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      testResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  testResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

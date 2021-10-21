@@ -40,14 +40,13 @@ func (paymentMethodUsecase *paymentMethodUsecase) GetAllPaymentMethod(query mode
 				Value:          value.Value,
 				Account_Name:   value.AccountName.String,
 				Account_Number: value.AccountNumber.String,
-				Method_Image:   value.MethodImage.String,
+				Icon_Account:   value.IconAccount.String,
 				Is_Active:      value.IsActive,
 				Created_By:     value.CreatedBy,
 				Created_Date:   value.CreatedDate,
 				Modified_By:    value.ModifiedBy.String,
 				Modified_Date:  value.ModifiedDate.Time,
-				Deleted_By:     value.DeletedBy.String,
-				Deleted_Date:   value.DeletedDate.Time,
+				Is_Deleted:     value.IsDeleted,
 			})
 		}
 	}

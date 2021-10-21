@@ -9,8 +9,6 @@ type Learning struct {
 	Code               string
 	Class_Code         string
 	Title              string
-	SubTitles          []SubLearning
-	Exercises          ExerciseReading
 	Document_Path      string
 	Document_Name      string
 	Sequence           int
@@ -21,8 +19,9 @@ type Learning struct {
 	Created_Date       time.Time
 	Modified_By        string
 	Modified_Date      time.Time
-	Deleted_By         string
-	Deleted_Date       time.Time
+	Is_Deleted         bool
+	Exercises          []ExerciseReading
+	SubTitles          []SubLearning
 }
 
 type SubLearning struct {
@@ -42,6 +41,5 @@ type SubLearning struct {
 	Created_Date   time.Time
 	Modified_By    string
 	Modified_Date  time.Time
-	Deleted_By     string
-	Deleted_Date   time.Time
+	Is_Deleted     bool
 }

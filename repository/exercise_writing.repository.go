@@ -32,18 +32,16 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 		id,
 		code,
 		subtitle_code,
-		image_code,
-		exercise_image,
+		image_exercise,
 		is_active,
 		created_by,
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM v_m_exercise
+		is_deleted
+	FROM master.master_exercise_writing
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -53,34 +51,32 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 	rows, sqlError := exerciseRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllExercise => ", sqlError)
+		utils.PushLogf("SQL error on GetAllExerciseWriting => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
-			var id, imageCode int
+			var id int
 			var createdDate time.Time
-			var modifiedBy, deletedBy sql.NullString
-			var modifiedDate, deletedDate sql.NullTime
-			var exerciseImage, subtitleCode, code, createdBy string
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
+			var subtitleCode, code, createdBy string
+			var modifiedBy, imageExercise sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
 				&code,
 				&subtitleCode,
-				&imageCode,
-				&exerciseImage,
+				&imageExercise,
 				&isActive,
 				&createdBy,
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllExercise => ", sqlError)
+				utils.PushLogf("SQL error on GetAllExerciseWriting => ", sqlError.Error())
 			} else {
 				exerciseList = append(
 					exerciseList,
@@ -88,15 +84,13 @@ func (exerciseRepository *exerciseRepository) GetAllExercise(skip, take int, fil
 						ID:            id,
 						Code:          code,
 						SubtitleCode:  subtitleCode,
-						ImageCode:     imageCode,
-						ExerciseImage: exerciseImage,
+						ImageExercise: imageExercise,
 						IsActive:      isActive,
 						CreatedBy:     createdBy,
 						CreatedDate:   createdDate,
 						ModifiedBy:    modifiedBy,
 						ModifiedDate:  modifiedDate,
-						DeletedBy:     deletedBy,
-						DeletedDate:   deletedDate,
+						IsDeleted:     isDeleted,
 					},
 				)
 			}
@@ -109,9 +103,9 @@ func (exerciseRepository *exerciseRepository) GetAllExerciseCount(filter string)
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_exercise  
+		master.master_exercise_writing  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)
@@ -119,7 +113,7 @@ func (exerciseRepository *exerciseRepository) GetAllExerciseCount(filter string)
 	row := exerciseRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllExerciseCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllExerciseWritingCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError

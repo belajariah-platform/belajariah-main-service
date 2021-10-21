@@ -52,11 +52,10 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM v_m_class
+		is_deleted
+	FROM master.v_m_class
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -70,13 +69,13 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 	} else {
 		defer rows.Close()
 		for rows.Next() {
+			var classRating float64
 			var createdDate time.Time
-			var isActive, isDirect bool
-			var id, totalReview, totalVideo int
-			var modifiedDate, deletedDate sql.NullTime
-			var classRating, totalVideoDuration float64
-			var classInitial, classDescription, classImage, classVideo, instructorDescription, instructorBiografi, instructorImage, modifiedBy, deletedBy sql.NullString
-			var code, classCategoryCode, classCategory, className, instructorName, createdBy string
+			var modifiedDate sql.NullTime
+			var isActive, isDirect, isDeleted bool
+			var id, totalReview, totalVideo, totalVideoDuration int
+			var code, classCategoryCode, classCategory, className, createdBy string
+			var classInitial, classDescription, classImage, classVideo, instructorDescription, instructorBiografi, instructorImage, modifiedBy, instructorName sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -102,8 +101,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 			if sqlError != nil {
 				utils.PushLogf("SQL error on GetAllClass => ", sqlError.Error())
@@ -134,13 +132,13 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 						CreatedDate:           createdDate,
 						ModifiedBy:            modifiedBy,
 						ModifiedDate:          modifiedDate,
-						DeletedBy:             deletedBy,
-						DeletedDate:           deletedDate,
+						IsDeleted:             isDeleted,
 					},
 				)
 			}
 		}
 	}
+
 	return classList, sqlError
 }
 
@@ -148,9 +146,9 @@ func (classRepository *classRepository) GetAllClassCount(filter string) (int, er
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_class  
+		master.v_m_class  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	`, filter)
@@ -158,7 +156,7 @@ func (classRepository *classRepository) GetAllClassCount(filter string) (int, er
 	row := classRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllClassCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllClassCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError

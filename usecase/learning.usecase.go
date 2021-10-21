@@ -5,6 +5,7 @@ import (
 	"belajariah-main-service/repository"
 	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
+	"fmt"
 )
 
 type learningUsecase struct {
@@ -36,7 +37,6 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 
 	if err == nil {
 		for _, value := range learnings {
-
 			var subLearning []model.SubLearning
 			var subLearningResult []shape.SubLearning
 			subLearning, err := learningUsecase.learningRepository.GetAllSubLearning(value.Code)
@@ -51,41 +51,56 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 						Video:          sublearn.Video.String,
 						Document:       sublearn.Document.String,
 						Poster:         sublearn.Poster.String,
-						Sequence:       int(sublearn.Sequence.Int64),
+						Sequence:       sublearn.Sequence,
 						Is_Done:        isDone,
-						Is_Exercise:    sublearn.IsExercise.Bool,
+						Is_Exercise:    sublearn.IsExercise,
 						Is_Active:      sublearn.IsActive,
 						Created_By:     sublearn.CreatedBy,
 						Created_Date:   sublearn.CreatedDate,
 						Modified_By:    sublearn.ModifiedBy.String,
 						Modified_Date:  sublearn.ModifiedDate.Time,
-						Deleted_By:     sublearn.DeletedBy.String,
-						Deleted_Date:   sublearn.DeletedDate.Time,
+						Is_Deleted:     value.IsDeleted,
 					})
 				}
 				count = count + len(subLearning)
 			}
-			var exerciseResult shape.ExerciseReading
-			if value.IsExercise.Bool {
-				exercise, err := learningUsecase.exerciseReadingRepository.GetExerciseReading(value.Code)
+
+			var exerciseResult []shape.ExerciseReading
+			if value.IsExercise {
+				var exercises []model.ExerciseReading
+				filter := fmt.Sprintf(`AND title_code='%s'`, value.Code)
+				exercises, err := learningUsecase.exerciseReadingRepository.GetAllExerciseReading(0, 100, filter)
+				fmt.Println(exercises)
 				if err == nil {
-					exerciseResult = shape.ExerciseReading{
-						ID:            exercise.ID,
-						Code:          exercise.Code,
-						Title_Code:    exercise.TitleCode,
-						Surat_Code:    exercise.SuratCode,
-						Ayat_Start:    exercise.AyatStart,
-						Ayat_End:      exercise.AyatEnd,
-						Is_Active:     exercise.IsActive,
-						Created_By:    exercise.CreatedBy,
-						Created_Date:  exercise.CreatedDate,
-						Modified_By:   exercise.ModifiedBy.String,
-						Modified_Date: exercise.ModifiedDate.Time,
-						Deleted_By:    exercise.DeletedBy.String,
-						Deleted_Date:  exercise.DeletedDate.Time,
+					for _, exercise := range exercises {
+						exerciseResult = append(exerciseResult, shape.ExerciseReading{
+							ID:            exercise.ID,
+							Code:          exercise.Code,
+							Title_Code:    exercise.TitleCode,
+							Surat_Code:    exercise.SuratCode,
+							Ayat_Start:    exercise.AyatStart,
+							Ayat_End:      exercise.AyatEnd,
+							Is_Active:     exercise.IsActive,
+							Created_By:    exercise.CreatedBy,
+							Created_Date:  exercise.CreatedDate,
+							Modified_By:   exercise.ModifiedBy.String,
+							Modified_Date: exercise.ModifiedDate.Time,
+							Is_Deleted:    exercise.IsDeleted,
+						})
 					}
 				}
 			}
+
+			sublearningEmpty := make([]shape.SubLearning, 0)
+			if len(subLearningResult) == 0 {
+				subLearningResult = sublearningEmpty
+			}
+
+			exerciseEmpty := make([]shape.ExerciseReading, 0)
+			if len(subLearningResult) == 0 {
+				exerciseResult = exerciseEmpty
+			}
+
 			learningResult = append(learningResult, shape.Learning{
 				ID:                 value.ID,
 				Code:               value.Code,
@@ -93,21 +108,21 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 				Title:              value.Title,
 				Document_Path:      value.DocumentPath.String,
 				Document_Name:      value.DocumentName.String,
-				Sequence:           int(value.Sequence.Int64),
-				SubTitles:          subLearningResult,
-				Exercises:          exerciseResult,
-				Is_Exercise:        value.IsExercise.Bool,
+				Sequence:           value.Sequence,
+				Is_Exercise:        value.IsExercise,
 				Is_Direct_Learning: value.IsDirectLearning,
 				Is_Active:          value.IsActive,
 				Created_By:         value.CreatedBy,
 				Created_Date:       value.CreatedDate,
 				Modified_By:        value.ModifiedBy.String,
 				Modified_Date:      value.ModifiedDate.Time,
-				Deleted_By:         value.DeletedBy.String,
-				Deleted_Date:       value.DeletedDate.Time,
+				Is_Deleted:         value.IsDeleted,
+				Exercises:          exerciseResult,
+				SubTitles:          subLearningResult,
 			})
 		}
 	}
+
 	learningEmpty := make([]shape.Learning, 0)
 	if len(learningResult) == 0 {
 		return learningEmpty, count, err

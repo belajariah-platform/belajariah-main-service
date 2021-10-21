@@ -49,15 +49,15 @@ func (quranHandler *quranHandler) GetAllQuran(ctx *gin.Context) {
 		ratingResult, count, err = quranHandler.quranUsecase.GetAllQuran(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      ratingResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  ratingResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      ratingResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  ratingResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 
@@ -88,15 +88,15 @@ func (quranHandler *quranHandler) GetAllAyatQuran(ctx *gin.Context) {
 		ratingResult, count, err = quranHandler.quranUsecase.GetAllAyatQuran(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      ratingResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  ratingResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      ratingResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  ratingResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

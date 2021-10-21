@@ -48,15 +48,15 @@ func (packageHandler *packageHandler) GetAllPackage(ctx *gin.Context) {
 		packageResult, count, err = packageHandler.packageUsecase.GetAllPackage(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      packageResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  packageResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      packageResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  packageResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

@@ -47,15 +47,15 @@ func (enumHandler *enumHandler) GetAllEnum(ctx *gin.Context) {
 		enumResult, count, err = enumHandler.enumUsecase.GetAllEnum(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      enumResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  enumResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      enumResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  enumResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

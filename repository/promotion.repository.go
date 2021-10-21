@@ -42,8 +42,8 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 		promo_type_code,
 		promo_type,
 		discount,
-		banner_image,
-		header_image,
+		image_banner,
+		image_header,
 		expired_date,
 		quota_user,
 		quota_used,
@@ -52,12 +52,11 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
+		is_deleted
 	FROM 
-		v_m_promotion
+		master.v_m_promotion
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -67,18 +66,18 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 	rows, sqlError := promotionRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPromotion => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPromotion => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var id int
-			var isActive bool
 			var createdDate time.Time
+			var isActive, isDeleted bool
 			var discount sql.NullFloat64
 			var quoteUser, quotaUsed sql.NullInt64
-			var modifiedDate, expiredDate, deletedDate sql.NullTime
+			var modifiedDate, expiredDate sql.NullTime
 			var code, classCode, title, promoCode, createdBy string
-			var promoType, promoTypeCode, bannerImage, headerImage, description, modifiedBy, deletedBy sql.NullString
+			var promoType, promoTypeCode, bannerImage, headerImage, description, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -100,11 +99,10 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllPromotion => ", sqlError)
+				utils.PushLogf("SQL error on GetAllPromotion => ", sqlError.Error())
 			} else {
 				promotionList = append(
 					promotionList,
@@ -118,8 +116,8 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 						PromoTypeCode: promoTypeCode,
 						PromoType:     promoType,
 						Discount:      discount,
-						BannerImage:   bannerImage,
-						HeaderImage:   headerImage,
+						ImageBanner:   bannerImage,
+						ImageHeader:   headerImage,
 						ExpiredDate:   expiredDate,
 						QuotaUser:     quoteUser,
 						QuotaUsed:     quotaUsed,
@@ -128,8 +126,7 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 						CreatedDate:   createdDate,
 						ModifiedBy:    modifiedBy,
 						ModifiedDate:  modifiedDate,
-						DeletedBy:     deletedBy,
-						DeletedDate:   deletedDate,
+						IsDeleted:     isDeleted,
 					},
 				)
 			}
@@ -151,8 +148,8 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		promo_type_code,
 		promo_type,
 		discount,
-		banner_image,
-		header_image,
+		image_banner,
+		image_header,
 		expired_date,
 		quota_user,
 		quota_used,
@@ -161,23 +158,22 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
+		is_deleted
 	FROM 
-		v_m_promotion
+		master.v_m_promotion
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true AND
 		(code = $1 OR promo_code = $1) `, filter)
 
 	var id int
-	var isActive bool
 	var createdDate time.Time
+	var isActive, isDeleted bool
 	var discount sql.NullFloat64
 	var quoteUser, quotaUsed sql.NullInt64
-	var modifiedDate, expiredDate, deletedDate sql.NullTime
+	var modifiedDate, expiredDate sql.NullTime
 	var code, classCode, title, promoCode, createdBy string
-	var promoType, promoTypeCode, bannerImage, headerImage, description, modifiedBy, deletedBy sql.NullString
+	var promoType, promoTypeCode, bannerImage, headerImage, description, modifiedBy sql.NullString
 
 	sqlError := row.Scan(
 		&id,
@@ -199,12 +195,11 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 		&createdDate,
 		&modifiedBy,
 		&modifiedDate,
-		&deletedBy,
-		&deletedDate,
+		&isDeleted,
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetPromotion => ", sqlError)
+		utils.PushLogf("SQL error on GetPromotion => ", sqlError.Error())
 		return model.Promotion{}, nil
 	} else {
 		promotionRow = model.Promotion{
@@ -217,8 +212,8 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 			PromoTypeCode: promoTypeCode,
 			PromoType:     promoType,
 			Discount:      discount,
-			BannerImage:   bannerImage,
-			HeaderImage:   headerImage,
+			ImageBanner:   bannerImage,
+			ImageHeader:   headerImage,
 			ExpiredDate:   expiredDate,
 			QuotaUser:     quoteUser,
 			QuotaUsed:     quotaUsed,
@@ -227,8 +222,7 @@ func (promotionRepository *promotionRepository) GetPromotion(filter string) (mod
 			CreatedDate:   createdDate,
 			ModifiedBy:    modifiedBy,
 			ModifiedDate:  modifiedDate,
-			DeletedBy:     deletedBy,
-			DeletedDate:   deletedDate,
+			IsDeleted:     isDeleted,
 		}
 		return promotionRow, sqlError
 	}
@@ -238,9 +232,9 @@ func (promotionRepository *promotionRepository) GetAllPromotionCount(filter stri
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_promotion  
+		master.v_m_promotion  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)
@@ -248,7 +242,7 @@ func (promotionRepository *promotionRepository) GetAllPromotionCount(filter stri
 	row := promotionRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPromotionCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPromotionCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
@@ -264,7 +258,7 @@ func (promotionRepository *promotionRepository) UpdatePromotionActivated(promoti
 	} else {
 		err = updatePromotionActivated(tx, promotion)
 		if err != nil {
-			utils.PushLogf("err in promotion---", err)
+			utils.PushLogf("err in promotion---", err.Error())
 		}
 	}
 
@@ -274,7 +268,7 @@ func (promotionRepository *promotionRepository) UpdatePromotionActivated(promoti
 	} else {
 		result = false
 		tx.Rollback()
-		utils.PushLogf("failed to updatePromotionActivated", err)
+		utils.PushLogf("failed to updatePromotionActivated", err.Error())
 	}
 
 	return result, err
@@ -315,7 +309,7 @@ func (promotionRepository *promotionRepository) CheckAllPromotionExpired() ([]mo
 	;
 	`)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError)
+		utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
@@ -323,7 +317,7 @@ func (promotionRepository *promotionRepository) CheckAllPromotionExpired() ([]mo
 
 			sqlError := rows.Scan(&id)
 			if sqlError != nil {
-				utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError)
+				utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError.Error())
 			} else {
 				promotionList = append(promotionList, model.Promotion{
 					ID: id,

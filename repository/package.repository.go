@@ -42,24 +42,23 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date,
+		is_deleted,
 		duration,
 		consultation,
 		webinar
-	FROM master_class_package
+	FROM master.master_package
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true AND
 		code=$1
 	`, codes)
 
-	var isActive bool
 	var id, duration int
 	var createdDate time.Time
+	var isActive, isDeleted bool
 	var consultation, webinar sql.NullInt64
-	var modifiedDate, deletedDate sql.NullTime
-	var PriceDiscount, modifiedBy, deletedBy sql.NullString
+	var modifiedDate sql.NullTime
+	var PriceDiscount, modifiedBy sql.NullString
 	var types, classCode, pricePackage, code, createdBy string
 
 	sqlError := row.Scan(
@@ -74,14 +73,13 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		&createdDate,
 		&modifiedBy,
 		&modifiedDate,
-		&deletedBy,
-		&deletedDate,
+		&isDeleted,
 		&duration,
 		&consultation,
 		&webinar,
 	)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetPackage => ", sqlError)
+		utils.PushLogf("SQL error on GetPackage => ", sqlError.Error())
 		return model.Package{}, nil
 	} else {
 		packageRow = model.Package{
@@ -96,8 +94,7 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 			CreatedDate:   createdDate,
 			ModifiedBy:    modifiedBy,
 			ModifiedDate:  modifiedDate,
-			DeletedBy:     deletedBy,
-			DeletedDate:   deletedDate,
+			IsDeleted:     isDeleted,
 			Duration:      duration,
 			Consultation:  consultation,
 			Webinar:       webinar,
@@ -122,14 +119,13 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date,
+		is_deleted,
 		duration,
 		consultation,
 		webinar
-	FROM master_class_package
+	FROM master.master_package
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -139,16 +135,16 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 	rows, sqlError := packageRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPackage => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPackage => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var id, duration int
 			var createdDate time.Time
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
 			var consultation, webinar sql.NullInt64
-			var modifiedDate, deletedDate sql.NullTime
-			var PriceDiscount, modifiedBy, deletedBy, description sql.NullString
+			var PriceDiscount, modifiedBy, description sql.NullString
 			var types, classCode, pricePackage, code, createdBy string
 
 			sqlError := rows.Scan(
@@ -164,15 +160,14 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 				&duration,
 				&consultation,
 				&webinar,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllPackage => ", sqlError)
+				utils.PushLogf("SQL error on GetAllPackage => ", sqlError.Error())
 			} else {
 				packageList = append(
 					packageList,
@@ -189,8 +184,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 						CreatedDate:   createdDate,
 						ModifiedBy:    modifiedBy,
 						ModifiedDate:  modifiedDate,
-						DeletedBy:     deletedBy,
-						DeletedDate:   deletedDate,
+						IsDeleted:     isDeleted,
 						Duration:      duration,
 						Consultation:  consultation,
 						Webinar:       webinar,
@@ -206,9 +200,9 @@ func (packageRepository *packageRepository) GetAllPackageCount(filter string) (i
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_class_package  
+		master.master_package  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)
@@ -216,7 +210,7 @@ func (packageRepository *packageRepository) GetAllPackageCount(filter string) (i
 	row := packageRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPackageCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPackageCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
@@ -229,18 +223,18 @@ func (packageRepository *packageRepository) GetAllBenefit(skip, take int, filter
 		id,
 		code,
 		class_code,
-		value,
-		benefit_image,
+		description,
+		icon_benefit,
+		sequence,
 		is_active,
 		created_by,
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM master_benefit
+		is_deleted
+	FROM master.master_benefit
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -250,34 +244,34 @@ func (packageRepository *packageRepository) GetAllBenefit(skip, take int, filter
 	rows, sqlError := packageRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllBenefit => ", sqlError)
+		utils.PushLogf("SQL error on GetAllBenefit => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
-			var id int
+			var id, sequence int
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
 			var code, value, classCode, createdBy string
-			var benefitImage, modifiedBy, deletedBy sql.NullString
+			var iconBenefit, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
 				&code,
 				&classCode,
 				&value,
-				&benefitImage,
+				&iconBenefit,
+				&sequence,
 				&isActive,
 				&createdBy,
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllPackage => ", sqlError)
+				utils.PushLogf("SQL error on GetAllBenefit => ", sqlError.Error())
 			} else {
 				packageList = append(
 					packageList,
@@ -285,15 +279,15 @@ func (packageRepository *packageRepository) GetAllBenefit(skip, take int, filter
 						ID:           id,
 						Code:         code,
 						ClassCode:    classCode,
-						Value:        value,
-						BenefitImage: benefitImage,
+						Description:  value,
+						IconBenefit:  iconBenefit,
+						Sequence:     sequence,
 						IsActive:     isActive,
 						CreatedBy:    createdBy,
 						CreatedDate:  createdDate,
 						ModifiedBy:   modifiedBy,
 						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						IsDeleted:    isDeleted,
 					},
 				)
 			}

@@ -31,10 +31,10 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 	SELECT
 		id,
 		code,
-		category_code,
-		header_image,
-		banner_image,
-		video_code,
+		story_category_code,
+		image_banner_story,
+		image_header_story,
+		video_story,
 		title,
 		content,
 		source,
@@ -43,12 +43,11 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
+		is_deleted
 	FROM 
-		master_story
+		master.master_story
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -58,16 +57,16 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 	rows, sqlError := storyRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllStory => ", sqlError)
+		utils.PushLogf("SQL error on GetAllStory => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var id int
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
 			var code, categoryCode, title, content, createdBy string
-			var source, headerImg, bannerImg, videoCode, modifiedBy, deletedBy sql.NullString
+			var source, headerImg, bannerImg, videoCode, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -84,32 +83,30 @@ func (storyRepository *storyRepository) GetAllStory(skip, take int, filter strin
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllStory => ", sqlError)
+				utils.PushLogf("SQL error on GetAllStory => ", sqlError.Error())
 			} else {
 				storyList = append(
 					storyList,
 					model.Story{
-						ID:           id,
-						Code:         code,
-						CategoryCode: categoryCode,
-						HeaderImage:  headerImg,
-						BannerImage:  bannerImg,
-						VideoCode:    videoCode,
-						Title:        title,
-						Content:      content,
-						Source:       source,
-						IsActive:     isActive,
-						CreatedBy:    createdBy,
-						CreatedDate:  createdDate,
-						ModifiedBy:   modifiedBy,
-						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						ID:                id,
+						Code:              code,
+						StoryCategoryCode: categoryCode,
+						ImageHeaderStory:  headerImg,
+						ImageBannerStory:  bannerImg,
+						VideoStory:        videoCode,
+						Title:             title,
+						Content:           content,
+						Source:            source,
+						IsActive:          isActive,
+						CreatedBy:         createdBy,
+						CreatedDate:       createdDate,
+						ModifiedBy:        modifiedBy,
+						ModifiedDate:      modifiedDate,
+						IsDeleted:         isDeleted,
 					},
 				)
 			}
@@ -122,9 +119,9 @@ func (storyRepository *storyRepository) GetAllStoryCount(filter string) (int, er
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_story  
+		master.master_story  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)
@@ -132,7 +129,7 @@ func (storyRepository *storyRepository) GetAllStoryCount(filter string) (int, er
 	row := storyRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllStoryCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllStoryCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError

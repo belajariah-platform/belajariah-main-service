@@ -45,8 +45,7 @@ func (exerciseReadingUsecase *exerciseReadingUsecase) GetAllExerciseReading(quer
 				Created_Date:  value.CreatedDate,
 				Modified_By:   value.ModifiedBy.String,
 				Modified_Date: value.ModifiedDate.Time,
-				Deleted_By:    value.DeletedBy.String,
-				Deleted_Date:  value.DeletedDate.Time,
+				Is_Deleted:    value.IsDeleted,
 			})
 		}
 	}

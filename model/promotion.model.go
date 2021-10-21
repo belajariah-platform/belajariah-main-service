@@ -15,8 +15,8 @@ type Promotion struct {
 	PromoTypeCode sql.NullString
 	PromoType     sql.NullString
 	Discount      sql.NullFloat64
-	BannerImage   sql.NullString
-	HeaderImage   sql.NullString
+	ImageBanner   sql.NullString
+	ImageHeader   sql.NullString
 	ExpiredDate   sql.NullTime
 	QuotaUser     sql.NullInt64
 	QuotaUsed     sql.NullInt64
@@ -25,6 +25,5 @@ type Promotion struct {
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
-	DeletedBy     sql.NullString
-	DeletedDate   sql.NullTime
+	IsDeleted     bool
 }

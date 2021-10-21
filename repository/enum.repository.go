@@ -40,11 +40,10 @@ func (enumRepository *enumRepository) GetAllEnum(skip, take int, filter string) 
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
-	FROM master_enum
+		is_deleted
+	FROM master.master_enum
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -53,15 +52,15 @@ func (enumRepository *enumRepository) GetAllEnum(skip, take int, filter string) 
 	rows, sqlError := enumRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllEnum => ", sqlError)
+		utils.PushLogf("SQL error on GetAllEnum => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
 			var id int
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
-			var modifiedBy, deletedBy sql.NullString
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
+			var modifiedBy sql.NullString
 			var types, value, code, createdBy string
 
 			sqlError := rows.Scan(
@@ -74,12 +73,11 @@ func (enumRepository *enumRepository) GetAllEnum(skip, take int, filter string) 
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllEnum => ", sqlError)
+				utils.PushLogf("SQL error on GetAllEnum => ", sqlError.Error())
 			} else {
 				enumList = append(
 					enumList,
@@ -93,8 +91,7 @@ func (enumRepository *enumRepository) GetAllEnum(skip, take int, filter string) 
 						CreatedDate:  createdDate,
 						ModifiedBy:   modifiedBy,
 						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						IsDeleted:    isDeleted,
 					},
 				)
 			}
@@ -107,9 +104,9 @@ func (enumRepository *enumRepository) GetAllEnumCount(filter string) (int, error
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		master_enum  
+		master.master_enum  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true
 	%s
 	`, filter)
@@ -117,7 +114,7 @@ func (enumRepository *enumRepository) GetAllEnumCount(filter string) (int, error
 	row := enumRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllEnumCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllEnumCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
@@ -131,9 +128,9 @@ func (enumRepository *enumRepository) GetEnum(values string) (model.Enum, error)
 		code,
 		type,
 		value
-	FROM master_enum
+	FROM master.master_enum
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true AND
 		value=$1
 	`, values)
@@ -149,7 +146,7 @@ func (enumRepository *enumRepository) GetEnum(values string) (model.Enum, error)
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetEnum => ", sqlError)
+		utils.PushLogf("SQL error on GetEnum => ", sqlError.Error())
 		return model.Enum{}, nil
 	} else {
 		enumRow = model.Enum{
@@ -171,9 +168,9 @@ func (enumRepository *enumRepository) GetEnumSplit(values string) (model.Enum, e
 		type,
 		value
 	FROM 
-		master_enum
+		master.master_enum
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted = false AND
 		is_active=true AND
 		split_part(value, '|', 1)=$1
 	`, values)
@@ -189,7 +186,7 @@ func (enumRepository *enumRepository) GetEnumSplit(values string) (model.Enum, e
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetEnumSplit => ", sqlError)
+		utils.PushLogf("SQL error on GetEnumSplit => ", sqlError.Error())
 		return model.Enum{}, nil
 	} else {
 		enumRow = model.Enum{

@@ -10,20 +10,19 @@ type Learning struct {
 	Code             string
 	ClassCode        string
 	Title            string
-	SubTitles        []SubLearning
-	Exercises        ExerciseReading
 	DocumentPath     sql.NullString
 	DocumentName     sql.NullString
-	Sequence         sql.NullInt64
-	IsExercise       sql.NullBool
+	Sequence         int
+	IsExercise       bool
 	IsDirectLearning bool
 	IsActive         bool
 	CreatedBy        string
 	CreatedDate      time.Time
 	ModifiedBy       sql.NullString
 	ModifiedDate     sql.NullTime
-	DeletedBy        sql.NullString
-	DeletedDate      sql.NullTime
+	IsDeleted        bool
+	Exercises        ExerciseReading
+	SubTitles        []SubLearning
 }
 
 type SubLearning struct {
@@ -35,14 +34,13 @@ type SubLearning struct {
 	Video         sql.NullString
 	Document      sql.NullString
 	Poster        sql.NullString
-	Exercises     []Exercise
-	Sequence      sql.NullInt64
-	IsExercise    sql.NullBool
+	Sequence      int
+	IsExercise    bool
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
-	DeletedBy     sql.NullString
-	DeletedDate   sql.NullTime
+	IsDeleted     bool
+	Exercises     []Exercise
 }

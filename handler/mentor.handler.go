@@ -65,15 +65,15 @@ func (mentorHandler *mentorHandler) GetAllMentor(ctx *gin.Context) {
 		mentorResult, count, err = mentorHandler.mentorUsecase.GetAllMentor(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
-				"data":      mentorResult,
-				"dataCount": count,
-				"error":     "",
+				"data":  mentorResult,
+				"count": count,
+				"error": "",
 			})
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":      mentorResult,
-				"dataCount": count,
-				"error":     err.Error(),
+				"data":  mentorResult,
+				"count": count,
+				"error": err.Error(),
 			})
 		}
 

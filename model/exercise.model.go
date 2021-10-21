@@ -9,15 +9,13 @@ type Exercise struct {
 	ID            int
 	Code          string
 	SubtitleCode  string
-	ImageCode     int
-	ExerciseImage string
+	ImageExercise sql.NullString
 	IsActive      bool
 	CreatedBy     string
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
-	DeletedBy     sql.NullString
-	DeletedDate   sql.NullTime
+	IsDeleted     bool
 }
 
 type ExerciseReading struct {
@@ -32,8 +30,7 @@ type ExerciseReading struct {
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
-	DeletedBy    sql.NullString
-	DeletedDate  sql.NullTime
+	IsDeleted    bool
 }
 
 type UserExerciseReading struct {
@@ -49,6 +46,5 @@ type UserExerciseReading struct {
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
-	DeletedBy     sql.NullString
-	DeletedDate   sql.NullTime
+	IsDeleted     bool
 }

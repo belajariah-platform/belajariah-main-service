@@ -21,21 +21,20 @@ type Package struct {
 	CreatedDate   time.Time
 	ModifiedBy    sql.NullString
 	ModifiedDate  sql.NullTime
-	DeletedBy     sql.NullString
-	DeletedDate   sql.NullTime
+	IsDeleted     bool
 }
 
 type Benefit struct {
 	ID           int
 	Code         string
 	ClassCode    string
-	Value        string
-	BenefitImage sql.NullString
+	Description  string
+	IconBenefit  sql.NullString
+	Sequence     int
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
-	DeletedBy    sql.NullString
-	DeletedDate  sql.NullTime
+	IsDeleted    bool
 }

@@ -53,8 +53,8 @@ func (promotionUsecase *promotionUsecase) GetAllPromotion(query model.Query) ([]
 				Promo_Type_Code: value.PromoTypeCode.String,
 				Promo_Type:      value.PromoType.String,
 				Discount:        value.Discount.Float64,
-				Banner_Image:    value.BannerImage.String,
-				Header_Image:    value.HeaderImage.String,
+				Image_Banner:    value.ImageBanner.String,
+				Image_Header:    value.ImageHeader.String,
 				Expired_Date:    utils.HandleNullableDate(value.ExpiredDate.Time),
 				Quota_User:      int(value.QuotaUser.Int64),
 				Quota_Used:      int(value.QuotaUsed.Int64),
@@ -63,8 +63,7 @@ func (promotionUsecase *promotionUsecase) GetAllPromotion(query model.Query) ([]
 				Created_Date:    value.CreatedDate,
 				Modified_By:     value.ModifiedBy.String,
 				Modified_Date:   value.ModifiedDate.Time,
-				Deleted_By:      value.DeletedBy.String,
-				Deleted_Date:    value.DeletedDate.Time,
+				Is_Deleted:      value.IsDeleted,
 			})
 		}
 	}
@@ -90,8 +89,8 @@ func (promotionUsecase *promotionUsecase) GetPromotion(code string) (shape.Promo
 		Promo_Type:      promotion.PromoType.String,
 		Promo_Type_Code: promotion.PromoTypeCode.String,
 		Discount:        promotion.Discount.Float64,
-		Banner_Image:    promotion.BannerImage.String,
-		Header_Image:    promotion.HeaderImage.String,
+		Image_Banner:    promotion.ImageBanner.String,
+		Image_Header:    promotion.ImageHeader.String,
 		Expired_Date:    utils.HandleNullableDate(promotion.ExpiredDate.Time),
 		Quota_User:      int(promotion.QuotaUser.Int64),
 		Quota_Used:      int(promotion.QuotaUsed.Int64),
@@ -100,8 +99,7 @@ func (promotionUsecase *promotionUsecase) GetPromotion(code string) (shape.Promo
 		Created_Date:    promotion.CreatedDate,
 		Modified_By:     promotion.ModifiedBy.String,
 		Modified_Date:   promotion.ModifiedDate.Time,
-		Deleted_By:      promotion.DeletedBy.String,
-		Deleted_Date:    promotion.DeletedDate.Time,
+		Is_Deleted:      promotion.IsDeleted,
 	}
 	return promotionResult, err
 }

@@ -15,11 +15,12 @@ type Class struct {
 	ClassDescription      sql.NullString
 	ClassImage            sql.NullString
 	ClassVideo            sql.NullString
+	ClassDocument         sql.NullString
 	ClassRating           float64
 	TotalReview           int
 	TotalVideo            int
-	TotalVideoDuration    float64
-	InstructorName        string
+	TotalVideoDuration    int
+	InstructorName        sql.NullString
 	InstructorDescription sql.NullString
 	InstructorBiografi    sql.NullString
 	InstructorImage       sql.NullString
@@ -29,6 +30,5 @@ type Class struct {
 	CreatedDate           time.Time
 	ModifiedBy            sql.NullString
 	ModifiedDate          sql.NullTime
-	DeletedBy             sql.NullString
-	DeletedDate           sql.NullTime
+	IsDeleted             bool
 }

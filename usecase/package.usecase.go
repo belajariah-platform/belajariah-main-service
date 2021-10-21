@@ -50,8 +50,7 @@ func (packageUsecase *packageUsecase) GetAllPackage(query model.Query) ([]shape.
 				Created_Date:   value.CreatedDate,
 				Modified_By:    value.ModifiedBy.String,
 				Modified_Date:  value.ModifiedDate.Time,
-				Deleted_By:     value.DeletedBy.String,
-				Deleted_Date:   value.DeletedDate.Time,
+				Is_Deleted:     value.IsDeleted,
 			})
 		}
 	}
@@ -77,15 +76,15 @@ func (packageUsecase *packageUsecase) GetAllBenefit(query model.Query) ([]shape.
 				ID:            value.ID,
 				Code:          value.Code,
 				Class_Code:    value.ClassCode,
-				Value:         value.Value,
-				Benefit_Image: value.BenefitImage.String,
+				Description:   value.Description,
+				Icon_Benefit:  value.IconBenefit.String,
+				Sequence:      value.Sequence,
 				Is_Active:     value.IsActive,
 				Created_By:    value.CreatedBy,
 				Created_Date:  value.CreatedDate,
 				Modified_By:   value.ModifiedBy.String,
 				Modified_Date: value.ModifiedDate.Time,
-				Deleted_By:    value.DeletedBy.String,
-				Deleted_Date:  value.DeletedDate.Time,
+				Is_Deleted:    value.IsDeleted,
 			})
 		}
 	}

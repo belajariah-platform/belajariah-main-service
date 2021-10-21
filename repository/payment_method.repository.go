@@ -35,18 +35,17 @@ func (paymentMethodRepository *paymentMethodRepository) GetAllPaymentMethod(skip
 		value,
 		account_name,
 		account_number,
-		method_image,
+		icon_account,
 		is_active,
 		created_by,
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
+		is_deleted
 	FROM 
-		v_m_payment_method 
+		master.master_payment_method 
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	OFFSET %d
@@ -55,16 +54,16 @@ func (paymentMethodRepository *paymentMethodRepository) GetAllPaymentMethod(skip
 
 	rows, sqlError := paymentMethodRepository.db.Query(query)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPaymentMethod => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPaymentMethod => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var id int
-			var isActive bool
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
 			var code, types, values, createdBy string
-			var accountName, accountNumber, methodImage, modifiedBy, deletedBy sql.NullString
+			var accountName, accountNumber, iconAccount, modifiedBy sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -73,14 +72,13 @@ func (paymentMethodRepository *paymentMethodRepository) GetAllPaymentMethod(skip
 				&values,
 				&accountName,
 				&accountNumber,
-				&methodImage,
+				&iconAccount,
 				&isActive,
 				&createdBy,
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
@@ -95,14 +93,13 @@ func (paymentMethodRepository *paymentMethodRepository) GetAllPaymentMethod(skip
 						Value:         values,
 						AccountName:   accountName,
 						AccountNumber: accountNumber,
-						MethodImage:   methodImage,
+						IconAccount:   iconAccount,
 						IsActive:      isActive,
 						CreatedBy:     createdBy,
 						CreatedDate:   createdDate,
 						ModifiedBy:    modifiedBy,
 						ModifiedDate:  modifiedDate,
-						DeletedBy:     deletedBy,
-						DeletedDate:   deletedDate,
+						IsDeleted:     isDeleted,
 					},
 				)
 			}
@@ -115,9 +112,9 @@ func (paymentMethodRepository *paymentMethodRepository) GetAllPaymentMethodCount
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_m_payment_method  
+		master.master_payment_method  
 	WHERE 
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_active=true
 	%s
 	`, filter)

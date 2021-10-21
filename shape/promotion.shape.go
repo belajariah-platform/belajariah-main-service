@@ -14,8 +14,8 @@ type Promotion struct {
 	Promo_Type_Code string
 	Promo_Type      string
 	Discount        float64
-	Banner_Image    string
-	Header_Image    string
+	Image_Banner    string
+	Image_Header    string
 	Expired_Date    string
 	Quota_User      int
 	Quota_Used      int
@@ -24,8 +24,7 @@ type Promotion struct {
 	Created_Date    time.Time
 	Modified_By     string
 	Modified_Date   time.Time
-	Deleted_By      string
-	Deleted_Date    time.Time
+	Is_Deleted      bool
 }
 
 type PromotionClaim struct {

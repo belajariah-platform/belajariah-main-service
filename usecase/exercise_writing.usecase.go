@@ -37,15 +37,13 @@ func (exerciseUsecase *exerciseUsecase) GetAllExercise(query model.Query) ([]sha
 				ID:             value.ID,
 				Code:           value.Code,
 				Subtitle_Code:  value.SubtitleCode,
-				Image_Code:     value.ImageCode,
-				Exercise_Image: value.ExerciseImage,
+				Image_Exercise: value.ImageExercise.String,
 				Is_Active:      value.IsActive,
 				Created_By:     value.CreatedBy,
 				Created_Date:   value.CreatedDate,
 				Modified_By:    value.ModifiedBy.String,
 				Modified_Date:  value.ModifiedDate.Time,
-				Deleted_By:     value.DeletedBy.String,
-				Deleted_Date:   value.DeletedDate.Time,
+				Is_Deleted:     value.IsDeleted,
 			})
 		}
 	}
