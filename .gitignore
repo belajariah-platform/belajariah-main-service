@@ -60,9 +60,8 @@ Temporary Items
 
 .env
 .env.local
-lintas-port-main-service
 launch.json
-lintas-port-main-service
+belajariah-main.json
 
 /node_modules
 package-lock.json

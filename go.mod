@@ -9,6 +9,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/lib/pq v1.8.0
+	github.com/pkg/errors v0.9.1
 	github.com/s12v/go-jwks v0.2.1
 	github.com/square/go-jose v2.5.1+incompatible
 	github.com/yudapc/go-rupiah v0.0.0-20191125064410-802df8589ba5

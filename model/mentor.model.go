@@ -48,4 +48,5 @@ type MentorSchedule struct {
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
+	TimeZone     sql.NullString
 }

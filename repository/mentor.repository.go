@@ -273,7 +273,8 @@ func (mentorRepository *mentorRepository) GetAllMentorSchedule(code int) ([]mode
 		created_by,
 		created_date,
 		modified_by,
-		modified_date
+		modified_date,
+		time_zone
 	FROM 
 		public.master_mentor_schedule
 	WHERE 
@@ -292,7 +293,7 @@ func (mentorRepository *mentorRepository) GetAllMentorSchedule(code int) ([]mode
 			var isActive bool
 			var id, mentorCode int
 			var modifiedDate sql.NullTime
-			var modifiedBy sql.NullString
+			var modifiedBy, timeZone sql.NullString
 			var createdBy, shiftName string
 			var startAt, endAt, createdDate time.Time
 
@@ -307,6 +308,7 @@ func (mentorRepository *mentorRepository) GetAllMentorSchedule(code int) ([]mode
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
+				&timeZone,
 			)
 
 			if sqlError != nil {
@@ -324,6 +326,7 @@ func (mentorRepository *mentorRepository) GetAllMentorSchedule(code int) ([]mode
 						CreatedDate:  createdDate,
 						ModifiedBy:   modifiedBy,
 						ModifiedDate: modifiedDate,
+						TimeZone:     timeZone,
 					},
 				)
 			}

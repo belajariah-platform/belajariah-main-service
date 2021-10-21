@@ -96,6 +96,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 						Created_Date:  schedule.CreatedDate,
 						Modified_By:   schedule.ModifiedBy.String,
 						Modified_Date: schedule.ModifiedDate.Time,
+						Time_Zone:     schedule.TimeZone.String,
 					})
 				}
 			}

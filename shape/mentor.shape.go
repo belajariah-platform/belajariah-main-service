@@ -47,4 +47,5 @@ type MentorSchedule struct {
 	Created_Date  time.Time
 	Modified_By   string
 	Modified_Date time.Time
+	Time_Zone     string
 }
