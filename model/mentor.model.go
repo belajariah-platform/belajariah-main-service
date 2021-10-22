@@ -7,11 +7,11 @@ import (
 
 type Mentor struct {
 	ID                 int
+	Code               string
+	MentorCode         int
 	RoleCode           string
 	Role               string
 	Email              string
-	ClassCode          string
-	MentorCode         int
 	FullName           sql.NullString
 	Phone              sql.NullInt64
 	Profession         sql.NullString
@@ -20,16 +20,15 @@ type Mentor struct {
 	Province           sql.NullString
 	City               sql.NullString
 	Address            sql.NullString
-	ImageCode          sql.NullString
-	ImageFilename      sql.NullString
-	ImageFilepath      sql.NullString
-	Biografi           sql.NullString
+	Birth              sql.NullTime
+	ImageProfile       sql.NullString
 	Description        sql.NullString
-	Rating             float64
+	AccountOwner       sql.NullString
+	AccountName        sql.NullString
+	AccountNumber      sql.NullString
 	LearningMethod     sql.NullString
 	LearningMethodText sql.NullString
-	TaskCompleted      int
-	TaskInprogress     int
+	Rating             float64
 	IsActive           bool
 	CreatedBy          string
 	CreatedDate        time.Time
@@ -39,14 +38,30 @@ type Mentor struct {
 
 type MentorSchedule struct {
 	ID           int
-	MentorCode   int
+	Code         string
+	MentorCode   string
 	ShiftName    string
-	StartAt      time.Time
-	EndAt        time.Time
+	StartDate    time.Time
+	EndDate      time.Time
+	TimeZone     string
+	Sequence     int
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
-	TimeZone     sql.NullString
+	IsDeleted    bool
+}
+
+type MentorExperience struct {
+	ID           int
+	Code         string
+	MentorCode   string
+	Experience   string
+	IsActive     bool
+	CreatedBy    string
+	CreatedDate  time.Time
+	ModifiedBy   sql.NullString
+	ModifiedDate sql.NullTime
+	IsDeleted    bool
 }

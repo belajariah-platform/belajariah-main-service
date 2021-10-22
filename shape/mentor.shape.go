@@ -6,9 +6,9 @@ import (
 
 type Mentor struct {
 	ID                   int
-	Role_Code            string
-	Class_Code           string
+	Code                 string
 	Mentor_Code          int
+	Role_Code            string
 	Role                 string
 	Email                string
 	Full_Name            string
@@ -19,33 +19,50 @@ type Mentor struct {
 	Province             string
 	City                 string
 	Address              string
+	Birth                time.Time
+	ImageProfile         string
 	Description          string
-	Image_Code           string
-	Image_Filename       string
-	Image_Filepath       string
-	Rating               float64
+	Account_Owner        string
+	Account_Name         string
+	Account_Number       string
 	Learning_Method      string
 	Learning_Method_Text string
-	Task_Completed       int
-	Task_Inprogress      int
+	Rating               float64
 	Is_Active            bool
 	Created_By           string
 	Created_Date         time.Time
 	Modified_By          string
 	Modified_Date        time.Time
-	Schedule             []MentorSchedule
+	Mentor_Schedule      []MentorSchedule
+	Mentor_Experience    []MentorExperience
 }
 
 type MentorSchedule struct {
 	ID            int
-	Mentor_Code   int
+	Code          string
+	Mentor_Code   string
 	Shift_Name    string
-	Start_At      time.Time
-	End_At        time.Time
+	Start_Date    time.Time
+	End_Date      time.Time
+	Time_Zone     string
+	Sequence      int
 	Is_Active     bool
 	Created_By    string
 	Created_Date  time.Time
 	Modified_By   string
 	Modified_Date time.Time
-	Time_Zone     string
+	Is_Deleted    bool
+}
+
+type MentorExperience struct {
+	ID            int
+	Code          string
+	Mentor_Code   string
+	Experience    string
+	Is_Active     bool
+	Created_By    string
+	Created_Date  time.Time
+	Modified_By   string
+	Modified_Date time.Time
+	Is_Deleted    bool
 }
