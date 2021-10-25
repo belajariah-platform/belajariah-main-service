@@ -15,13 +15,12 @@ type mentorRepository struct {
 }
 
 type MentorRepository interface {
-	GetMentorInfo(email string) (model.Mentor, error)
+	GetMentorInfo(email string) (model.MentorInfo, error)
 
-	GetAllMentor(skip, take int, sort, search, filter string) ([]model.Mentor, error)
+	GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error)
 	GetAllMentorCount(filter string) (int, error)
 
 	GetAllMentorSchedule(code string) ([]model.MentorSchedule, error)
-
 	GetAllMentorExperience(code string) ([]model.MentorExperience, error)
 }
 
@@ -31,8 +30,8 @@ func InitMentorRepository(db *sqlx.DB) MentorRepository {
 	}
 }
 
-func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Mentor, error) {
-	var mentorRow model.Mentor
+func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error) {
+	var mentorRow model.MentorInfo
 	row := mentorRepository.db.QueryRow(`
 	SELECT
 		id,
@@ -109,9 +108,9 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 	)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetMentorInfo => ", sqlError.Error())
-		return model.Mentor{}, nil
+		return model.MentorInfo{}, nil
 	} else {
-		mentorRow = model.Mentor{
+		mentorRow = model.MentorInfo{
 			ID:                 id,
 			Code:               code,
 			RoleCode:           roleCode,
@@ -144,8 +143,8 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 	}
 }
 
-func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, search, filter string) ([]model.Mentor, error) {
-	var mentorList []model.Mentor
+func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error) {
+	var mentorList []model.MentorInfo
 	query := fmt.Sprintf(`
 		SELECT
 			id,
@@ -237,7 +236,7 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 				utils.PushLogf("SQL error on GetAllMentor => ", sqlError.Error())
 			} else {
 				mentorList = append(mentorList,
-					model.Mentor{
+					model.MentorInfo{
 						ID:                 id,
 						Code:               code,
 						RoleCode:           roleCode,

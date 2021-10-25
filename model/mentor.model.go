@@ -5,7 +5,26 @@ import (
 	"time"
 )
 
-type Mentor struct {
+type Mentors struct {
+	ID           int
+	Code         string
+	RoleCode     string
+	Email        string
+	Password     string
+	NewPassword  string
+	OldPassword  string
+	FullName     sql.NullString
+	Phone        sql.NullInt64
+	VerifiedCode sql.NullString
+	IsVerified   bool
+	IsActive     bool
+	CreatedBy    string
+	CreatedDate  time.Time
+	ModifiedBy   sql.NullString
+	ModifiedDate sql.NullTime
+}
+
+type MentorInfo struct {
 	ID                 int
 	Code               string
 	MentorCode         int

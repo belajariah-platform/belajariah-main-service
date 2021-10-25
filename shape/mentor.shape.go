@@ -4,7 +4,28 @@ import (
 	"time"
 )
 
-type Mentor struct {
+type Mentors struct {
+	ID            int
+	Code          string
+	Role_Code     string
+	Email         string
+	Password      string
+	Old_Password  string
+	New_Password  string
+	Full_Name     string
+	Phone         int64
+	Verified_Code string
+	Is_Verified   bool
+	Is_Active     bool
+	Created_By    string
+	Created_Date  time.Time
+	Modified_By   string
+	Modified_Date time.Time
+	Deleted_By    string
+	Deleted_Date  time.Time
+}
+
+type MentorInfo struct {
 	ID                   int
 	Code                 string
 	Mentor_Code          int

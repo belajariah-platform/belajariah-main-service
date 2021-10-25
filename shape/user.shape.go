@@ -6,6 +6,7 @@ import (
 
 type Users struct {
 	ID            int
+	Code          string
 	Role_Code     string
 	Email         string
 	Password      string
@@ -25,27 +26,27 @@ type Users struct {
 }
 
 type UserInfo struct {
-	ID             int
-	Role_Code      string
-	Role           string
-	Email          string
-	Full_Name      string
-	Phone          int
-	Profession     string
-	Gender         string
-	Age            int
-	Birth          string
-	Province       string
-	City           string
-	Address        string
-	Image_Code     string
-	Image_Filename string
-	Is_Verified    bool
-	Is_Active      bool
-	Created_By     string
-	Created_Date   time.Time
-	Modified_By    string
-	Modified_Date  time.Time
+	ID            int
+	Code          string
+	Role_Code     string
+	Role          string
+	Email         string
+	Full_Name     string
+	Phone         int
+	Profession    string
+	Gender        string
+	Age           int
+	Birth         string
+	Province      string
+	City          string
+	Address       string
+	Image_Profile string
+	Is_Verified   bool
+	Is_Active     bool
+	Created_By    string
+	Created_Date  time.Time
+	Modified_By   string
+	Modified_Date time.Time
 }
 
 type UsersPost struct {

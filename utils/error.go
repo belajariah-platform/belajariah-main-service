@@ -10,6 +10,7 @@ import (
 // WrapError => use this function to wrap stack trace of errors
 // when performing error handling
 func WrapError(err error, message string) error {
+	PushLogf(message, err.Error())
 	return errors.Wrap(err, fmt.Sprintf("%s =>", message))
 }
 

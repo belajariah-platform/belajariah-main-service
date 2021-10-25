@@ -6,7 +6,8 @@ import (
 
 type UserClass struct {
 	ID                 int
-	User_Code          int
+	Code               string
+	User_Code          string
 	Class_Code         string
 	Class_Name         string
 	Class_Initial      string
@@ -48,7 +49,8 @@ type UserClass struct {
 
 type UserClassPost struct {
 	ID                int
-	User_Code         int
+	Code              string
+	User_Code         string
 	Class_Code        string
 	Class_Name        string
 	Class_Initial     string

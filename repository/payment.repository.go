@@ -38,6 +38,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 	query := fmt.Sprintf(`
 	SELECT
 		id,
+		code,
 		user_code,
 		user_name,
 		class_code,
@@ -74,22 +75,23 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 		modified_by,
 		modified_date
 	FROM 
-		v_t_payment 
+		transaction.v_t_payment 
 		%s
 	`, filter)
 	row := paymentsRepository.db.QueryRow(query)
 
 	var isActive bool
+	var id, totalTransfer int
 	var createdDate time.Time
 	var modifiedDate sql.NullTime
 	var promoDiscount sql.NullFloat64
-	var id, userCode, totalTransfer int
 	var totalConsultation, totalWebinar, packageDiscount sql.NullInt64
 	var promoCode, promoTitle, accountName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy, classImage, paymentMethodImage sql.NullString
-	var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy, paymentMethodType string
+	var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy, paymentMethodType, code, userCode string
 
 	sqlError := row.Scan(
 		&id,
+		&code,
 		&userCode,
 		&userName,
 		&classCode,
@@ -127,7 +129,7 @@ func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.P
 		&modifiedDate,
 	)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetPayment => ", sqlError)
+		utils.PushLogf("SQL error on GetPayment => ", sqlError.Error())
 		return model.Payment{}, nil
 	} else {
 		paymentRow = model.Payment{
@@ -206,7 +208,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 		created_date,
 		modified_by,
 		modified_date
-	FROM v_t_payment
+	FROM transaction.v_t_payment
 		WHERE is_active = true
 		%s %s %s %s
 	OFFSET %d
@@ -216,19 +218,20 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 	rows, sqlError := paymentsRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPayment => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPayment => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var isActive bool
+			var id, totalTransfer int
 			var createdDate time.Time
 			var modifiedDate sql.NullTime
-			var id, userCode, totalTransfer int
-			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy, paymentMethodType string
+			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy, paymentMethodType, code, userCode string
 			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, imageFilename, modifiedBy, paymentMethodImage sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&userCode,
 				&userName,
 				&classCode,
@@ -261,7 +264,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllPayment => ", sqlError)
+				utils.PushLogf("SQL error on GetAllPayment => ", sqlError.Error())
 			} else {
 				paymentList = append(
 					paymentList,
@@ -308,7 +311,7 @@ func (paymentsRepository *paymentsRepository) GetAllPaymentCount(filter, filterU
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM
-		v_t_payment 
+		transaction.v_t_payment 
 	WHERE
 		is_active = true 
 		%s
@@ -318,7 +321,7 @@ func (paymentsRepository *paymentsRepository) GetAllPaymentCount(filter, filterU
 	row := paymentsRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPaymentCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllPaymentCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
@@ -355,7 +358,7 @@ func insertPayment(tx *sql.Tx, payment model.Payment) (model.Payment, error) {
 	var id int
 	var paymentRow model.Payment
 	err := tx.QueryRow(`
-	INSERT INTO transact_payment
+	INSERT INTO transaction.transact_payment
 	(
 		user_code,
 		class_code,
@@ -442,7 +445,7 @@ func (paymentsRepository *paymentsRepository) UploadPayment(payment model.Paymen
 func uploadPayment(tx *sql.Tx, payment model.Payment) error {
 	_, err := tx.Exec(`
 	UPDATE
-		transact_payment
+		transaction.transact_payment
 	 SET
 		payment_method_code=$1,
 		status_payment=$2,
@@ -495,7 +498,7 @@ func (paymentsRepository *paymentsRepository) ConfirmPayment(payment model.Payme
 func confirmPayment(tx *sql.Tx, payment model.Payment) error {
 	_, err := tx.Exec(`
 	UPDATE
-		transact_payment
+		transaction.transact_payment
 	 SET
 		status_payment=$1,
 		payment_type=$2,
@@ -523,19 +526,19 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentExpired() ([]model.
 		id,
 		user_code,
 		status_payment_code
-	FROM v_t_payment
+	FROM transaction.v_t_payment
 	WHERE  
 		modified_date + interval '1440 minutes' <= now() AND 
 		status_payment IN ('Waiting for Payment');
 	`)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError)
+		utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var id, userCode int
-			var statusPaymentCode string
+			var id int
+			var statusPaymentCode, code, userCode string
 
 			sqlError := rows.Scan(
 				&id,
@@ -544,10 +547,11 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentExpired() ([]model.
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError)
+				utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError.Error())
 			} else {
 				paymentList = append(paymentList, model.Payment{
 					ID:                id,
+					Code:              code,
 					UserCode:          userCode,
 					StatusPaymentCode: statusPaymentCode,
 				})
@@ -566,7 +570,7 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentBeforeExpired() ([]
 		user_code,
 		status_payment_code,
 		modified_date
-	FROM v_t_payment
+	FROM transaction.v_t_payment
 	WHERE  
 		DATE_PART('day', modified_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
 		DATE_PART('hour', modified_date::timestamp - now()::timestamp) * 60 * 60 +
@@ -576,13 +580,13 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentBeforeExpired() ([]
 	`)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError)
+		utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var id, userCode int
-			var statusPaymentCode string
+			var id int
 			var modifiedDate sql.NullTime
+			var statusPaymentCode, code, userCode string
 
 			sqlError := rows.Scan(
 				&id,
@@ -592,10 +596,11 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentBeforeExpired() ([]
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError)
+				utils.PushLogf("SQL error on CheckAllPaymentExpired => ", sqlError.Error())
 			} else {
 				paymentList = append(paymentList, model.Payment{
 					ID:                id,
+					Code:              code,
 					UserCode:          userCode,
 					StatusPaymentCode: statusPaymentCode,
 					ModifiedDate:      modifiedDate,

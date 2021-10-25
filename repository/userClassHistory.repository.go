@@ -45,9 +45,9 @@ func (userClassHistoryRepository *userClassHistoryRepository) GetUserClassHistor
 	`, filter)
 	row := userClassHistoryRepository.db.QueryRow(query)
 
-	var id, userCode int
+	var id int
 	var expiredDate time.Time
-	var typeCode, packageCode, statusCode, classCode string
+	var typeCode, packageCode, statusCode, classCode, userCode string
 
 	sqlError := row.Scan(
 		&id,

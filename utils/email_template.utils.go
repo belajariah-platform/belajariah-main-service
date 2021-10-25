@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-func TemplateChangePassword(email model.EmailBody) string {
-	bodyTemp := fmt.Sprintf(`
+const (
+	_changePassword = `
 	<table width="%s">
         <tr>
             <td style="display:block!important;max-width:600px!important;clear:both!important;margin:0 auto;padding:0;background-color:transparent";>
@@ -108,17 +108,9 @@ func TemplateChangePassword(email model.EmailBody) string {
                 </div>
             </td>
         </tr>
-    </table>`,
-		"100%", "100%", email.UserEmail, "100%",
-		email.WhatsApp, "100%", "60%", "100%",
-		email.GooglePLay, "100%", "40%", "100%",
-		email.Facebook, email.Youtube, email.Instagram, "100%", email.CopyRight,
-	)
-	return bodyTemp
-}
+    </table>`
 
-func TemplateRegisterSuccess(email model.EmailBody) string {
-	bodyTemp := fmt.Sprintf(`
+	_registerSuccess = `
 	<table width="%s">
 	<tr>
 		<td style="display:block!important;max-width:600px!important;clear:both!important;margin:0 auto;padding:0;background-color:transparent";>
@@ -254,21 +246,9 @@ func TemplateRegisterSuccess(email model.EmailBody) string {
 			</div>
 		</td>
 	</tr>
-	</table>`,
-		"100%", "100%", email.UserName,
-		"50%", "100%", "100%", "100%",
-		email.WhatsApp,
-		"100%", "60%", "100%",
-		email.GooglePLay,
-		"100%", "40%", "100%",
-		email.Facebook, email.Youtube, email.Instagram,
-		"100%", email.CopyRight,
-	)
-	return bodyTemp
-}
+	</table>`
 
-func TemplateAccountVerification(email model.EmailBody) string {
-	bodyTemp := fmt.Sprintf(`
+	_accountVerification = `
 	<table width="%s">
         <tr>
             <td style="display:block!important;max-width:600px!important;clear:both!important;margin:0 auto;padding:0;background-color:transparent";>
@@ -394,7 +374,35 @@ func TemplateAccountVerification(email model.EmailBody) string {
                 </div>
             </td>
         </tr>
-    </table>`,
+    </table>`
+)
+
+func TemplateChangePassword(email model.EmailBody) string {
+	bodyTemp := fmt.Sprintf(_changePassword,
+		"100%", "100%", email.UserEmail, "100%",
+		email.WhatsApp, "100%", "60%", "100%",
+		email.GooglePLay, "100%", "40%", "100%",
+		email.Facebook, email.Youtube, email.Instagram, "100%", email.CopyRight,
+	)
+	return bodyTemp
+}
+
+func TemplateRegisterSuccess(email model.EmailBody) string {
+	bodyTemp := fmt.Sprintf(_registerSuccess,
+		"100%", "100%", email.UserName,
+		"50%", "100%", "100%", "100%",
+		email.WhatsApp,
+		"100%", "60%", "100%",
+		email.GooglePLay,
+		"100%", "40%", "100%",
+		email.Facebook, email.Youtube, email.Instagram,
+		"100%", email.CopyRight,
+	)
+	return bodyTemp
+}
+
+func TemplateAccountVerification(email model.EmailBody) string {
+	bodyTemp := fmt.Sprintf(_accountVerification,
 		"100%", "100%",
 		email.UserName, email.VerificationCode,
 		"100%", "100%",

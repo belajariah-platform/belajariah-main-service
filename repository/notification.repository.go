@@ -73,10 +73,10 @@ func (notificationRepository *notificationRepository) GetNotification(filter, ty
 
 	row := notificationRepository.db.QueryRow(query)
 	var expiredDate sql.NullTime
-	var id, userCode, sequence int
+	var id, sequence int
 	var isRead, isActionTaken bool
 	var userClassCode, paymentCode sql.NullInt64
-	var code, tableRef, notificationType, notificationTypeText, userName string
+	var code, tableRef, notificationType, notificationTypeText, userName, userCode string
 
 	sqlError := row.Scan(
 		&id,

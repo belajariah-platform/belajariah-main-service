@@ -13,7 +13,7 @@ type Notification struct {
 	TableRef             string
 	NotificationType     string
 	NotificationTypeText string
-	UserCode             int
+	UserCode             string
 	UserName             string
 	Sequence             int
 	IsRead               bool

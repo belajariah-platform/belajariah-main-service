@@ -61,7 +61,7 @@ func (mentorHandler *mentorHandler) GetAllMentor(ctx *gin.Context) {
 			})
 		}
 
-		var mentorResult []shape.Mentor
+		var mentorResult []shape.MentorInfo
 		mentorResult, count, err = mentorHandler.mentorUsecase.GetAllMentor(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{

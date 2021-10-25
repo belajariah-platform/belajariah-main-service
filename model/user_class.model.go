@@ -7,7 +7,8 @@ import (
 
 type UserClass struct {
 	ID                int
-	UserCode          int
+	Code              string
+	UserCode          string
 	ClassCode         string
 	ClassName         string
 	ClassInitial      sql.NullString

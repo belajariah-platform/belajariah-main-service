@@ -13,8 +13,8 @@ type mentorUsecase struct {
 }
 
 type MentorUsecase interface {
-	GetMentorInfo(email string) (shape.Mentor, error)
-	GetAllMentor(query model.Query) ([]shape.Mentor, int, error)
+	GetMentorInfo(email string) (shape.MentorInfo, error)
+	GetAllMentor(query model.Query) ([]shape.MentorInfo, int, error)
 }
 
 func InitMentorUsecase(mentorRepository repository.MentorRepository) MentorUsecase {
@@ -23,13 +23,13 @@ func InitMentorUsecase(mentorRepository repository.MentorRepository) MentorUseca
 	}
 }
 
-func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.Mentor, error) {
+func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.MentorInfo, error) {
 	mentor, err := mentorUsecase.mentorRepository.GetMentorInfo(email)
-	if err != nil || mentor == (model.Mentor{}) {
-		return shape.Mentor{}, utils.WrapError(err, "mentorUsecase.mentorRepository.GetMentorInfo : ")
+	if err != nil || mentor == (model.MentorInfo{}) {
+		return shape.MentorInfo{}, utils.WrapError(err, "mentorUsecase.mentorRepository.GetMentorInfo : ")
 	}
 
-	mentorResult := shape.Mentor{
+	mentorResult := shape.MentorInfo{
 		ID:                   mentor.ID,
 		Code:                 mentor.Code,
 		Role_Code:            mentor.RoleCode,
@@ -62,9 +62,9 @@ func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.Mentor, e
 	return mentorResult, err
 }
 
-func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Mentor, int, error) {
-	var mentors []model.Mentor
-	var mentorResult []shape.Mentor
+func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.MentorInfo, int, error) {
+	var mentors []model.MentorInfo
+	var mentorResult []shape.MentorInfo
 	var filterQuery, sorting, search string
 
 	if len(query.Order) > 0 {
@@ -78,7 +78,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
-	mentorEmpty := make([]shape.Mentor, 0)
+	mentorEmpty := make([]shape.MentorInfo, 0)
 	mentorScheduleEmpty := make([]shape.MentorSchedule, 0)
 	mentorExperienceEmpty := make([]shape.MentorExperience, 0)
 
@@ -156,7 +156,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				mentorExperienceResult = mentorExperienceEmpty
 			}
 
-			mentorResult = append(mentorResult, shape.Mentor{
+			mentorResult = append(mentorResult, shape.MentorInfo{
 				ID:                   value.ID,
 				Code:                 value.Code,
 				Role_Code:            value.RoleCode,

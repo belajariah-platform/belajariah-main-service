@@ -9,7 +9,7 @@ type EmailBody struct {
 	BodyTemp         string
 	UserName         string
 	UserEmail        string
-	UserCode         int
+	UserCode         string
 	Count            int
 	ExpiredDate      time.Time
 	VerificationCode string

@@ -6,7 +6,7 @@ import (
 
 type Payment struct {
 	ID                   int
-	User_Code            int
+	User_Code            string
 	User_Name            string
 	Class_Code           string
 	Class_Name           string
@@ -39,7 +39,7 @@ type Payment struct {
 
 type PaymentPost struct {
 	ID                  int
-	User_Code           int
+	User_Code           string
 	User_Name           string
 	Class_Code          string
 	Class_Name          string

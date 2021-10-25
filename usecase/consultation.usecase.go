@@ -31,7 +31,7 @@ type ConsultationUsecase interface {
 
 	CheckAllConsultationExpired()
 	CheckConsultationSpamUser(userObj model.UserInfo) (int, error)
-	CheckConsultationSpamMentor(userObj model.Mentor) (int, error)
+	CheckConsultationSpamMentor(userObj model.MentorInfo) (int, error)
 }
 
 func InitConsultationUsecase(userRepository repository.UserRepository, enumRepository repository.EnumRepository, consultationRepository repository.ConsultationRepository, approvalStatusRepository repository.ApprovalStatusRepository) ConsultationUsecase {
@@ -556,7 +556,7 @@ func (consultationUsecase *consultationUsecase) CheckConsultationSpamUser(userOb
 	return count, err
 }
 
-func (consultationUsecase *consultationUsecase) CheckConsultationSpamMentor(userObj model.Mentor) (int, error) {
+func (consultationUsecase *consultationUsecase) CheckConsultationSpamMentor(userObj model.MentorInfo) (int, error) {
 	var err error
 	var count int
 	var consultationList []model.Consultation

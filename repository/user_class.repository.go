@@ -42,6 +42,7 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	query := fmt.Sprintf(`
 	SELECT
 		id,
+		code,
 		user_code,
 		class_code,
 		total_user,
@@ -67,24 +68,25 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 		total_consultation,
 		total_webinar
 	FROM 
-		v_t_user_class
+		transaction.v_t_user_class
 	WHERE 
-		deleted_by IS NULL
+		is_deleted=false
 		%s
 	`, filter)
 	row := userClassRepository.db.QueryRow(query)
 
 	var isExpired bool
 	var postTestDate sql.NullTime
+	var id, totalUser, timeDuration int
 	var startDate, expiredDate time.Time
 	var preTestTotal, postTestTotal sql.NullInt64
-	var id, userCode, totalUser, timeDuration int
 	var progress, preTestScores, postTestScores sql.NullFloat64
-	var packageCode, packageType, typeCode, types, status, statusCode, classCode string
+	var packageCode, packageType, typeCode, types, status, statusCode, classCode, userCode, code string
 	var progressCount, progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 
 	sqlError := row.Scan(
 		&id,
+		&code,
 		&userCode,
 		&classCode,
 		&totalUser,
@@ -112,11 +114,12 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetUserClass => ", sqlError)
+		utils.PushLogf("SQL error on GetUserClass => ", sqlError.Error())
 		return model.UserClass{}, nil
 	} else {
 		userClassRow = model.UserClass{
 			ID:                id,
+			Code:              code,
 			UserCode:          userCode,
 			ClassCode:         classCode,
 			TotalUser:         totalUser,
@@ -151,6 +154,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 	query := fmt.Sprintf(`
 	SELECT
 		id,
+		code,
 		user_code,
 		class_code,
 		class_name,
@@ -188,9 +192,9 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		modified_date,
 		deleted_by,
 		deleted_date
-	FROM v_t_user_class
+	FROM transaction.v_t_user_class
 	WHERE 
-		deleted_by IS NULL
+		is_deleted=false
 		%s
 	%s %s
 	OFFSET %d
@@ -200,23 +204,25 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 	rows, sqlError := userClassRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllUserClass => ", sqlError)
+		utils.PushLogf("SQL error on GetAllUserClass => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var classRating float64
 			var isExpired, isActive bool
+			var id, totalUser, timeDuration int
 			var preTestTotal, postTestTotal sql.NullInt64
-			var id, userCode, totalUser, timeDuration int
 			var startDate, expiredDate, createdDate time.Time
 			var postTestDate, modifiedDate, deletedDate sql.NullTime
 			var progress, preTestScores, postTestScores sql.NullFloat64
 			var classInitial, classDescription, classImage, modifiedBy, deletedBy sql.NullString
-			var packageCode, packageType, typeCode, types, status, statusCode, classCode, className, classCategory, createdBy string
+			var packageCode, packageType, typeCode, types, status, statusCode, classCode, className, classCategory, createdBy,
+				code, userCode string
 			var progressCount, progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&userCode,
 				&classCode,
 				&className,
@@ -257,12 +263,13 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllUserClass => ", sqlError)
+				utils.PushLogf("SQL error on GetAllUserClass => ", sqlError.Error())
 			} else {
 				userClassList = append(
 					userClassList,
 					model.UserClass{
 						ID:                id,
+						Code:              code,
 						UserCode:          userCode,
 						ClassCode:         classCode,
 						ClassName:         className,
@@ -312,9 +319,9 @@ func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, fil
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_t_user_class  
+		transaction.v_t_user_class  
 	WHERE 
-		deleted_by IS NULL
+		is_deleted=false
 		%s
 	%s
 	`, filterUser, filter)
@@ -322,7 +329,7 @@ func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, fil
 	row := userClassRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllUserClassCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllUserClassCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
@@ -708,6 +715,7 @@ func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]mo
 	rows, sqlError := userClassRepository.db.Query(`
 	SELECT
 		id,
+		code,
 		user_code,
 		class_code,
 		status_code,
@@ -717,26 +725,27 @@ func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]mo
 		expired_date,
 		time_duration,
 		progress
-	FROM v_t_user_class
+	FROM transaction.v_t_user_class
 	WHERE  	
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_expired = false AND
 		expired_date <= now() 
 	`)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError)
+		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var isExpired bool
+			var id, timeDuration int
 			var progress sql.NullFloat64
-			var id, userCode, timeDuration int
 			var startDate, expiredDate time.Time
-			var status, statusCode, classCode string
+			var status, statusCode, classCode, userCode, code string
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&userCode,
 				&classCode,
 				&statusCode,
@@ -749,10 +758,11 @@ func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]mo
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError)
+				utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError.Error())
 			} else {
 				userClassList = append(userClassList, model.UserClass{
 					ID:           id,
+					Code:         code,
 					UserCode:     userCode,
 					ClassCode:    classCode,
 					StatusCode:   statusCode,
@@ -775,6 +785,7 @@ func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(i
 	rows, sqlError := userClassRepository.db.Query(`
 	SELECT
 		id,
+		code,
 		user_code,
 		class_code,
 		status_code,
@@ -784,9 +795,9 @@ func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(i
 		expired_date,
 		time_duration,
 		progress
-	FROM v_t_user_class
+	FROM transaction.v_t_user_class
 	WHERE  	
-		deleted_by IS NULL AND
+		is_deleted=false AND
 		is_expired = false AND
 		DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
 		DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
@@ -799,18 +810,19 @@ func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(i
 	`, interval.Interval1, interval.Interval2)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError)
+		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var isExpired bool
+			var id, timeDuration int
 			var progress sql.NullFloat64
-			var id, userCode, timeDuration int
 			var startDate, expiredDate time.Time
-			var status, statusCode, classCode string
+			var status, statusCode, classCode, code, userCode string
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&userCode,
 				&classCode,
 				&statusCode,
@@ -823,10 +835,11 @@ func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(i
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError)
+				utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError.Error())
 			} else {
 				userClassList = append(userClassList, model.UserClass{
 					ID:           id,
+					Code:         code,
 					UserCode:     userCode,
 					ClassCode:    classCode,
 					StatusCode:   statusCode,

@@ -7,12 +7,13 @@ import (
 
 type Payment struct {
 	ID                 int
-	UserCode           int
+	Code               string
+	UserCode           string
 	UserName           string
 	ClassCode          string
 	ClassName          string
-	ClassImage         sql.NullString
 	ClassInitial       string
+	ClassImage         sql.NullString
 	PackageCode        string
 	PackageType        string
 	PackageDiscount    sql.NullInt64

@@ -242,7 +242,7 @@ func (consultationHandler *consultationHandler) CheckConsultationSpamUser(ctx *g
 }
 
 func (consultationHandler *consultationHandler) CheckConsultationSpamMentor(ctx *gin.Context) {
-	var userObj model.Mentor
+	var userObj model.MentorInfo
 	for _, valueUser := range ctx.Request.Header["User"] {
 		itemInfoBytes := []byte(valueUser)
 

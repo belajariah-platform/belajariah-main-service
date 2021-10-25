@@ -16,15 +16,18 @@ type userUsecase struct {
 }
 
 type UserUsecase interface {
+	RegisterUser(users shape.Users) (bool, error, string)
+	ResetVerificationUser(users shape.Users) (bool, error)
 	LoginUser(users shape.Users) (shape.UserInfo, bool, error, string)
 	UpdateProfileUser(users shape.UsersPost, email string) (bool, error)
-	GoogleLogin(users shape.Users) (shape.UserInfo, bool, error)
-	ChangePasswordPrivate(users shape.Users) (bool, error, string)
-	ResetVerificationUser(users shape.Users) (bool, error)
+
 	ChangePasswordPublic(users shape.Users) (bool, error)
-	RegisterUser(users shape.Users) (bool, error, string)
-	VerifyAccount(users shape.Users) (bool, error, string)
+	ChangePasswordPrivate(users shape.Users) (bool, error, string)
+
 	GetUserInfo(email string) (shape.UserInfo, error)
+	VerifyAccount(users shape.Users) (bool, error, string)
+	GoogleLogin(users shape.Users) (shape.UserInfo, bool, error)
+
 	CheckEmail(email string) (shape.UserInfo, error)
 	VerifyEmail(users shape.Users) (string, int, error)
 }
@@ -44,30 +47,37 @@ func (userUsecase *userUsecase) LoginUser(users shape.Users) (shape.UserInfo, bo
 		Password: users.Password,
 	}
 	userLogin, err := userUsecase.userRepository.CheckValidateLogin(dataUser)
-	if err == nil {
-		isPassword := utils.CheckPasswordHash(dataUser.Password, userLogin.Password)
-		if userLogin == (model.Users{}) || !isPassword {
-			msg = fmt.Sprintf(`Email dan kata sandi salah`)
-			return shape.UserInfo{}, false, err, msg
-		}
+	if err != nil {
+		return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.CheckValidateLogin : "), msg
 	}
+
+	isPassword := utils.CheckPasswordHash(dataUser.Password, userLogin.Password)
+	if userLogin == (model.Users{}) || !isPassword {
+		msg = fmt.Sprintf(`Email dan kata sandi salah`)
+		return shape.UserInfo{}, false, err, msg
+	}
+
 	user, err := userUsecase.GetUserInfo(dataUser.Email)
+	if err != nil {
+		return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.GetUserInfo : "), msg
+	}
+
 	if !user.Is_Verified {
 		msg = fmt.Sprintf(`Akun kamu belum terverifikasi`)
 		return shape.UserInfo{}, false, err, msg
 	}
+
 	return user, true, err, msg
 }
 
 func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, bool, error) {
 	var emailType string = "Registration Success"
 	var result bool = true
-	var userID int
+	var userID string
 
 	hashPassword, err := utils.GenerateHashPassword(users.Password)
 	if err != nil {
-		utils.PushLogf("error :", err)
-		return shape.UserInfo{}, result, err
+		return shape.UserInfo{}, false, utils.WrapError(err, "utils.GenerateHashPassword : ")
 	}
 
 	dataUser := model.Users{
@@ -91,9 +101,17 @@ func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, 
 	}
 
 	userLogin, err := userUsecase.userRepository.CheckValidateLogin(dataUser)
-	if err == nil && userLogin == (model.Users{}) {
+	if err != nil {
+		return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.CheckValidateLogin : ")
+	}
+
+	if userLogin == (model.Users{}) {
 		userID, result, err = userUsecase.userRepository.RegisterUser(dataUser)
-		if err == nil && userID != 0 {
+		if err != nil {
+			return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.RegisterUser : ")
+		}
+
+		if userID != "" {
 			dataEmail := model.EmailBody{
 				UserCode: userID,
 				BodyTemp: emailType,
@@ -129,9 +147,13 @@ func (userUsecase *userUsecase) ResetVerificationUser(users shape.Users) (bool, 
 	}
 
 	userAuth, result, err = userUsecase.userRepository.ResetVerificationCode(dataUser)
-	if err == nil && userAuth.ID != 0 {
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.ResetVerificationCode : ")
+	}
+
+	if userAuth.ID != 0 {
 		dataEmail := model.EmailBody{
-			UserCode:         userAuth.ID,
+			UserCode:         userAuth.Code,
 			BodyTemp:         emailType,
 			VerificationCode: dataUser.VerifiedCode.String,
 		}
@@ -143,16 +165,15 @@ func (userUsecase *userUsecase) ResetVerificationUser(users shape.Users) (bool, 
 func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, string) {
 	var emailType string = "Account Verification"
 	var user model.UserInfo
+	var msg, userID string
 	var err error
-	var msg string
-	var userID int
 	var result bool
 
 	hashPassword, err := utils.GenerateHashPassword(users.Password)
 	if err != nil {
-		utils.PushLogf("error :", err)
-		return result, err, msg
+		return false, utils.WrapError(err, "utils.GenerateHashPassword : "), msg
 	}
+
 	dataUser := model.Users{
 		Email:    users.Email,
 		Password: hashPassword,
@@ -176,7 +197,12 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 			Time: time.Now(),
 		},
 	}
+
 	user, err = userUsecase.userRepository.GetUserInfo(dataUser.Email)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.GetUserInfo : "), msg
+	}
+
 	if user.Email == dataUser.Email && user.IsVerified {
 		msg = fmt.Sprintf(`Email '%s' sudah ada`, dataUser.Email)
 		return result, err, msg
@@ -187,7 +213,11 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 
 	firstLoop := true
 	for firstLoop {
-		count, _ := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+		count, err := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+		if err != nil {
+			utils.PushLogf("userUsecase.userRepository.CheckVerifyCodeUser :", err)
+		}
+
 		if count == 0 {
 			firstLoop = false
 		} else {
@@ -196,7 +226,11 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 	}
 
 	userID, result, err = userUsecase.userRepository.RegisterUser(dataUser)
-	if err == nil && userID != 0 {
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.RegisterUser : "), msg
+	}
+
+	if err == nil && userID != "" {
 		dataEmail := model.EmailBody{
 			UserCode:         userID,
 			BodyTemp:         emailType,
@@ -204,6 +238,7 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 		}
 		userUsecase.emailUsecase.SendEmail(dataEmail)
 	}
+
 	return result, err, msg
 }
 
@@ -245,6 +280,10 @@ func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email s
 	}
 
 	result, err = userUsecase.userRepository.UpdateProfileUser(dataUser)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.UpdateProfileUser : ")
+	}
+
 	return result, err
 }
 
@@ -255,8 +294,7 @@ func (userUsecase *userUsecase) ChangePasswordPrivate(users shape.Users) (bool, 
 
 	hashPassword, err := utils.GenerateHashPassword(users.New_Password)
 	if err != nil {
-		utils.PushLogf("error :", err)
-		return result, err, msg
+		return false, utils.WrapError(err, "utils.GenerateHashPassword : "), msg
 	}
 
 	dataUser := model.Users{
@@ -264,18 +302,24 @@ func (userUsecase *userUsecase) ChangePasswordPrivate(users shape.Users) (bool, 
 		OldPassword: users.Old_Password,
 		Password:    hashPassword,
 	}
+
 	userLogin, err := userUsecase.userRepository.CheckValidateLogin(dataUser)
-	if err == nil {
-		isPassword := utils.CheckPasswordHash(dataUser.OldPassword, userLogin.Password)
-		if userLogin == (model.Users{}) || !isPassword {
-			msg = fmt.Sprintf(`Kata sandi lama salah`)
-			return result, err, msg
-		}
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.CheckValidateLogin : "), msg
 	}
+
+	isPassword := utils.CheckPasswordHash(dataUser.OldPassword, userLogin.Password)
+	if userLogin == (model.Users{}) || !isPassword {
+		msg = fmt.Sprintf(`Kata sandi lama salah`)
+		return result, err, msg
+	}
+
 	user, result, err := userUsecase.userRepository.ChangePassword(dataUser)
-	if err == nil {
-		utils.PushLogf("[SUCCESS CHANGE PASSWORD] :", user)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.CheckValidateLogin : "), msg
 	}
+
+	utils.PushLogf("[SUCCESS CHANGE PASSWORD] :", user)
 
 	return result, err, msg
 }
@@ -288,9 +332,9 @@ func (userUsecase *userUsecase) ChangePasswordPublic(users shape.Users) (bool, e
 
 	hashPassword, err := utils.GenerateHashPassword(users.Password)
 	if err != nil {
-		utils.PushLogf("error :", err)
-		return result, err
+		return false, utils.WrapError(err, "utils.GenerateHashPassword : ")
 	}
+
 	dataUser := model.Users{
 		Email:    users.Email,
 		Password: hashPassword,
@@ -303,14 +347,17 @@ func (userUsecase *userUsecase) ChangePasswordPublic(users shape.Users) (bool, e
 	}
 
 	user, result, err = userUsecase.userRepository.ChangePassword(dataUser)
-	if err == nil {
-		dataEmail := model.EmailBody{
-			UserEmail: dataUser.Email,
-			BodyTemp:  emailType,
-			UserCode:  user.ID,
-		}
-		userUsecase.emailUsecase.SendEmail(dataEmail)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.ChangePassword : ")
 	}
+
+	dataEmail := model.EmailBody{
+		UserEmail: dataUser.Email,
+		BodyTemp:  emailType,
+		UserCode:  user.Code,
+	}
+	userUsecase.emailUsecase.SendEmail(dataEmail)
+
 	return result, err
 }
 
@@ -329,19 +376,26 @@ func (userUsecase *userUsecase) VerifyAccount(users shape.Users) (bool, error, s
 	}
 
 	count, err := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.CheckVerifyCodeUser : "), msg
+	}
+
 	if count == 0 {
 		msg = fmt.Sprintf(`Kode verifikasi salah`)
 		return result, err, msg
 	}
 
 	user, result, err = userUsecase.userRepository.VerifyUser(dataUser)
-	if err == nil {
-		dataEmail := model.EmailBody{
-			BodyTemp: emailType,
-			UserCode: user.ID,
-		}
-		userUsecase.emailUsecase.SendEmail(dataEmail)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.VerifyUser : "), msg
 	}
+
+	dataEmail := model.EmailBody{
+		BodyTemp: emailType,
+		UserCode: user.Code,
+	}
+	userUsecase.emailUsecase.SendEmail(dataEmail)
+
 	return result, err, msg
 }
 
@@ -355,42 +409,57 @@ func (userUsecase *userUsecase) VerifyEmail(users shape.Users) (string, int, err
 		},
 	}
 	count, err := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+	if err != nil {
+		return email, count, utils.WrapError(err, "userUsecase.userRepository.CheckVerifyCodeUser : ")
+	}
+
 	if count == 0 {
 		return email, count, err
 	}
+
 	user, err := userUsecase.userRepository.GetEmailByVerifyCode(dataUser.VerifiedCode.String)
+	if err != nil {
+		return email, count, utils.WrapError(err, "userUsecase.userRepository.GetEmailByVerifyCode : ")
+	}
+
 	email = user.Email
 	return email, count, err
 }
 
 func (userUsecase *userUsecase) GetUserInfo(email string) (shape.UserInfo, error) {
 	user, err := userUsecase.userRepository.GetUserInfo(email)
+	if err != nil {
+		return shape.UserInfo{}, utils.WrapError(err, "userUsecase.userRepository.GetUserInfo : ")
+	}
+
 	if user == (model.UserInfo{}) {
 		return shape.UserInfo{}, nil
 	}
+
 	userResult := shape.UserInfo{
-		ID:             user.ID,
-		Role_Code:      user.RoleCode,
-		Role:           user.Role,
-		Email:          user.Email,
-		Full_Name:      user.FullName.String,
-		Phone:          int(user.Phone.Int64),
-		Profession:     user.Profession.String,
-		Gender:         user.Gender.String,
-		Age:            int(user.Age.Int64),
-		Birth:          utils.HandleNullableDate(user.Birth.Time),
-		Province:       user.Province.String,
-		City:           user.City.String,
-		Address:        user.Address.String,
-		Image_Code:     user.ImageCode.String,
-		Image_Filename: user.ImageFilename.String,
-		Is_Verified:    user.IsVerified,
-		Is_Active:      user.IsActive,
-		Created_By:     user.CreatedBy,
-		Created_Date:   user.CreatedDate,
-		Modified_By:    user.ModifiedBy.String,
-		Modified_Date:  user.ModifiedDate.Time,
+		ID:            user.ID,
+		Code:          user.Code,
+		Role_Code:     user.RoleCode,
+		Role:          user.Role,
+		Email:         user.Email,
+		Full_Name:     user.FullName.String,
+		Phone:         int(user.Phone.Int64),
+		Profession:    user.Profession.String,
+		Gender:        user.Gender.String,
+		Age:           int(user.Age.Int64),
+		Birth:         utils.HandleNullableDate(user.Birth.Time),
+		Province:      user.Province.String,
+		City:          user.City.String,
+		Address:       user.Address.String,
+		Image_Profile: user.ImageProfile.String,
+		Is_Verified:   user.IsVerified,
+		Is_Active:     user.IsActive,
+		Created_By:    user.CreatedBy,
+		Created_Date:  user.CreatedDate,
+		Modified_By:   user.ModifiedBy.String,
+		Modified_Date: user.ModifiedDate.Time,
 	}
+
 	return userResult, err
 }
 
@@ -398,31 +467,36 @@ func (userUsecase *userUsecase) CheckEmail(email string) (shape.UserInfo, error)
 	var emailType string = "Account Verification"
 
 	user, err := userUsecase.userRepository.GetUserInfo(email)
+	if err != nil {
+		return shape.UserInfo{}, utils.WrapError(err, "userUsecase.userRepository.GetUserInfo : ")
+	}
+
 	if user == (model.UserInfo{}) || !user.IsVerified {
 		return shape.UserInfo{}, nil
 	}
+
 	userResult := shape.UserInfo{
-		ID:             user.ID,
-		Role_Code:      user.RoleCode,
-		Role:           user.Role,
-		Email:          user.Email,
-		Full_Name:      user.FullName.String,
-		Phone:          int(user.Phone.Int64),
-		Profession:     user.Profession.String,
-		Gender:         user.Gender.String,
-		Age:            int(user.Age.Int64),
-		Birth:          utils.HandleNullableDate(user.Birth.Time),
-		Province:       user.Province.String,
-		City:           user.City.String,
-		Address:        user.Address.String,
-		Image_Code:     user.ImageCode.String,
-		Image_Filename: user.ImageFilename.String,
-		Is_Verified:    user.IsVerified,
-		Is_Active:      user.IsActive,
-		Created_By:     user.CreatedBy,
-		Created_Date:   user.CreatedDate,
-		Modified_By:    user.ModifiedBy.String,
-		Modified_Date:  user.ModifiedDate.Time,
+		ID:            user.ID,
+		Code:          user.Code,
+		Role_Code:     user.RoleCode,
+		Role:          user.Role,
+		Email:         user.Email,
+		Full_Name:     user.FullName.String,
+		Phone:         int(user.Phone.Int64),
+		Profession:    user.Profession.String,
+		Gender:        user.Gender.String,
+		Age:           int(user.Age.Int64),
+		Birth:         utils.HandleNullableDate(user.Birth.Time),
+		Province:      user.Province.String,
+		City:          user.City.String,
+		Address:       user.Address.String,
+		Image_Profile: user.ImageProfile.String,
+		Is_Verified:   user.IsVerified,
+		Is_Active:     user.IsActive,
+		Created_By:    user.CreatedBy,
+		Created_Date:  user.CreatedDate,
+		Modified_By:   user.ModifiedBy.String,
+		Modified_Date: user.ModifiedDate.Time,
 	}
 
 	dataUser := model.Users{
@@ -441,7 +515,11 @@ func (userUsecase *userUsecase) CheckEmail(email string) (shape.UserInfo, error)
 
 	firstLoop := true
 	for firstLoop {
-		count, _ := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+		count, err := userUsecase.userRepository.CheckVerifyCodeUser(dataUser)
+		if err != nil {
+			return shape.UserInfo{}, utils.WrapError(err, "userUsecase.userRepository.CheckVerifyCodeUser : ")
+		}
+
 		if count == 0 {
 			firstLoop = false
 		} else {
@@ -450,9 +528,13 @@ func (userUsecase *userUsecase) CheckEmail(email string) (shape.UserInfo, error)
 	}
 
 	userAuth, result, err := userUsecase.userRepository.ResetVerificationCode(dataUser)
-	if err == nil && result && userAuth.ID != 0 {
+	if err != nil {
+		return shape.UserInfo{}, utils.WrapError(err, "userUsecase.userRepository.ResetVerificationCode : ")
+	}
+
+	if result && userAuth.ID != 0 {
 		dataEmail := model.EmailBody{
-			UserCode:         userAuth.ID,
+			UserCode:         userAuth.Code,
 			BodyTemp:         emailType,
 			VerificationCode: dataUser.VerifiedCode.String,
 		}
