@@ -199,7 +199,6 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 		sender_bank,
 		sender_name,
 		image_proof,
-		image_filename,
 		payment_type_code,
 		payment_type,
 		remarks,
@@ -227,7 +226,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 			var createdDate time.Time
 			var modifiedDate sql.NullTime
 			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy, paymentMethodType, code, userCode string
-			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, imageFilename, modifiedBy, paymentMethodImage sql.NullString
+			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy, paymentMethodImage sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -252,7 +251,6 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 				&senderBank,
 				&senderName,
 				&imageProof,
-				&imageFilename,
 				&paymentTypeCode,
 				&paymentType,
 				&remarks,
@@ -290,7 +288,6 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 						SenderBank:         senderBank,
 						SenderName:         senderName,
 						ImageProof:         imageProof,
-						ImageFilename:      imageFilename,
 						PaymentTypeCode:    paymentTypeCode,
 						PaymentType:        paymentType,
 						Remarks:            remarks,

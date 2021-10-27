@@ -24,6 +24,7 @@ type paymentUsecase struct {
 type PaymentUsecase interface {
 	CheckAllPaymentExpired()
 	CheckAllPayment2HourBeforeExpired()
+
 	GetAllPayment(query model.Query) ([]shape.Payment, int, error)
 	GetAllPaymentRejected(query model.Query) ([]shape.Payment, int, error)
 	GetAllPaymentByUserID(query model.Query, userObj model.UserHeader) ([]shape.Payment, int, error)
@@ -90,7 +91,6 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 				Sender_Bank:          value.SenderBank.String,
 				Sender_Name:          value.SenderName.String,
 				Image_Proof:          value.ImageProof.String,
-				Image_Filename:       value.ImageFilename.String,
 				Payment_Type_Code:    value.PaymentTypeCode,
 				Payment_Type:         value.PaymentType,
 				Is_Active:            value.IsActive,
@@ -113,6 +113,8 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentRejected(query model.Query) (
 	var paymentResult []shape.Payment
 	var filterQuery, filterUser, sorting, search string
 
+	paymentEmpty := make([]shape.Payment, 0)
+
 	if len(query.Order) > 0 {
 		sorting = strings.Replace(query.Order, "|", " ", 1)
 		sorting = "ORDER BY " + sorting
@@ -127,7 +129,14 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentRejected(query model.Query) (
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
 	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
+	if err != nil {
+		return paymentEmpty, 0, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetAllPayment : ")
+	}
+
 	count, errCount := paymentUsecase.paymentsRepository.GetAllPaymentCount(filterQuery, filterUser)
+	if errCount != nil {
+		return paymentEmpty, 0, utils.WrapError(errCount, "paymentUsecase.paymentsRepository.GetAllPaymentCount : ")
+	}
 
 	if err == nil && errCount == nil {
 		for _, value := range payments {
@@ -151,7 +160,6 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentRejected(query model.Query) (
 				Sender_Bank:         value.SenderBank.String,
 				Sender_Name:         value.SenderName.String,
 				Image_Proof:         value.ImageProof.String,
-				Image_Filename:      value.ImageFilename.String,
 				Payment_Type_Code:   value.PaymentTypeCode,
 				Payment_Type:        value.PaymentType,
 				Is_Active:           value.IsActive,
@@ -162,10 +170,11 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentRejected(query model.Query) (
 			})
 		}
 	}
-	paymentEmpty := make([]shape.Payment, 0)
+
 	if len(paymentResult) == 0 {
 		return paymentEmpty, count, err
 	}
+
 	return paymentResult, count, err
 }
 
@@ -173,6 +182,8 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 	var payments []model.Payment
 	var paymentResult []shape.Payment
 	var filterQuery, filterUser, sorting, search string
+
+	paymentEmpty := make([]shape.Payment, 0)
 
 	if len(query.Order) > 0 {
 		sorting = strings.Replace(query.Order, "|", " ", 1)
@@ -185,10 +196,17 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
-	filterUser = fmt.Sprintf(`AND user_code=%d`, userObj.ID)
+	filterUser = fmt.Sprintf(`AND user_code='%s'`, userObj.Code)
 
 	payments, err := paymentUsecase.paymentsRepository.GetAllPayment(query.Skip, query.Take, sorting, search, filterQuery, filterUser)
+	if err != nil {
+		return paymentEmpty, 0, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetAllPayment : ")
+	}
+
 	count, errCount := paymentUsecase.paymentsRepository.GetAllPaymentCount(filterQuery, filterUser)
+	if errCount != nil {
+		return paymentEmpty, 0, utils.WrapError(errCount, "paymentUsecase.paymentsRepository.GetAllPaymentCount : ")
+	}
 
 	if err == nil && errCount == nil {
 		for _, value := range payments {
@@ -216,7 +234,6 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 				Sender_Bank:          value.SenderBank.String,
 				Sender_Name:          value.SenderName.String,
 				Image_Proof:          value.ImageProof.String,
-				Image_Filename:       value.ImageFilename.String,
 				Is_Active:            value.IsActive,
 				Created_By:           value.CreatedBy,
 				Created_Date:         value.CreatedDate,
@@ -226,10 +243,11 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 			})
 		}
 	}
-	paymentEmpty := make([]shape.Payment, 0)
+
 	if len(paymentResult) == 0 {
 		return paymentEmpty, count, err
 	}
+
 	return paymentResult, count, err
 }
 
@@ -380,8 +398,8 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			ClassCode:    payment.Class_Code,
 			PackageCode:  payment.Package_Code,
 			StatusCode:   statusCode,
-			StartDate:    time.Now(),
-			ExpiredDate:  utils.TimeAdd(time.Now(), packages.Duration),
+			StartDate:    sql.NullTime{Time: time.Now()},
+			ExpiredDate:  sql.NullTime{Time: utils.TimeAdd(time.Now(), packages.Duration)},
 			TimeDuration: packages.Duration * 30,
 			TotalConsultation: sql.NullInt64{
 				Int64: packages.Consultation.Int64,
@@ -404,7 +422,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			dataUserClass.TypeCode = "extend class"
 			dataUserClass.StartDate = class.StartDate
 			dataUserClass.TimeDuration = class.TimeDuration + packages.Duration*30
-			dataUserClass.ExpiredDate = utils.TimeAdd(class.ExpiredDate, packages.Duration)
+			dataUserClass.ExpiredDate = sql.NullTime{Time: utils.TimeAdd(class.ExpiredDate.Time, packages.Duration)}
 			dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
 			dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
 			result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)

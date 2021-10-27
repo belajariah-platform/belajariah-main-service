@@ -7,10 +7,11 @@ import (
 
 type Rating struct {
 	ID           int
+	Code         string
 	ClassCode    string
 	ClassName    string
 	ClassInitial sql.NullString
-	UserCode     int
+	UserCode     string
 	UserName     string
 	Rating       float64
 	Comment      sql.NullString
@@ -19,15 +20,15 @@ type Rating struct {
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
-	DeletedBy    sql.NullString
-	DeletedDate  sql.NullTime
+	IsDeleted    bool
 }
 
 type RatingPost struct {
 	ID           int
+	Code         string
 	ClassCode    string
-	MentorCode   int
-	UserCode     int
+	MentorCode   string
+	UserCode     string
 	Rating       int
 	Comment      sql.NullString
 	IsActive     bool
@@ -35,6 +36,5 @@ type RatingPost struct {
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
-	DeletedBy    sql.NullString
-	DeletedDate  sql.NullTime
+	IsDeleted    bool
 }

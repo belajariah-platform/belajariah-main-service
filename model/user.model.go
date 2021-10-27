@@ -50,6 +50,7 @@ type UserInfo struct {
 
 type UserHeader struct {
 	ID        int
+	Code      string
 	Role_Code string
 	Role      string
 	Email     string

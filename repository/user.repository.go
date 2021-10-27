@@ -190,7 +190,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 		&modifiedDate,
 	)
 	if sqlError != nil {
-		return model.UserInfo{}, sqlError
+		return model.UserInfo{}, nil
 	} else {
 		userRow = model.UserInfo{
 			ID:           id,
@@ -400,10 +400,9 @@ func (userRepository *userRepository) RegisterUser(users model.Users) (string, b
 		utils.PushLogf("error in register", errTx)
 	} else {
 		code, email, err = registerUser(tx, users)
+		fmt.Println(err)
 		if err == nil {
 			insertUserDetail(tx, email, users)
-		} else if err != nil {
-			utils.PushLogf("err---", err)
 		}
 	}
 
@@ -413,7 +412,6 @@ func (userRepository *userRepository) RegisterUser(users model.Users) (string, b
 	} else {
 		result = false
 		tx.Rollback()
-		utils.PushLogf(users.Email, "failed to register")
 	}
 
 	return code, result, err
@@ -435,7 +433,7 @@ func registerUser(tx *sql.Tx, users model.Users) (string, string, error) {
 		modified_date
 	)
 	VALUES(
-		(SELECT code FROM auth.user_role WHERE "role" = 'Users'),
+		(SELECT code FROM auth.roles WHERE "role" = 'User' LIMIT 1),
 		$1,
 		$2,
 		$3,
@@ -455,6 +453,7 @@ func registerUser(tx *sql.Tx, users model.Users) (string, string, error) {
 		users.ModifiedBy.String,
 		users.ModifiedDate.Time,
 	).Scan(&email, &code)
+
 	return code, email, err
 }
 
@@ -463,7 +462,7 @@ func insertUserDetail(tx *sql.Tx, email string, users model.Users) error {
 	INSERT INTO auth.user_detail
 	(
 		user_code,
-		full_name,
+		fullname,
 		phone,
 		created_by,
 		created_date,
@@ -471,7 +470,7 @@ func insertUserDetail(tx *sql.Tx, email string, users model.Users) error {
 		modified_date
 	)
 	VALUES(
-		(SELECT id FROM auth.users WHERE email = $1),
+		(SELECT code FROM auth.users WHERE email = $1 LIMIT 1),
 		$2,
 		$3,
 		$4,

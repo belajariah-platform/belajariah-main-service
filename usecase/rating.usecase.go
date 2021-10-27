@@ -29,16 +29,25 @@ func (ratingUsecase *ratingUsecase) GetAllRatingClass(query model.Query) ([]shap
 	var filterQuery string
 	var ratings []model.Rating
 	var ratingResult []shape.Rating
+	ratingEmpty := make([]shape.Rating, 0)
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
 	ratings, err := ratingUsecase.ratingRepository.GetAllRatingClass(query.Skip, query.Take, filterQuery)
+	if err != nil {
+		return ratingEmpty, 0, utils.WrapError(err, "ratingUsecase.ratingRepository.GetAllRatingClass : ")
+	}
+
 	count, errCount := ratingUsecase.ratingRepository.GetAllRatingClassCount(filterQuery)
+	if err != nil {
+		return ratingEmpty, 0, utils.WrapError(err, "ratingUsecase.userRepository.GetAllRatingClassCount : ")
+	}
 
 	if err == nil && errCount == nil {
 		for _, value := range ratings {
 			ratingResult = append(ratingResult, shape.Rating{
 				ID:            value.ID,
+				Code:          value.Code,
 				Class_Code:    value.ClassCode,
 				Class_Name:    value.ClassName,
 				Class_Initial: value.ClassInitial.String,
@@ -51,12 +60,11 @@ func (ratingUsecase *ratingUsecase) GetAllRatingClass(query model.Query) ([]shap
 				Created_Date:  value.CreatedDate,
 				Modified_By:   value.ModifiedBy.String,
 				Modified_Date: value.ModifiedDate.Time,
-				Deleted_By:    value.DeletedBy.String,
-				Deleted_Date:  value.DeletedDate.Time,
+				Is_Deleted:    value.IsDeleted,
 			})
 		}
 	}
-	ratingEmpty := make([]shape.Rating, 0)
+
 	if len(ratingResult) == 0 {
 		return ratingEmpty, count, err
 	}
@@ -81,6 +89,10 @@ func (ratingUsecase *ratingUsecase) GiveRatingClass(rating shape.RatingPost, ema
 		},
 	}
 	result, err := ratingUsecase.ratingRepository.GiveRatingClass(dataRating)
+	if err != nil {
+		return false, utils.WrapError(err, "ratingUsecase.userRepository.GiveRatingClass : ")
+	}
+
 	return result, err
 }
 
@@ -102,5 +114,9 @@ func (ratingUsecase *ratingUsecase) GiveRatingMentor(rating shape.RatingPost, em
 		},
 	}
 	result, err := ratingUsecase.ratingRepository.GiveRatingMentor(dataRating)
+	if err != nil {
+		return false, utils.WrapError(err, "ratingUsecase.userRepository.GiveRatingMentor : ")
+	}
+
 	return result, err
 }

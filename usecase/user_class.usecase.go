@@ -42,11 +42,12 @@ func InitUserClassUsecase(emailUsecase EmailUsecase, enumRepository repository.E
 
 func (userClassUsecase *userClassUsecase) GetUserClass(code string, userObj model.UserHeader) (shape.UserClass, error) {
 
-	filter := fmt.Sprintf(`AND user_code=%d AND class_code='%s'`, userObj.ID, code)
+	filter := fmt.Sprintf(`AND user_code='%s' AND class_code='%s'`, userObj.Code, code)
 	value, err := userClassUsecase.userClassRepository.GetUserClass(filter)
-	if value == (model.UserClass{}) {
-		return shape.UserClass{}, nil
+	if err != nil {
+		return shape.UserClass{}, utils.WrapError(err, "userClassUsecase.mentorRepuserClassRepositoryository.GetUserClass : ")
 	}
+
 	userClassResult := shape.UserClass{
 		ID:                 value.ID,
 		User_Code:          value.UserCode,
@@ -59,8 +60,8 @@ func (userClassUsecase *userClassUsecase) GetUserClass(code string, userObj mode
 		Package_Code:       value.PackageCode,
 		Package_Type:       value.PackageType,
 		Is_Expired:         value.IsExpired,
-		Start_Date:         utils.HandleNullableDate(value.StartDate),
-		Expired_Date:       utils.HandleNullableDate(value.ExpiredDate),
+		Start_Date:         utils.HandleNullableDate(value.StartDate.Time),
+		Expired_Date:       utils.HandleNullableDate(value.ExpiredDate.Time),
 		Time_Duration:      value.TimeDuration,
 		Progress:           value.Progress.Float64,
 		Progress_Count:     int(value.ProgressCount.Int64),
@@ -81,6 +82,7 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 	var userClass []model.UserClass
 	var userClassResult []shape.UserClass
 	var filterQuery, filterUser, sorting string
+	classEmpty := make([]shape.UserClass, 0)
 
 	if len(query.Order) > 0 {
 		sorting = strings.Replace(query.Order, "|", " ", 1)
@@ -88,10 +90,17 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 	}
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
-	filterUser = fmt.Sprintf(`AND user_code=%d`, userObj.ID)
+	filterUser = fmt.Sprintf(`AND user_code='%s'`, userObj.Code)
 
 	userClass, err := userClassUsecase.userClassRepository.GetAllUserClass(query.Skip, query.Take, sorting, filterQuery, filterUser)
+	if err != nil {
+		return classEmpty, 0, utils.WrapError(err, "userClassUsecase.mentorRepuserClassRepositoryository.GetAllUserClass : ")
+	}
+
 	count, errCount := userClassUsecase.userClassRepository.GetAllUserClassCount(filterQuery, filterUser)
+	if err != nil {
+		return classEmpty, 0, utils.WrapError(err, "userClassUsecase.mentorRepuserClassRepositoryository.GetAllUserClassCount : ")
+	}
 
 	if err == nil && errCount == nil {
 		for _, value := range userClass {
@@ -113,8 +122,8 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 				Package_Code:       value.PackageCode,
 				Package_Type:       value.PackageType,
 				Is_Expired:         value.IsExpired,
-				Start_Date:         utils.HandleNullableDate(value.StartDate),
-				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate),
+				Start_Date:         utils.HandleNullableDate(value.StartDate.Time),
+				Expired_Date:       utils.HandleNullableDate(value.ExpiredDate.Time),
 				Time_Duration:      value.TimeDuration,
 				Progress:           value.Progress.Float64,
 				Progress_Count:     int(value.ProgressCount.Int64),
@@ -132,14 +141,13 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 				Created_Date:       value.CreatedDate,
 				Modified_By:        value.ModifiedBy.String,
 				Modified_Date:      value.ModifiedDate.Time,
-				Deleted_By:         value.DeletedBy.String,
-				Deleted_Date:       value.DeletedDate.Time,
+				Is_Deleted:         value.IsDeleted,
 			})
 		}
 	}
-	paymentEmpty := make([]shape.UserClass, 0)
+
 	if len(userClassResult) == 0 {
-		return paymentEmpty, count, err
+		return classEmpty, count, err
 	}
 	return userClassResult, count, err
 }
@@ -219,7 +227,7 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClassExpired() {
 						UserCode:         value.UserCode,
 						Sequence:         1,
 						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate,
+							Time: value.ExpiredDate.Time,
 						},
 						CreatedBy:   email,
 						CreatedDate: time.Now(),
@@ -266,12 +274,12 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass7DaysBeforeExpired() 
 			for _, value := range userClassList {
 				filterNotif := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
 				notification, err := userClassUsecase.notificationRepository.GetNotification(filterNotif, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate) > minutes {
+				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
 					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
 					dataEmail := model.EmailBody{
 						BodyTemp:      emailType,
 						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate,
+						ExpiredDate:   value.ExpiredDate.Time,
 						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
 					}
 					userClassUsecase.emailUsecase.SendEmail(dataEmail)
@@ -285,7 +293,7 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass7DaysBeforeExpired() 
 						UserCode:         value.UserCode,
 						Sequence:         1,
 						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate,
+							Time: value.ExpiredDate.Time,
 						},
 						CreatedBy:   email,
 						CreatedDate: time.Now(),
@@ -330,12 +338,12 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass5DaysBeforeExpired() 
 			for _, value := range userClassList {
 				filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
 				notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate) > minutes {
+				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
 					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
 					dataEmail := model.EmailBody{
 						BodyTemp:      emailType,
 						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate,
+						ExpiredDate:   value.ExpiredDate.Time,
 						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
 					}
 					userClassUsecase.emailUsecase.SendEmail(dataEmail)
@@ -349,7 +357,7 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass5DaysBeforeExpired() 
 						UserCode:         value.UserCode,
 						Sequence:         1,
 						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate,
+							Time: value.ExpiredDate.Time,
 						},
 						CreatedBy:   email,
 						CreatedDate: time.Now(),
@@ -394,12 +402,12 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass2DaysBeforeExpired() 
 			for _, value := range userClassList {
 				filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
 				notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate) > minutes {
+				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
 					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
 					dataEmail := model.EmailBody{
 						BodyTemp:      emailType,
 						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate,
+						ExpiredDate:   value.ExpiredDate.Time,
 						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
 					}
 					userClassUsecase.emailUsecase.SendEmail(dataEmail)
@@ -413,7 +421,7 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass2DaysBeforeExpired() 
 						UserCode:         value.UserCode,
 						Sequence:         1,
 						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate,
+							Time: value.ExpiredDate.Time,
 						},
 						CreatedBy:   email,
 						CreatedDate: time.Now(),
@@ -458,12 +466,12 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass1DaysBeforeExpired() 
 			for _, value := range userClassList {
 				filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
 				notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate) > minutes {
+				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
 					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
 					dataEmail := model.EmailBody{
 						BodyTemp:      emailType,
 						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate,
+						ExpiredDate:   value.ExpiredDate.Time,
 						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
 					}
 					userClassUsecase.emailUsecase.SendEmail(dataEmail)
@@ -477,7 +485,7 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass1DaysBeforeExpired() 
 						UserCode:         value.UserCode,
 						Sequence:         1,
 						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate,
+							Time: value.ExpiredDate.Time,
 						},
 						CreatedBy:   email,
 						CreatedDate: time.Now(),

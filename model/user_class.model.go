@@ -25,8 +25,8 @@ type UserClass struct {
 	Status            string
 	IsExpired         bool
 	PromoCode         sql.NullString
-	StartDate         time.Time
-	ExpiredDate       time.Time
+	StartDate         sql.NullTime
+	ExpiredDate       sql.NullTime
 	TimeDuration      int
 	Progress          sql.NullFloat64
 	ProgressCount     sql.NullInt64
@@ -44,8 +44,7 @@ type UserClass struct {
 	CreatedDate       time.Time
 	ModifiedBy        sql.NullString
 	ModifiedDate      sql.NullTime
-	DeletedBy         sql.NullString
-	DeletedDate       sql.NullTime
+	IsDeleted         bool
 }
 
 type TimeInterval struct {

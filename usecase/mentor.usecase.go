@@ -25,7 +25,7 @@ func InitMentorUsecase(mentorRepository repository.MentorRepository) MentorUseca
 
 func (mentorUsecase *mentorUsecase) GetMentorInfo(email string) (shape.MentorInfo, error) {
 	mentor, err := mentorUsecase.mentorRepository.GetMentorInfo(email)
-	if err != nil || mentor == (model.MentorInfo{}) {
+	if err != nil {
 		return shape.MentorInfo{}, utils.WrapError(err, "mentorUsecase.mentorRepository.GetMentorInfo : ")
 	}
 

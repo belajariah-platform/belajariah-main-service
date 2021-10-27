@@ -5,7 +5,6 @@ import (
 	"belajariah-main-service/utils"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -46,7 +45,7 @@ func (userClassHistoryRepository *userClassHistoryRepository) GetUserClassHistor
 	row := userClassHistoryRepository.db.QueryRow(query)
 
 	var id int
-	var expiredDate time.Time
+	var expiredDate sql.NullTime
 	var typeCode, packageCode, statusCode, classCode, userCode string
 
 	sqlError := row.Scan(
@@ -177,15 +176,17 @@ func deleteUserClassHistory(tx *sql.Tx, userClass model.UserClass) error {
 	UPDATE
 		transact_user_class_history
 	 SET
-		deleted_by=$1,
-		deleted_date=$2
+		modified_by=$1,
+		modified_date=$2,
+		is_active=false,
+		is_deleted=true
  	 WHERE
  		user_code=$3 AND
 		class_code=$4 AND
 		expired_date=$5
 	`,
-		userClass.DeletedBy.String,
-		userClass.DeletedDate.Time,
+		userClass.ModifiedBy.String,
+		userClass.ModifiedDate.Time,
 		userClass.UserCode,
 		userClass.ClassCode,
 		userClass.ExpiredDate,

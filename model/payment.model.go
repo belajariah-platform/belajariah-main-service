@@ -36,7 +36,6 @@ type Payment struct {
 	SenderName         sql.NullString
 	ImageCode          sql.NullInt64
 	ImageProof         sql.NullString
-	ImageFilename      sql.NullString
 	PaymentTypeCode    string
 	PaymentType        string
 	Remarks            sql.NullString

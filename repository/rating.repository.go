@@ -32,6 +32,7 @@ func (ratingRepository *ratingRepository) GetAllRatingClass(skip, take int, filt
 	query := fmt.Sprintf(`
 	SELECT
 		id,
+		code,
 		class_code,
 		class_name,
 		class_initial,
@@ -44,12 +45,11 @@ func (ratingRepository *ratingRepository) GetAllRatingClass(skip, take int, filt
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
+		is_deleted
 	FROM 
-		v_t_class_rating
+		transaction.v_t_class_rating
 	WHERE 
-		deleted_by IS NULL
+		is_deleted=false
 	%s
 	OFFSET %d
 	LIMIT %d
@@ -58,20 +58,21 @@ func (ratingRepository *ratingRepository) GetAllRatingClass(skip, take int, filt
 	rows, sqlError := ratingRepository.db.Query(query)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllRatingClass => ", sqlError)
+		utils.PushLogf("SQL error on GetAllRatingClass => ", sqlError.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			var isActive bool
+			var id int
 			var rating float64
-			var id, userCode int
 			var createdDate time.Time
-			var modifiedDate, deletedDate sql.NullTime
-			var comment, classInitial, modifiedBy, deletedBy sql.NullString
-			var classCode, className, userName, createdBy string
+			var isActive, isDeleted bool
+			var modifiedDate sql.NullTime
+			var comment, classInitial, modifiedBy sql.NullString
+			var classCode, className, userName, createdBy, code, userCode string
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&classCode,
 				&className,
 				&classInitial,
@@ -84,17 +85,17 @@ func (ratingRepository *ratingRepository) GetAllRatingClass(skip, take int, filt
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&isDeleted,
 			)
 
 			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllRatingClass => ", sqlError)
+				utils.PushLogf("SQL error on GetAllRatingClass => ", sqlError.Error())
 			} else {
 				ratingList = append(
 					ratingList,
 					model.Rating{
 						ID:           id,
+						Code:         code,
 						ClassCode:    classCode,
 						ClassName:    className,
 						ClassInitial: classInitial,
@@ -107,8 +108,7 @@ func (ratingRepository *ratingRepository) GetAllRatingClass(skip, take int, filt
 						CreatedDate:  createdDate,
 						ModifiedBy:   modifiedBy,
 						ModifiedDate: modifiedDate,
-						DeletedBy:    deletedBy,
-						DeletedDate:  deletedDate,
+						IsDeleted:    isDeleted,
 					},
 				)
 			}
@@ -121,16 +121,16 @@ func (ratingRepository *ratingRepository) GetAllRatingClassCount(filter string) 
 	var count int
 	query := fmt.Sprintf(`
 	SELECT COUNT(*) FROM 
-		v_t_class_rating  
+		transaction.v_t_class_rating  
 	WHERE 
-		deleted_by IS NULL
+		is_deleted=false
 	%s
 	`, filter)
 
 	row := ratingRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllRatingClassCount => ", sqlError)
+		utils.PushLogf("SQL error on GetAllRatingClassCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
@@ -164,7 +164,7 @@ func (ratingRepository *ratingRepository) GiveRatingClass(rating model.RatingPos
 
 func insertRatingClass(tx *sql.Tx, rating model.RatingPost) error {
 	sqlQuery := `
-	INSERT INTO transact_class_rating
+	INSERT INTO transaction.transact_class_rating
 	(
 		class_code,
 		user_code,
@@ -227,7 +227,7 @@ func (ratingRepository *ratingRepository) GiveRatingMentor(rating model.RatingPo
 
 func insertRatingMentor(tx *sql.Tx, rating model.RatingPost) error {
 	sqlQuery := `
-	INSERT INTO transact_mentor_rating
+	INSERT INTO transaction.transact_mentor_rating
 	(
 		mentor_code,
 		user_code,

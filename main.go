@@ -40,6 +40,7 @@ func main() {
 	ratingRepository := repository.InitRatingRepository(db)
 	packageRepository := repository.InitPackageRepository(db)
 	paymentRepository := repository.InitPaymentsRepository(db)
+	scheduleRepository := repository.InitScheduleRepository(db)
 	exerciseRepository := repository.InitExerciseRepository(db)
 	learningRepository := repository.InitLearningRepository(db)
 	promotionRepository := repository.InitPromotionRepository(db)
@@ -48,6 +49,7 @@ func main() {
 	consultationRepository := repository.InitConsultationRepository(db)
 	paymentMethodRepository := repository.InitPaymentMethodRepository(db)
 	approvalStatusRepository := repository.InitApprovalStatusRepository(db)
+	coachingProgramRepository := repository.InitCoachingProgramRepository(db)
 	exerciseReadingRepository := repository.InitExerciseReadingRepository(db)
 	userClassHistoryRepository := repository.InitUserClassHistoryRepository(db)
 	userExerciseReadingRepository := repository.InitUserExerciseReadingRepository(db)
@@ -60,7 +62,9 @@ func main() {
 	mentorUsecase := usecase.InitMentorUsecase(mentorRepository)
 	ratingUsecase := usecase.InitRatingUsecase(ratingRepository)
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
+	scheduleUsecase := usecase.InitScheduleUsecase(scheduleRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
+	coachingProgramUsecase := usecase.InitCoachingProgramUsecase(coachingProgramRepository)
 	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository, userClassRepository, paymentRepository)
 	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, enumRepository, emailRepository)
 	userUsecase := usecase.InitUserUsecase(emailUsecase, userRepository)
@@ -85,12 +89,14 @@ func main() {
 	ratingHandler := handler.InitRatingHandler(ratingUsecase)
 	paymentHandler := handler.InitPaymentHandler(paymentUsecase)
 	packageHandler := handler.InitPackageHandler(packageUsecase)
+	scheduleHandler := handler.InitScheduleHandler(scheduleUsecase)
 	exerciseHandler := handler.InitExerciseHandler(exerciseUsecase)
 	learningHandler := handler.InitLearningHandler(learningUsecase)
 	promotionHandler := handler.InitPromotionHandler(promotionUsecase)
 	userClassHandler := handler.InitUserClassHandler(userClassUsecase)
 	consultationHandler := handler.InitConsultationHandler(consultationUsecase)
 	paymentMethodHandler := handler.InitPaymentMethodHandler(paymentMethodUsecase)
+	coachingProgramHandler := handler.InitCoachingProgramHandler(coachingProgramUsecase)
 	exerciseReadingHandler := handler.InitExerciseReadingHandler(exerciseReadingUsecase)
 	userExerciseReadingHandler := handler.InitUserExerciseReadingHandler(userExerciseReadingUsecase)
 
@@ -212,6 +218,12 @@ func main() {
 
 	// router-payment-method
 	router.GET("/payment_methods", paymentMethodHandler.GetAllPaymentMethod)
+
+	// router-payment-method
+	router.POST("/coaching_program", coachingProgramHandler.CoachingProgram)
+
+	// router-schedule
+	router.POST("/schedule", scheduleHandler.Schedule)
 
 	// go paymentUsecase.CheckAllPaymentExpired()
 	// go paymentUsecase.CheckAllPayment2HourBeforeExpired()

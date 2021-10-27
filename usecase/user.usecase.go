@@ -107,6 +107,8 @@ func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, 
 
 	if userLogin == (model.Users{}) {
 		userID, result, err = userUsecase.userRepository.RegisterUser(dataUser)
+		fmt.Println(userLogin)
+		fmt.Println(userID)
 		if err != nil {
 			return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.RegisterUser : ")
 		}
@@ -119,10 +121,16 @@ func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, 
 			userUsecase.emailUsecase.SendEmail(dataEmail)
 		}
 	}
+
 	user, err := userUsecase.GetUserInfo(dataUser.Email)
+	if err != nil {
+		return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.GetUserInfo : ")
+	}
+
 	if user == (shape.UserInfo{}) {
 		return shape.UserInfo{}, false, err
 	}
+
 	return user, result, err
 }
 

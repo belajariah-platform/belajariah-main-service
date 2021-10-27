@@ -76,10 +76,9 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	row := userClassRepository.db.QueryRow(query)
 
 	var isExpired bool
-	var postTestDate sql.NullTime
 	var id, totalUser, timeDuration int
-	var startDate, expiredDate time.Time
 	var preTestTotal, postTestTotal sql.NullInt64
+	var postTestDate, startDate, expiredDate sql.NullTime
 	var progress, preTestScores, postTestScores sql.NullFloat64
 	var packageCode, packageType, typeCode, types, status, statusCode, classCode, userCode, code string
 	var progressCount, progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
@@ -114,7 +113,6 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 	)
 
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetUserClass => ", sqlError.Error())
 		return model.UserClass{}, nil
 	} else {
 		userClassRow = model.UserClass{
@@ -190,8 +188,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		created_date,
 		modified_by,
 		modified_date,
-		deleted_by,
-		deleted_date
+		is_deleted
 	FROM transaction.v_t_user_class
 	WHERE 
 		is_deleted=false
@@ -200,7 +197,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 	OFFSET %d
 	LIMIT %d
 	`, filterUser, filter, sort, skip, take)
-
+	fmt.Println(query)
 	rows, sqlError := userClassRepository.db.Query(query)
 
 	if sqlError != nil {
@@ -209,13 +206,13 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 		defer rows.Close()
 		for rows.Next() {
 			var classRating float64
-			var isExpired, isActive bool
+			var createdDate time.Time
 			var id, totalUser, timeDuration int
+			var isExpired, isActive, is_deleted bool
+			var postTestDate, modifiedDate, startDate, expiredDate sql.NullTime
 			var preTestTotal, postTestTotal sql.NullInt64
-			var startDate, expiredDate, createdDate time.Time
-			var postTestDate, modifiedDate, deletedDate sql.NullTime
 			var progress, preTestScores, postTestScores sql.NullFloat64
-			var classInitial, classDescription, classImage, modifiedBy, deletedBy sql.NullString
+			var classInitial, classDescription, classImage, modifiedBy sql.NullString
 			var packageCode, packageType, typeCode, types, status, statusCode, classCode, className, classCategory, createdBy,
 				code, userCode string
 			var progressCount, progressIndex, progressSubindex, totalConsultation, totalWebinar sql.NullInt64
@@ -258,8 +255,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 				&createdDate,
 				&modifiedBy,
 				&modifiedDate,
-				&deletedBy,
-				&deletedDate,
+				&is_deleted,
 			)
 
 			if sqlError != nil {
@@ -305,8 +301,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 						CreatedDate:       createdDate,
 						ModifiedBy:        modifiedBy,
 						ModifiedDate:      modifiedDate,
-						DeletedBy:         deletedBy,
-						DeletedDate:       deletedDate,
+						IsDeleted:         is_deleted,
 					},
 				)
 			}
@@ -450,15 +445,17 @@ func deleteUserClass(tx *sql.Tx, userClass model.UserClass) (time.Time, error) {
 	UPDATE
 		transact_user_class
 	 SET
-		deleted_by=$1,
-		deleted_date=$2
+	 	modified_by=$1,
+	 	modified_date=$2,
+		is_active=false,
+		is_deleted=true
  	WHERE
  		class_code=$3 AND
 		user_code=$4 
 		returning expired_date
 	`,
-		userClass.DeletedBy.String,
-		userClass.DeletedDate.Time,
+		userClass.ModifiedBy.String,
+		userClass.ModifiedDate.Time,
 		userClass.ClassCode,
 		userClass.UserCode,
 	).Scan(&expiredDate)
@@ -740,7 +737,7 @@ func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]mo
 			var isExpired bool
 			var id, timeDuration int
 			var progress sql.NullFloat64
-			var startDate, expiredDate time.Time
+			var startDate, expiredDate sql.NullTime
 			var status, statusCode, classCode, userCode, code string
 
 			sqlError := rows.Scan(
@@ -817,7 +814,7 @@ func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(i
 			var isExpired bool
 			var id, timeDuration int
 			var progress sql.NullFloat64
-			var startDate, expiredDate time.Time
+			var startDate, expiredDate sql.NullTime
 			var status, statusCode, classCode, code, userCode string
 
 			sqlError := rows.Scan(

@@ -128,7 +128,7 @@ func (promotionUsecase *promotionUsecase) ClaimPromotion(promotions shape.Promot
 			class, _ := promotionUsecase.userClassRepository.GetUserClass(filter)
 			if class == (model.UserClass{}) {
 				message = "Mohon maaf anda belum bisa menggunakan kode promo ini, Ayo berlangganan kelas dahulu"
-			} else if utils.GetDuration(class.ExpiredDate, time.Now()) >= 10080 {
+			} else if utils.GetDuration(class.ExpiredDate.Time, time.Now()) >= 10080 {
 				message = "Mohon maaf anda belum bisa menggunakan kode promo ini"
 			} else {
 				message = ""
