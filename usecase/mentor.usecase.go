@@ -15,6 +15,8 @@ type mentorUsecase struct {
 type MentorUsecase interface {
 	GetMentorInfo(email string) (shape.MentorInfo, error)
 	GetAllMentor(query model.Query) ([]shape.MentorInfo, int, error)
+
+	RegisterMentor(r model.Mentors) (bool, error)
 }
 
 func InitMentorUsecase(mentorRepository repository.MentorRepository) MentorUsecase {
@@ -192,4 +194,14 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 	}
 
 	return mentorResult, count, err
+}
+
+func (mentorUsecase *mentorUsecase) RegisterMentor(r model.Mentors) (bool, error) {
+
+	result, err := mentorUsecase.mentorRepository.RegisterMentor(r)
+	if err != nil {
+		return false, utils.WrapError(err, "mentorUsecase.mentorRepository.RegisterMentor : ")
+	}
+
+	return result, err
 }

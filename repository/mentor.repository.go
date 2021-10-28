@@ -4,35 +4,15 @@ import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/utils"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
-type mentorRepository struct {
-	db *sqlx.DB
-}
-
-type MentorRepository interface {
-	GetMentorInfo(email string) (model.MentorInfo, error)
-
-	GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error)
-	GetAllMentorCount(filter string) (int, error)
-
-	GetAllMentorSchedule(code string) ([]model.MentorSchedule, error)
-	GetAllMentorExperience(code string) ([]model.MentorExperience, error)
-}
-
-func InitMentorRepository(db *sqlx.DB) MentorRepository {
-	return &mentorRepository{
-		db,
-	}
-}
-
-func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error) {
-	var mentorRow model.MentorInfo
-	row := mentorRepository.db.QueryRow(`
+const (
+	_getMentorInfo = `
 	SELECT
 		id,
 		code,
@@ -65,7 +45,150 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 	FROM 
 		belajariah.v_mentors
 	WHERE 
-		email = $1`, email)
+		email = $1`
+
+	_getAllMentor = `
+	SELECT
+		id,
+		code,
+		role_code,
+		role,
+		mentor_code, 
+		email,
+		fullname,
+		phone,
+		profession,
+		gender,
+		age,
+		birth,
+		province,
+		city,
+		address,
+		image_profile,
+		description,
+		account_owner,
+		account_name,
+		account_number,
+		learning_method,
+		learning_method_text,
+		rating,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date
+	FROM 
+		belajariah.v_mentors
+	WHERE 
+		is_active=true
+	%s %s %s
+	OFFSET %d
+	LIMIT %d
+`
+
+	_getAllMentorSchedule = `
+	SELECT
+		id,
+		code,
+		mentor_code,
+		shift_name,
+		start_date,
+		end_date,
+		time_zone,
+		coalesce(sequence, 0) AS sequence,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		is_deleted
+	FROM 
+		master.master_mentor_schedule
+	WHERE 
+		is_active=true and 
+		is_deleted=false and
+		mentor_code='%s'
+	`
+
+	_getAllMentorExperience = `
+	SELECT
+		id,
+		code,
+		mentor_code,
+		experience,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		is_deleted
+	FROM 
+		belajariah.mentor_experience
+	WHERE 
+		is_active=true and 
+		is_deleted=false and
+		mentor_code='%s'
+	`
+
+	_getAllMentorCount = `
+		SELECT COUNT(*) FROM 
+			belajariah.v_mentors  
+		WHERE 
+			is_active=true
+		%s
+		`
+	_registerMentor = `
+		INSERT INTO auth.mentors
+		(
+			role_code,
+			email,
+			password,
+			verified_code,
+			is_verified,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES(
+			(SELECT code FROM auth.roles WHERE role = 'Mentor' LIMIT 1),
+			'%s',
+			'%s',
+			'%s',
+			 %t,
+			'%s',
+			'%s',
+			'%s',
+			'%s'
+		) returning code
+		`
+)
+
+type mentorRepository struct {
+	db *sqlx.DB
+}
+
+type MentorRepository interface {
+	GetMentorInfo(email string) (model.MentorInfo, error)
+
+	GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error)
+	GetAllMentorCount(filter string) (int, error)
+
+	GetAllMentorSchedule(code string) ([]model.MentorSchedule, error)
+	GetAllMentorExperience(code string) ([]model.MentorExperience, error)
+
+	RegisterMentor(data model.Mentors) (bool, error)
+}
+
+func InitMentorRepository(db *sqlx.DB) MentorRepository {
+	return &mentorRepository{
+		db,
+	}
+}
+
+func (r *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error) {
+	var mentorRow model.MentorInfo
+	row := r.db.QueryRow(_getMentorInfo, email)
 	var isActive bool
 	var rating float64
 	var id, mentorCode int
@@ -143,48 +266,11 @@ func (mentorRepository *mentorRepository) GetMentorInfo(email string) (model.Men
 	}
 }
 
-func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error) {
+func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error) {
 	var mentorList []model.MentorInfo
-	query := fmt.Sprintf(`
-		SELECT
-			id,
-			code,
-			role_code,
-			role,
-			mentor_code, 
-			email,
-			fullname,
-			phone,
-			profession,
-			gender,
-			age,
-			birth,
-			province,
-			city,
-			address,
-			image_profile,
-			description,
-			account_owner,
-			account_name,
-			account_number,
-			learning_method,
-			learning_method_text,
-			rating,
-			is_active,
-			created_by,
-			created_date,
-			modified_by,
-			modified_date
-		FROM 
-			belajariah.v_mentors
-		WHERE 
-			is_active=true
-		%s %s %s
-		OFFSET %d
-		LIMIT %d
-	`, filter, search, sort, skip, take)
+	query := fmt.Sprintf(_getAllMentor, filter, search, sort, skip, take)
 
-	rows, sqlError := mentorRepository.db.Query(query)
+	rows, sqlError := r.db.Query(query)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllMentor => ", sqlError.Error())
@@ -272,33 +358,11 @@ func (mentorRepository *mentorRepository) GetAllMentor(skip, take int, sort, sea
 	return mentorList, sqlError
 }
 
-func (mentorRepository *mentorRepository) GetAllMentorSchedule(code string) ([]model.MentorSchedule, error) {
+func (r *mentorRepository) GetAllMentorSchedule(code string) ([]model.MentorSchedule, error) {
 	var mentorList []model.MentorSchedule
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		code,
-		mentor_code,
-		shift_name,
-		start_date,
-		end_date,
-		time_zone,
-		coalesce(sequence, 0) AS sequence,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		is_deleted
-	FROM 
-		master.master_mentor_schedule
-	WHERE 
-		is_active=true and 
-		is_deleted=false and
-		mentor_code='%s'
-	`, code)
+	query := fmt.Sprintf(_getAllMentorSchedule, code)
 
-	rows, sqlError := mentorRepository.db.Query(query)
+	rows, sqlError := r.db.Query(query)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllMentorSchedule => ", sqlError.Error())
@@ -356,29 +420,11 @@ func (mentorRepository *mentorRepository) GetAllMentorSchedule(code string) ([]m
 	return mentorList, sqlError
 }
 
-func (mentorRepository *mentorRepository) GetAllMentorExperience(code string) ([]model.MentorExperience, error) {
+func (r *mentorRepository) GetAllMentorExperience(code string) ([]model.MentorExperience, error) {
 	var mentorList []model.MentorExperience
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		code,
-		mentor_code,
-		experience,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		is_deleted
-	FROM 
-		belajariah.mentor_experience
-	WHERE 
-		is_active=true and 
-		is_deleted=false and
-		mentor_code='%s'
-	`, code)
+	query := fmt.Sprintf(_getAllMentorExperience, code)
 
-	rows, sqlError := mentorRepository.db.Query(query)
+	rows, sqlError := r.db.Query(query)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllMentorExperience => ", sqlError.Error())
@@ -428,21 +474,41 @@ func (mentorRepository *mentorRepository) GetAllMentorExperience(code string) ([
 	return mentorList, sqlError
 }
 
-func (mentorRepository *mentorRepository) GetAllMentorCount(filter string) (int, error) {
+func (r *mentorRepository) GetAllMentorCount(filter string) (int, error) {
 	var count int
-	query := fmt.Sprintf(`
-	SELECT COUNT(*) FROM 
-		belajariah.v_mentors  
-	WHERE 
-		is_active=true
-	%s
-	`, filter)
+	query := fmt.Sprintf(_getAllMentorCount, filter)
 
-	row := mentorRepository.db.QueryRow(query)
+	row := r.db.QueryRow(query)
 	sqlError := row.Scan(&count)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllMentorCount => ", sqlError.Error())
 		count = 0
 	}
 	return count, sqlError
+}
+
+func (r *mentorRepository) RegisterMentor(data model.Mentors) (bool, error) {
+	var code string
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("mentorRepository: RegisterMentor: error begin transaction")
+	}
+
+	data.CreatedDate = time.Now()
+	data.ModifiedDate.Time = time.Now()
+
+	mutation := fmt.Sprintf(_registerMentor,
+		data.Email, data.Password, data.VerifiedCode.String, data.IsVerified, data.Email,
+		utils.CurrentDateString(data.CreatedDate), data.Email, utils.CurrentDateString(data.ModifiedDate.Time),
+	)
+
+	err = tx.QueryRow(mutation).Scan(&code)
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "mentorRepository: RegisterMentor: error insert")
+	}
+
+	tx.Commit()
+	return err == nil, nil
 }

@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+type MentorRequest struct {
+	Action string  `form:"action" json:"action" xml:"action"`
+	Data   Mentors `form:"data" json:"data" xml:"data"`
+	Query  Query   `form:"query" json:"query" xml:"query"`
+}
+
 type Mentors struct {
 	ID           int
 	Code         string
@@ -14,7 +20,7 @@ type Mentors struct {
 	NewPassword  string
 	OldPassword  string
 	FullName     sql.NullString
-	Phone        sql.NullInt64
+	Phone        NullInt64
 	VerifiedCode sql.NullString
 	IsVerified   bool
 	IsActive     bool

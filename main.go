@@ -155,6 +155,7 @@ func main() {
 	// router-mentor
 	router.GET("/mentors", mentorHandler.GetAllMentor)
 	router.GET("/mentor/:email", mentorHandler.GetMentor)
+	router.POST("/mentors", mentorHandler.Mentor)
 
 	// router-rating
 	router.POST("/rating_class", ratingHandler.GiveRatingClass)

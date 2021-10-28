@@ -148,7 +148,7 @@ func (r *coachingProgramRepository) GetAllMasterCoachingProgram(filter string) (
 
 	err := r.db.Select(&result, query)
 	if err != nil {
-		return nil, utils.WrapError(err, "coachingProgramRepository.GetAllMasterCoachingPorgram :  error get")
+		return nil, utils.WrapError(err, "coachingProgramRepository.GetAllMasterCoachingProgram :  error get")
 	}
 
 	return &result, nil
@@ -160,7 +160,7 @@ func (r *coachingProgramRepository) GetAllCoachingProgram(filter string) (*[]mod
 
 	err := r.db.Select(&result, query)
 	if err != nil {
-		return nil, utils.WrapError(err, "coachingProgramRepository.GetAllCoachingPorgram : ")
+		return nil, utils.WrapError(err, "coachingProgramRepository.GetAllCoachingProgram : ")
 	}
 
 	return &result, nil

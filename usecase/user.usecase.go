@@ -73,7 +73,7 @@ func (userUsecase *userUsecase) LoginUser(users shape.Users) (shape.UserInfo, bo
 func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, bool, error) {
 	var emailType string = "Registration Success"
 	var result bool = true
-	var userID string
+	var userResult model.Users
 
 	hashPassword, err := utils.GenerateHashPassword(users.Password)
 	if err != nil {
@@ -106,16 +106,14 @@ func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, 
 	}
 
 	if userLogin == (model.Users{}) {
-		userID, result, err = userUsecase.userRepository.RegisterUser(dataUser)
-		fmt.Println(userLogin)
-		fmt.Println(userID)
+		userResult, result, err = userUsecase.userRepository.RegisterUser(dataUser)
 		if err != nil {
 			return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.RegisterUser : ")
 		}
 
-		if userID != "" {
+		if userResult.Code != "" {
 			dataEmail := model.EmailBody{
-				UserCode: userID,
+				UserCode: userResult.Code,
 				BodyTemp: emailType,
 			}
 			userUsecase.emailUsecase.SendEmail(dataEmail)
@@ -172,8 +170,9 @@ func (userUsecase *userUsecase) ResetVerificationUser(users shape.Users) (bool, 
 
 func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, string) {
 	var emailType string = "Account Verification"
+	var userResult model.Users
 	var user model.UserInfo
-	var msg, userID string
+	var msg string
 	var err error
 	var result bool
 
@@ -233,14 +232,20 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 		}
 	}
 
-	userID, result, err = userUsecase.userRepository.RegisterUser(dataUser)
+	userResult, result, err = userUsecase.userRepository.RegisterUser(dataUser)
 	if err != nil {
 		return false, utils.WrapError(err, "userUsecase.userRepository.RegisterUser : "), msg
 	}
 
-	if err == nil && userID != "" {
+	dataUser.Code = userResult.Code
+	result, err = userUsecase.userRepository.InsertUserDetail(dataUser)
+	if err != nil {
+		return false, utils.WrapError(err, "userUsecase.userRepository.InsertUserDetail : "), msg
+	}
+
+	if err == nil && userResult.Code != "" {
 		dataEmail := model.EmailBody{
-			UserCode:         userID,
+			UserCode:         userResult.Code,
 			BodyTemp:         emailType,
 			VerificationCode: dataUser.VerifiedCode.String,
 		}

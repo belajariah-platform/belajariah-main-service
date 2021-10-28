@@ -294,7 +294,7 @@ const (
                                 </tr>
                                 <tr style="margin:0;padding:0">
                                     <td style="margin:0;padding:0">
-                                        <h5 style="line-height:1.4;color:black;font-weight:100;font-size:20px;margin:0px 0px 10px 0px;padding:0;font-size: 16px;">Klik <a href="belajariah://app/verif">Link ini</a> untuk ke Halaman Verifikasi Belajariah</h5>  
+                                        <h5 style="line-height:1.4;color:black;font-weight:100;font-size:20px;margin:20px 20px 10px 20px;padding:0;font-size: 14px;">Klik <a href="belajariah://app/verif">Link ini</a> untuk ke Halaman Verifikasi Belajariah</h5>  
                                     </td>
                                 </tr>
                         </tbody>
