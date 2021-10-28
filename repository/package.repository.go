@@ -237,6 +237,7 @@ func (packageRepository *packageRepository) GetAllBenefit(skip, take int, filter
 		is_deleted = false AND
 		is_active=true
 	%s
+	ORDER BY sequence ASC
 	OFFSET %d
 	LIMIT %d
 	`, filter, skip, take)
