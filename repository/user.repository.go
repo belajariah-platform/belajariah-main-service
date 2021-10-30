@@ -117,7 +117,7 @@ const (
 	`
 	_updateProfileUser = `
 		UPDATE
-			auth.user_info
+			belajariah.user_info
 		SET
 			fullname=$1,
 			phone=$2,

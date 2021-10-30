@@ -265,7 +265,7 @@ func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email s
 	var result bool
 	var err error
 	dataUser := model.UserInfo{
-		ID: users.User_Code,
+		Code: users.User_Code,
 		FullName: sql.NullString{
 			String: users.Full_Name,
 		},

@@ -51,7 +51,7 @@ type UserInfo struct {
 
 type UsersPost struct {
 	ID             int
-	User_Code      int
+	User_Code      string
 	Role_Code      string
 	Role           string
 	Email          string
