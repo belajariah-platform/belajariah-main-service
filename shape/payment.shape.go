@@ -29,6 +29,8 @@ type Payment struct {
 	Payment_Type_Code    string
 	Payment_Type         string
 	Expired_Date         string
+	Schedule_Code_1      string
+	Schedule_Code_2      string
 	Is_Active            bool
 	Created_By           string
 	Created_Date         time.Time
@@ -58,6 +60,8 @@ type PaymentPost struct {
 	Image_Proof         string
 	Action              string
 	Remarks             string
+	Schedule_Code_1     string
+	Schedule_Code_2     string
 	Is_Active           bool
 	Created_By          string
 	Created_Date        time.Time

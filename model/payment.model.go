@@ -39,6 +39,8 @@ type Payment struct {
 	PaymentTypeCode    string
 	PaymentType        string
 	Remarks            sql.NullString
+	ScheduleCode1      sql.NullString
+	ScheduleCode2      sql.NullString
 	IsActive           bool
 	CreatedBy          string
 	CreatedDate        time.Time

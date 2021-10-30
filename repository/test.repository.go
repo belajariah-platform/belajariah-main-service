@@ -10,6 +10,50 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	_getAllTest = `
+		SELECT
+			id,
+			code,
+			class_code,
+			test_type_code,
+			question,
+			option_a,
+			option_b,
+			option_c,
+			option_d,
+			answer,
+			test_image,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM master.v_m_test
+		WHERE 
+			is_deleted = false AND
+			is_active=true
+		%s
+		OFFSET %d
+		LIMIT %d
+	`
+	_getAllTestCount = `
+		SELECT COUNT(*) FROM 
+			master.v_m_test  
+		WHERE 
+			is_deleted=false AND
+			is_active=true
+		%s
+	`
+	_correctionTest = `
+		SELECT COUNT(*) FROM 
+			master.v_m_test vmct
+		WHERE 
+			code = '%s' AND answer = %d
+	`
+)
+
 type testRepository struct {
 	db *sqlx.DB
 }
@@ -28,33 +72,7 @@ func InitTestRepository(db *sqlx.DB) TestRepository {
 
 func (testRepository *testRepository) GetAllTest(skip, take int, filter string) ([]model.ClassTest, error) {
 	var testList []model.ClassTest
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		code,
-		class_code,
-		test_type_code,
-		question,
-		option_a,
-		option_b,
-		option_c,
-		option_d,
-		answer,
-		test_image,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		is_deleted
-	FROM master.v_m_test
-	WHERE 
-		is_deleted = false AND
-		is_active=true
-	%s
-	OFFSET %d
-	LIMIT %d
-	`, filter, skip, take)
+	query := fmt.Sprintf(_getAllTest, filter, skip, take)
 
 	rows, sqlError := testRepository.db.Query(query)
 
@@ -123,14 +141,7 @@ func (testRepository *testRepository) GetAllTest(skip, take int, filter string) 
 
 func (testRepository *testRepository) GetAllTestCount(filter string) (int, error) {
 	var count int
-	query := fmt.Sprintf(`
-	SELECT COUNT(*) FROM 
-		master.v_m_test  
-	WHERE 
-		is_deleted=false AND
-		is_active=true
-	%s
-	`, filter)
+	query := fmt.Sprintf(_getAllTestCount, filter)
 
 	row := testRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
@@ -143,12 +154,7 @@ func (testRepository *testRepository) GetAllTestCount(filter string) (int, error
 
 func (testRepository *testRepository) CorrectionTest(code string, answer int) (int, error) {
 	var count int
-	query := fmt.Sprintf(`
-	SELECT COUNT(*) FROM 
-		master.v_m_test vmct
-	WHERE 
-		code = '%s' AND answer = %d
-	`, code, answer)
+	query := fmt.Sprintf(_correctionTest, code, answer)
 
 	row := testRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)

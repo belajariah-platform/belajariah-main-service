@@ -4,11 +4,272 @@ import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/utils"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+)
+
+const (
+	_getUserClass = `
+		SELECT
+			id,
+			code,
+			user_code,
+			class_code,
+			total_user,
+			type_code,
+			type,
+			status_code,
+			status,
+			package_code,
+			package_type,
+			is_expired,
+			start_date,
+			expired_date,
+			time_duration,
+			progress,
+			progress_count,
+			progress_index,
+			progress_subindex,
+			pre_test_scores,
+			post_test_scores,
+			post_test_date,
+			pre_test_total,
+			post_test_total,
+			total_consultation,
+			total_webinar
+		FROM 
+			transaction.v_t_user_class
+		WHERE 
+			is_deleted=false
+			%s
+	`
+	_getAllUserClass = `
+		SELECT
+			id,
+			code,
+			user_code,
+			class_code,
+			class_name,
+			class_initial,
+			class_category,
+			class_description,
+			class_image,
+			class_rating,
+			total_user,
+			type_code,
+			type,
+			status_code,
+			status,
+			package_code,
+			package_type,
+			is_expired,
+			start_date,
+			expired_date,
+			time_duration,
+			progress,
+			progress_count,
+			progress_index,
+			progress_subindex,
+			pre_test_scores,
+			post_test_scores,
+			post_test_date,
+			pre_test_total,
+			post_test_total,
+			total_consultation,
+			total_webinar,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM transaction.v_t_user_class
+		WHERE 
+			is_deleted=false
+			%s
+		%s %s
+		OFFSET %d
+		LIMIT %d
+	`
+	_getAllUserClassCount = `
+		SELECT COUNT(*) FROM 
+			transaction.v_t_user_class  
+		WHERE 
+			is_deleted=false
+			%s
+		%s
+	`
+	_insertUserClass = `
+		INSERT INTO transaction.transact_user_class
+		(
+			user_code,
+			class_code,
+			package_code,
+			type_code,
+			status_code,
+			start_date,
+			expired_date,
+			time_duration,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES(
+			$1,
+			$2,
+			$3,
+			(SELECT code 
+				FROM master.master_enum me 
+				WHERE lower(value)=lower('new class') LIMIT 1),
+			(SELECT code 
+				FROM master.master_enum me 
+				WHERE lower(value)=lower('start') LIMIT 1),
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9,
+			$10
+		)
+	`
+	_updateUserClass = `
+		UPDATE
+			transaction.transact_user_class
+		SET
+			package_code=$1,
+			type_code=(SELECT code 
+				FROM master.master_enum me 
+				WHERE value='Extend Class' LIMIT 1),
+			is_expired=false,
+			start_date=$2,
+			expired_date=$3,
+			time_duration=$4,
+			pre_test_scores=default,
+			post_test_scores=default,
+			post_test_date=default,
+			modified_by=$5,
+			modified_date=$6,
+			pre_test_total=0,
+			post_test_total=0
+		WHERE
+			class_code=$7 AND
+			user_code=$8 
+	`
+	_updateUserClassExpired = `
+		UPDATE
+			transaction.transact_user_class
+		SET
+			is_expired=true,
+			modified_by=$1,
+			modified_date=$2
+		WHERE
+			code=$3 AND
+			user_code=$4 
+	`
+	_updateUserClassProgress = `
+		UPDATE
+			transaction.transact_user_class
+		SET
+			progress=$1,
+			status_code=(SELECT code 
+				FROM master_enum me 
+				WHERE value=$2 LIMIT 1),
+			modified_by=$3,
+			modified_date=$4,
+			progress_index=$5,
+			progress_subindex=$6,
+			progress_count=$7
+		WHERE
+			code=$8 AND
+			user_code=$9
+	`
+	_updateUserClassPreTest = `
+		UPDATE
+			transaction.transact_user_class
+		SET
+			pre_test_scores=$1,
+			pre_test_total=pre_test_total+1,
+			modified_by=$2,
+			modified_date=$3
+		WHERE
+			code=$4
+	`
+	_updateUserClassPostTest = `
+		UPDATE
+			transaction.transact_user_class
+		SET
+			post_test_scores=$1,
+			post_test_date=$2,
+			post_test_total=post_test_total+1,
+			modified_by=$3,
+			modified_date=$4
+		WHERE
+			code=$5
+	`
+	_deleteUserClass = `
+		UPDATE
+			transaction.transact_user_class
+		SET
+			modified_by=$1,
+			modified_date=$2,
+			is_active=false,
+			is_deleted=true
+		WHERE
+			class_code=$3 AND
+			user_code=$4 
+			returning expired_date
+	`
+	_checkAllUserClassExpired = `
+		SELECT
+			id,
+			code,
+			user_code,
+			class_code,
+			status_code,
+			status,
+			is_expired,
+			start_date,
+			expired_date,
+			time_duration,
+			progress
+		FROM transaction.v_t_user_class
+		WHERE  	
+			is_deleted=false AND
+			is_expired = false AND
+			expired_date <= now() 
+	`
+	_checkAllUserClassBeforeExpired = `
+		SELECT
+			id,
+			code,
+			user_code,
+			class_code,
+			status_code,
+			status,
+			is_expired,
+			start_date,
+			expired_date,
+			time_duration,
+			progress
+		FROM transaction.v_t_user_class
+		WHERE  	
+			is_deleted=false AND
+			is_expired = false AND
+			DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
+			DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
+			DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
+			DATE_PART('second', expired_date::timestamp - now()::timestamp) <= $1 AND
+			DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
+			DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
+			DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
+			DATE_PART('second', expired_date::timestamp - now()::timestamp) >= $2
+	`
 )
 
 type userClassRepository struct {
@@ -39,40 +300,8 @@ func InitUserClassRepository(db *sqlx.DB) UserClassRepository {
 
 func (userClassRepository *userClassRepository) GetUserClass(filter string) (model.UserClass, error) {
 	var userClassRow model.UserClass
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		code,
-		user_code,
-		class_code,
-		total_user,
-		type_code,
-		type,
-		status_code,
-		status,
-		package_code,
-		package_type,
-		is_expired,
-		start_date,
-		expired_date,
-		time_duration,
-		progress,
-		progress_count,
-		progress_index,
-		progress_subindex,
-		pre_test_scores,
-		post_test_scores,
-		post_test_date,
-		pre_test_total,
-		post_test_total,
-		total_consultation,
-		total_webinar
-	FROM 
-		transaction.v_t_user_class
-	WHERE 
-		is_deleted=false
-		%s
-	`, filter)
+
+	query := fmt.Sprintf(_getUserClass, filter)
 	row := userClassRepository.db.QueryRow(query)
 
 	var isExpired bool
@@ -149,55 +378,8 @@ func (userClassRepository *userClassRepository) GetUserClass(filter string) (mod
 
 func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, sort, filter, filterUser string) ([]model.UserClass, error) {
 	var userClassList []model.UserClass
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		code,
-		user_code,
-		class_code,
-		class_name,
-		class_initial,
-		class_category,
-		class_description,
-		class_image,
-		class_rating,
-		total_user,
-		type_code,
-		type,
-		status_code,
-		status,
-		package_code,
-		package_type,
-		is_expired,
-		start_date,
-		expired_date,
-		time_duration,
-		progress,
-		progress_count,
-		progress_index,
-		progress_subindex,
-		pre_test_scores,
-		post_test_scores,
-		post_test_date,
-		pre_test_total,
-		post_test_total,
-		total_consultation,
-		total_webinar,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		is_deleted
-	FROM transaction.v_t_user_class
-	WHERE 
-		is_deleted=false
-		%s
-	%s %s
-	OFFSET %d
-	LIMIT %d
-	`, filterUser, filter, sort, skip, take)
-	fmt.Println(query)
+	query := fmt.Sprintf(_getAllUserClass, filterUser, filter, sort, skip, take)
+
 	rows, sqlError := userClassRepository.db.Query(query)
 
 	if sqlError != nil {
@@ -312,14 +494,7 @@ func (userClassRepository *userClassRepository) GetAllUserClass(skip, take int, 
 
 func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, filterUser string) (int, error) {
 	var count int
-	query := fmt.Sprintf(`
-	SELECT COUNT(*) FROM 
-		transaction.v_t_user_class  
-	WHERE 
-		is_deleted=false
-		%s
-	%s
-	`, filterUser, filter)
+	query := fmt.Sprintf(_getAllUserClassCount, filterUser, filter)
 
 	row := userClassRepository.db.QueryRow(query)
 	sqlError := row.Scan(&count)
@@ -330,72 +505,13 @@ func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, fil
 	return count, sqlError
 }
 
-func (userClassRepository *userClassRepository) InsertUserClass(userClass model.UserClass) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := userClassRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in insertUserClass", errTx)
-	} else {
-		err = insertUserClass(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class---", err)
-		}
+func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: InsertUserClass: error begin transaction")
 	}
 
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
-		tx.Rollback()
-		utils.PushLogf("failed to InsertUserClass", err)
-	}
-
-	return result, err
-}
-
-func insertUserClass(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	INSERT INTO transact_user_class
-	(
-		user_code,
-		class_code,
-		package_code,
-		type_code,
-		status_code,
-		start_date,
-		expired_date,
-		time_duration,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		total_consultation,
-		total_webinar
-	)
-	VALUES(
-		$1,
-		$2,
-		$3,
-		(SELECT code 
-			FROM master_enum me 
-			WHERE lower(value)=lower('new class') LIMIT 1),
-		(SELECT code 
-			FROM master_enum me 
-			WHERE lower(value)=lower('start') LIMIT 1),
-		$4,
-		$5,
-		$6,
-		$7,
-		$8,
-		$9,
-		$10,
-		$11,
-		$12
-	);
-	`,
+	_, err = tx.Exec(_insertUserClass,
 		userClass.UserCode,
 		userClass.ClassCode,
 		userClass.PackageCode,
@@ -406,218 +522,72 @@ func insertUserClass(tx *sql.Tx, userClass model.UserClass) error {
 		userClass.CreatedDate,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
-		userClass.TotalConsultation.Int64,
-		userClass.TotalWebinar.Int64,
 	)
-	return err
-}
 
-func (userClassRepository *userClassRepository) DeleteUserClass(userClass model.UserClass) (time.Time, bool, error) {
-	var err error
-	var result bool
-	var date time.Time
-
-	tx, errTx := userClassRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in DeleteUserClass", errTx)
-	} else {
-		date, err = deleteUserClass(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class---", err)
-		}
-	}
-
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
+	if err != nil {
 		tx.Rollback()
-		utils.PushLogf("failed to DeleteUserClass", err)
+		return false, utils.WrapError(err, "userClassRepository: InsertUserClass: error insert")
 	}
 
-	return date, result, err
+	tx.Commit()
+	return err == nil, nil
 }
 
-func deleteUserClass(tx *sql.Tx, userClass model.UserClass) (time.Time, error) {
-	var expiredDate time.Time
-	err := tx.QueryRow(`
-	UPDATE
-		transact_user_class
-	 SET
-	 	modified_by=$1,
-	 	modified_date=$2,
-		is_active=false,
-		is_deleted=true
- 	WHERE
- 		class_code=$3 AND
-		user_code=$4 
-		returning expired_date
-	`,
-		userClass.ModifiedBy.String,
-		userClass.ModifiedDate.Time,
-		userClass.ClassCode,
-		userClass.UserCode,
-	).Scan(&expiredDate)
-	return expiredDate, err
-}
-
-func (userClassRepository *userClassRepository) UpdateUserClass(userClass model.UserClass) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := userClassRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in UpdateUserClass", errTx)
-	} else {
-		err = updateUserClass(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class---", err)
-		}
+func (r *userClassRepository) UpdateUserClass(userClass model.UserClass) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: UpdateUserClass: error begin transaction")
 	}
 
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
-		tx.Rollback()
-		utils.PushLogf("failed to UpdateUserClass", err)
-	}
-
-	return result, err
-}
-
-func updateUserClass(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	UPDATE
-		transact_user_class
-	 SET
-		package_code=$1,
-		type_code=(SELECT code 
-			FROM master_enum me 
-			WHERE value='Extend Class' LIMIT 1),
-		is_expired=false,
-		start_date=$2,
-		expired_date=$3,
-		time_duration=$4,
-		pre_test_scores=default,
-		post_test_scores=default,
-		post_test_date=default,
-		modified_by=$5,
-		modified_date=$6,
-		total_consultation=$7,
-		total_webinar=$8,
-		pre_test_total=0,
-		post_test_total=0
- 	WHERE
- 		class_code=$9 AND
-		user_code=$10 
-	`,
+	_, err = tx.Exec(_updateUserClass,
 		userClass.PackageCode,
 		userClass.StartDate,
 		userClass.ExpiredDate,
 		userClass.TimeDuration,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
-		userClass.TotalConsultation.Int64,
-		userClass.TotalWebinar.Int64,
 		userClass.ClassCode,
 		userClass.UserCode,
 	)
-	return err
-}
 
-func (userClassRepository *userClassRepository) UpdateUserClassExpired(userClass model.UserClass) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := userClassRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in UpdateUserClassExpired", errTx)
-	} else {
-		err = updateUserClassExpired(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class---", err)
-		}
-	}
-
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
+	if err != nil {
 		tx.Rollback()
-		utils.PushLogf("failed to UpdateUserClassExpired", err)
+		return false, utils.WrapError(err, "userClassRepository: UpdateUserClass: error update")
 	}
 
-	return result, err
+	tx.Commit()
+	return err == nil, nil
 }
 
-func updateUserClassExpired(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	UPDATE
-		transact_user_class
-	 SET
-		is_expired=true,
-		modified_by=$1,
-		modified_date=$2
- 	WHERE
- 		id=$3 AND
-		user_code=$4 
-	`,
+func (r *userClassRepository) UpdateUserClassExpired(userClass model.UserClass) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: UpdateUserClassExpired: error begin transaction")
+	}
+
+	_, err = tx.Exec(_updateUserClassExpired,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
-		userClass.ID,
+		userClass.Code,
 		userClass.UserCode,
 	)
-	return err
-}
 
-func (userClassRepository *userClassRepository) UpdateUserClassProgress(userClass model.UserClass) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := userClassRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in UpdateUserClassProgress", errTx)
-	} else {
-		err = updateUserClassProgress(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class---", err)
-		}
-	}
-
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
+	if err != nil {
 		tx.Rollback()
-		utils.PushLogf("failed to UpdateUserClassProgress", err)
+		return false, utils.WrapError(err, "userClassRepository: UpdateUserClassExpired: error update")
 	}
 
-	return result, err
+	tx.Commit()
+	return err == nil, nil
 }
 
-func updateUserClassProgress(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	UPDATE
-		transact_user_class
-	 SET
-		progress=$1,
-		status_code=(SELECT code 
-			FROM master_enum me 
-			WHERE value=$2 LIMIT 1),
-		modified_by=$3,
-		modified_date=$4,
-		progress_index=$5,
-		progress_subindex=$6,
-		progress_count=$7
- 	WHERE
- 		id=$8 AND
-		user_code=$9
-	`,
+func (r *userClassRepository) UpdateUserClassProgress(userClass model.UserClass) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: UpdateUserClassProgress: error begin transaction")
+	}
+
+	_, err = tx.Exec(_updateUserClassProgress,
 		userClass.Progress.Float64,
 		userClass.Status,
 		userClass.ModifiedBy.String,
@@ -625,109 +595,84 @@ func updateUserClassProgress(tx *sql.Tx, userClass model.UserClass) error {
 		userClass.ProgressIndex.Int64,
 		userClass.ProgressSubindex.Int64,
 		userClass.ProgressCount.Int64,
-		userClass.ID,
+		userClass.Code,
 		userClass.UserCode,
 	)
-	return err
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "userClassRepository: UpdateUserClassProgress: error update")
+	}
+
+	tx.Commit()
+	return err == nil, nil
 }
 
-func (userClassRepository *userClassRepository) UpdateUserClassTest(userClass model.UserClass, types string) (bool, error) {
-	var err error
-	var result bool
+func (r *userClassRepository) UpdateUserClassTest(userClass model.UserClass, types string) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: UpdateUserClassTest: error begin transaction")
+	}
 
-	tx, errTx := userClassRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in UpdateUserClassTest", errTx)
-	} else {
-		if strings.ToLower(types) == "pre-test" {
-			err = updateUserClassPreTest(tx, userClass)
-			if err != nil {
-				utils.PushLogf("err in user-class---", err)
-			}
-		} else if strings.ToLower(types) == "post-test" {
-			err = updateUserClassPostTest(tx, userClass)
-			if err != nil {
-				utils.PushLogf("err in user-class---", err)
-			}
+	if strings.ToLower(types) == "pre-test" {
+		_, err = tx.Exec(_updateUserClassPreTest,
+			userClass.PreTestScores.Float64,
+			userClass.ModifiedBy.String,
+			userClass.ModifiedDate.Time,
+			userClass.Code,
+		)
+
+		if err != nil {
+			tx.Rollback()
+			return false, utils.WrapError(err, "userClassRepository: _updateUserClassPreTest: error update")
+		}
+
+	} else if strings.ToLower(types) == "post-test" {
+		_, err = tx.Exec(_updateUserClassPostTest,
+			userClass.PostTestDate.Time,
+			userClass.ModifiedBy.String,
+			userClass.ModifiedDate.Time,
+			userClass.Code,
+		)
+
+		if err != nil {
+			tx.Rollback()
+			return false, utils.WrapError(err, "userClassRepository: _updateUserClassPostTest: error update")
 		}
 	}
 
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
-		tx.Rollback()
-		utils.PushLogf("failed to UpdateUserClassTest", err)
+	tx.Commit()
+	return err == nil, nil
+}
+
+func (r *userClassRepository) DeleteUserClass(userClass model.UserClass) (time.Time, bool, error) {
+	var date time.Time
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return date, false, errors.New("userClassRepository: DeleteUserClass: error begin transaction")
 	}
 
-	return result, err
-}
-
-func updateUserClassPreTest(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	UPDATE
-		transact_user_class
-	 SET
-		pre_test_scores=$1,
-		pre_test_total=pre_test_total+1,
-		modified_by=$2,
-		modified_date=$3
- 	WHERE
- 		id=$4
-	`,
-		userClass.PreTestScores.Float64,
+	err = tx.QueryRow(_deleteUserClass,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
-		userClass.ID,
-	)
-	return err
-}
+		userClass.ClassCode,
+		userClass.UserCode,
+	).Scan(&date)
 
-func updateUserClassPostTest(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-		UPDATE
-			transact_user_class
-		SET
-			post_test_scores=$1,
-			post_test_date=$2,
-			post_test_total=post_test_total+1,
-			modified_by=$3,
-			modified_date=$4
-		WHERE
-			id=$5
-	`,
-		userClass.PostTestScores.Float64,
-		userClass.PostTestDate.Time,
-		userClass.ModifiedBy.String,
-		userClass.ModifiedDate.Time,
-		userClass.ID,
-	)
-	return err
+	if err != nil {
+		tx.Rollback()
+		return date, false, utils.WrapError(err, "userClassRepository: DeleteUserClass: error delete")
+	}
+
+	tx.Commit()
+	return date, err == nil, nil
 }
 
 func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]model.UserClass, error) {
 	var userClassList []model.UserClass
 
-	rows, sqlError := userClassRepository.db.Query(`
-	SELECT
-		id,
-		code,
-		user_code,
-		class_code,
-		status_code,
-		status,
-		is_expired,
-		start_date,
-		expired_date,
-		time_duration,
-		progress
-	FROM transaction.v_t_user_class
-	WHERE  	
-		is_deleted=false AND
-		is_expired = false AND
-		expired_date <= now() 
-	`)
+	rows, sqlError := userClassRepository.db.Query(_checkAllUserClassExpired)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError.Error())
@@ -779,32 +724,7 @@ func (userClassRepository *userClassRepository) CheckAllUserClassExpired() ([]mo
 func (userClassRepository *userClassRepository) CheckAllUserClassBeforeExpired(interval model.TimeInterval) ([]model.UserClass, error) {
 	var userClassList []model.UserClass
 
-	rows, sqlError := userClassRepository.db.Query(`
-	SELECT
-		id,
-		code,
-		user_code,
-		class_code,
-		status_code,
-		status,
-		is_expired,
-		start_date,
-		expired_date,
-		time_duration,
-		progress
-	FROM transaction.v_t_user_class
-	WHERE  	
-		is_deleted=false AND
-		is_expired = false AND
-		DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
-		DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
-		DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
-		DATE_PART('second', expired_date::timestamp - now()::timestamp) <= $1 AND
-		DATE_PART('day', expired_date::timestamp - now()::timestamp) * 24 * 60 * 60 + 
-		DATE_PART('hour', expired_date::timestamp - now()::timestamp) * 60 * 60 +
-		DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
-		DATE_PART('second', expired_date::timestamp - now()::timestamp) >= $2
-	`, interval.Interval1, interval.Interval2)
+	rows, sqlError := userClassRepository.db.Query(_checkAllUserClassBeforeExpired, interval.Interval1, interval.Interval2)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on CheckAllUserClassExpired => ", sqlError.Error())
