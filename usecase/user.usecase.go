@@ -111,6 +111,12 @@ func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, 
 			return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.RegisterUser : ")
 		}
 
+		dataUser.Code = userResult.Code
+		result, err = userUsecase.userRepository.InsertUserDetail(dataUser)
+		if err != nil {
+			return shape.UserInfo{}, false, utils.WrapError(err, "userUsecase.userRepository.InsertUserDetail : ")
+		}
+
 		if userResult.Code != "" {
 			dataEmail := model.EmailBody{
 				UserCode: userResult.Code,
@@ -545,7 +551,7 @@ func (userUsecase *userUsecase) CheckEmail(email string) (shape.UserInfo, error)
 		return shape.UserInfo{}, utils.WrapError(err, "userUsecase.userRepository.ResetVerificationCode : ")
 	}
 
-	if result && userAuth.ID != 0 {
+	if result && userAuth.Code != "" {
 		dataEmail := model.EmailBody{
 			UserCode:         userAuth.Code,
 			BodyTemp:         emailType,

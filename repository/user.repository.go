@@ -148,9 +148,9 @@ const (
 			auth.users	
 		SET
 			password=$1,
-		verified_code=default,
-		modified_by=$2,
-		modified_date=$3
+			verified_code=default,
+			modified_by=$2,
+			modified_date=$3
 		WHERE
 			email=$4
 		returning code
