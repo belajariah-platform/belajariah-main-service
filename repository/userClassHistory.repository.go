@@ -4,9 +4,68 @@ import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/utils"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+)
+
+const (
+	_getUserClassHistory = `
+		SELECT
+			id,
+			code,
+			user_class_code,
+			package_code,
+			promo_code,
+			price,
+			start_date,
+			expired_date
+		FROM 
+			log.user_class_history
+		WHERE 
+			is_deleted=false
+		%s
+	`
+	_insertUserClassHistory = `
+		INSERT INTO log.user_class_history
+		(
+			user_class_code,
+			package_code,
+			promo_code,
+			price,
+			start_date,
+			expired_date,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES(	
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9,
+			$10
+		);
+	`
+	_deleteUserClassHistory = `
+		UPDATE
+			log.user_class_history
+		SET
+			modified_by=$1,
+			modified_date=$2,
+			is_active=false,
+			is_deleted=true
+		WHERE
+			user_class_code=$3 AND
+			expired_date=$4
+	`
 )
 
 type userClassHistoryRepository struct {
@@ -14,9 +73,9 @@ type userClassHistoryRepository struct {
 }
 
 type UserClassHistoryRepository interface {
-	GetUserClassHistory(filter string) (model.UserClass, error)
-	InsertUserClassHistory(userClassHistory model.UserClass) (bool, error)
-	DeleteUserClassHistory(userClass model.UserClass) (bool, error)
+	GetUserClassHistory(filter string) (model.UserClassHistory, error)
+	InsertUserClassHistory(userClassHistory model.UserClassHistory) (bool, error)
+	DeleteUserClassHistory(userClass model.UserClassHistory) (bool, error)
 }
 
 func InitUserClassHistoryRepository(db *sqlx.DB) UserClassHistoryRepository {
@@ -25,171 +84,89 @@ func InitUserClassHistoryRepository(db *sqlx.DB) UserClassHistoryRepository {
 	}
 }
 
-func (userClassHistoryRepository *userClassHistoryRepository) GetUserClassHistory(filter string) (model.UserClass, error) {
-	var userClassRow model.UserClass
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		user_code,
-		class_code,
-		package_code,
-		type_code,
-		status_code,
-		expired_date
-	FROM 
-		transact_user_class_history
-	WHERE 
-		deleted_by IS NULL
-		%s
-	`, filter)
+func (userClassHistoryRepository *userClassHistoryRepository) GetUserClassHistory(filter string) (model.UserClassHistory, error) {
+	var userClassRow model.UserClassHistory
+	query := fmt.Sprintf(_getUserClassHistory, filter)
 	row := userClassHistoryRepository.db.QueryRow(query)
 
-	var id int
-	var expiredDate sql.NullTime
-	var typeCode, packageCode, statusCode, classCode, userCode string
+	var id, price int
+	var expiredDate, startDate sql.NullTime
+	var promoCode, packageCode, userClassCode, code string
 
 	sqlError := row.Scan(
 		&id,
-		&userCode,
-		&classCode,
-		&typeCode,
+		&code,
+		&userClassCode,
 		&packageCode,
-		&statusCode,
+		&promoCode,
+		&price,
+		&startDate,
 		&expiredDate,
 	)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetUserClassHistory => ", sqlError)
-		return model.UserClass{}, nil
+		return model.UserClassHistory{}, nil
 	} else {
-		userClassRow = model.UserClass{
-			ID:          id,
-			UserCode:    userCode,
-			ClassCode:   classCode,
-			TypeCode:    typeCode,
-			PackageCode: packageCode,
-			StatusCode:  statusCode,
-			ExpiredDate: expiredDate,
+		userClassRow = model.UserClassHistory{
+			ID:            id,
+			Code:          code,
+			UserClassCode: userClassCode,
+			PackageCode:   packageCode,
+			PromoCode:     promoCode,
+			Price:         price,
+			StartDate:     startDate,
+			ExpiredDate:   expiredDate,
 		}
 		return userClassRow, sqlError
 	}
 }
 
-func (userClassHistoryRepository *userClassHistoryRepository) InsertUserClassHistory(userClass model.UserClass) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := userClassHistoryRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in InsertUserClassHistory", errTx)
-	} else {
-		err = insertUserClassHistory(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class-history---", err)
-		}
+func (r *userClassHistoryRepository) InsertUserClassHistory(data model.UserClassHistory) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassHistoryRepository: InsertUserClassHistory: error begin transaction")
 	}
 
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
+	_, err = tx.Exec(_insertUserClassHistory,
+		data.UserClassCode,
+		data.PackageCode,
+		data.PromoCode,
+		data.Price,
+		data.StartDate.Time,
+		data.ExpiredDate.Time,
+		data.CreatedBy,
+		data.CreatedDate,
+		data.ModifiedBy.String,
+		data.ModifiedDate.Time,
+	)
+
+	if err != nil {
 		tx.Rollback()
-		utils.PushLogf("failed to InsertUserClassHistory", err)
+		return false, utils.WrapError(err, "userClassHistoryRepository: InsertUserClassHistory: error insert")
 	}
 
-	return result, err
+	tx.Commit()
+	return err == nil, nil
 }
 
-func insertUserClassHistory(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	INSERT INTO transact_user_class_history
-	(
-		user_code,
-		class_code,
-		package_code,
-		type_code,
-		status_code,
-		expired_date,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date
-	)
-	VALUES(	
-		$1,
-		$2,
-		$3,
-		(SELECT code 
-			FROM master_enum me 
-			WHERE lower(value)=lower($4) LIMIT 1),
-		(SELECT code 
-			FROM master_enum me 
-			WHERE lower(value)=lower('start') LIMIT 1),
-		$5,
-		$6,
-		$7,
-		$8,
-		$9
-	);
-	`,
-		userClass.UserCode,
-		userClass.ClassCode,
-		userClass.PackageCode,
-		userClass.TypeCode,
-		userClass.ExpiredDate,
-		userClass.CreatedBy,
-		userClass.CreatedDate,
-		userClass.ModifiedBy.String,
-		userClass.ModifiedDate.Time,
-	)
-	return err
-}
-
-func (userClassHistoryRepository *userClassHistoryRepository) DeleteUserClassHistory(userClass model.UserClass) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := userClassHistoryRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in DeleteUserClassHistory", errTx)
-	} else {
-		err = deleteUserClassHistory(tx, userClass)
-		if err != nil {
-			utils.PushLogf("err in user-class---", err)
-		}
+func (r *userClassHistoryRepository) DeleteUserClassHistory(data model.UserClassHistory) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassHistoryRepository: DeleteUserClassHistory: error begin transaction")
 	}
 
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
+	_, err = tx.Exec(_deleteUserClassHistory,
+		data.UserClassCode,
+		data.ModifiedBy.String,
+		data.ModifiedDate.Time,
+		data.ExpiredDate.Time,
+	)
+
+	if err != nil {
 		tx.Rollback()
-		utils.PushLogf("failed to DeleteUserClassHistory", err)
+		return false, utils.WrapError(err, "userClassHistoryRepository: DeleteUserClassHistory: error delete")
 	}
 
-	return result, err
-}
-
-func deleteUserClassHistory(tx *sql.Tx, userClass model.UserClass) error {
-	_, err := tx.Exec(`
-	UPDATE
-		transact_user_class_history
-	 SET
-		modified_by=$1,
-		modified_date=$2,
-		is_active=false,
-		is_deleted=true
- 	 WHERE
- 		user_code=$3 AND
-		class_code=$4 AND
-		expired_date=$5
-	`,
-		userClass.ModifiedBy.String,
-		userClass.ModifiedDate.Time,
-		userClass.UserCode,
-		userClass.ClassCode,
-		userClass.ExpiredDate,
-	)
-	return err
+	tx.Commit()
+	return err == nil, nil
 }

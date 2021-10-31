@@ -11,6 +11,7 @@ import (
 )
 
 type promotionUsecase struct {
+	sytemConfig         *model.Config
 	promotionRepository repository.PromotionRepository
 	userClassRepository repository.UserClassRepository
 	paymentRepository   repository.PaymentsRepository
@@ -23,8 +24,9 @@ type PromotionUsecase interface {
 	CheckAllPromotionExpired()
 }
 
-func InitPromotionUsecase(promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, paymentRepository repository.PaymentsRepository) PromotionUsecase {
+func InitPromotionUsecase(sytemConfig *model.Config, promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, paymentRepository repository.PaymentsRepository) PromotionUsecase {
 	return &promotionUsecase{
+		sytemConfig,
 		promotionRepository,
 		userClassRepository,
 		paymentRepository,
@@ -36,10 +38,18 @@ func (promotionUsecase *promotionUsecase) GetAllPromotion(query model.Query) ([]
 	var promotions []model.Promotion
 	var promotionResult []shape.Promotion
 
+	promotionEmpty := make([]shape.Promotion, 0)
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
 	promotions, err := promotionUsecase.promotionRepository.GetAllPromotion(query.Skip, query.Take, filterQuery)
+	if err != nil {
+		return promotionEmpty, 0, utils.WrapError(err, "promotionUsecase.promotionRepository.GetAllPromotion : ")
+	}
+
 	count, errCount := promotionUsecase.promotionRepository.GetAllPromotionCount(filterQuery)
+	if err != nil {
+		return promotionEmpty, 0, utils.WrapError(err, "promotionUsecase.promotionRepository.GetAllPromotionCount : ")
+	}
 
 	if err == nil && errCount == nil {
 		for _, value := range promotions {
@@ -67,7 +77,7 @@ func (promotionUsecase *promotionUsecase) GetAllPromotion(query model.Query) ([]
 			})
 		}
 	}
-	promotionEmpty := make([]shape.Promotion, 0)
+
 	if len(promotionResult) == 0 {
 		return promotionEmpty, count, err
 	}
@@ -79,6 +89,7 @@ func (promotionUsecase *promotionUsecase) GetPromotion(code string) (shape.Promo
 	if promotion == (model.Promotion{}) {
 		return shape.Promotion{}, nil
 	}
+
 	promotionResult := shape.Promotion{
 		ID:              promotion.ID,
 		Code:            promotion.Code,
@@ -107,12 +118,17 @@ func (promotionUsecase *promotionUsecase) GetPromotion(code string) (shape.Promo
 func (promotionUsecase *promotionUsecase) ClaimPromotion(promotions shape.PromotionClaim, userObj model.UserHeader) (shape.Promotion, string, error) {
 	var message string
 	var dataPromotion shape.Promotion
+
 	filter := fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
 		userObj.ID,
 		promotions.Class_Code,
 	)
 
 	promotion, err := promotionUsecase.promotionRepository.GetPromotion(promotions.Promo_Code)
+	if err != nil {
+		return dataPromotion, message, utils.WrapError(err, "promotionUsecase.promotionRepository.GetPromotion : ")
+	}
+
 	if promotion == (model.Promotion{}) {
 		message = "Mohon maaf kode promo tidak berlaku"
 	} else {
@@ -144,29 +160,31 @@ func (promotionUsecase *promotionUsecase) ClaimPromotion(promotions shape.Promot
 }
 
 func (promotionUsecase *promotionUsecase) CheckAllPromotionExpired() {
-	var email = "belajariah20@gmail.com"
-
 	firstloop := true
 	for {
 		if !firstloop {
 			time.Sleep(time.Minute)
 		}
 		promotionList, err := promotionUsecase.promotionRepository.CheckAllPromotionExpired()
+		if err != nil {
+			utils.PushLogf("promotionUsecase.promotionRepository.CheckAllPromotionExpired : ", err.Error())
+		}
+
 		firstloop = false
 		if err == nil {
 			for _, value := range promotionList {
 				dataPromotion := model.Promotion{
-					ID: value.ID,
+					Code: value.Code,
 					ModifiedBy: sql.NullString{
-						String: email,
+						String: promotionUsecase.sytemConfig.System.EmailSystem,
 					},
 					ModifiedDate: sql.NullTime{
 						Time: time.Now(),
 					},
 				}
-				result, err := promotionUsecase.promotionRepository.UpdatePromotionActivated(dataPromotion)
+				_, err := promotionUsecase.promotionRepository.UpdatePromotionActivated(dataPromotion)
 				if err != nil {
-					utils.PushLogf("ERROR : ", err, result)
+					utils.PushLogf("promotionUsecase.promotionRepository.UpdatePromotionActivated : ", err.Error())
 				}
 			}
 		}

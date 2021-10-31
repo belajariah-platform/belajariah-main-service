@@ -6,6 +6,7 @@ type Config struct {
 	Database DatabaseConfig
 	Log      LogConfig
 	Mail     MailConfig
+	System   ServiceSystem
 }
 
 // ServerConfig ...
@@ -41,4 +42,8 @@ type MailConfig struct {
 	SMTPPort     int
 	SenderName   string
 	CopyRight    string
+}
+
+type ServiceSystem struct {
+	EmailSystem string
 }

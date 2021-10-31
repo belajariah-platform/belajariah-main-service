@@ -57,6 +57,9 @@ func GetConfig() *model.Config {
 			SenderName:   os.Getenv("SENDER_NAME"),
 			CopyRight:    os.Getenv("COPY_RIGHT"),
 		},
+		System: model.ServiceSystem{
+			EmailSystem: os.Getenv("EMAIL_SYSTEM"),
+		},
 	}
 
 	return config

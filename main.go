@@ -65,7 +65,7 @@ func main() {
 	scheduleUsecase := usecase.InitScheduleUsecase(scheduleRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
 	coachingProgramUsecase := usecase.InitCoachingProgramUsecase(coachingProgramRepository)
-	promotionUsecase := usecase.InitPromotionUsecase(promotionRepository, userClassRepository, paymentRepository)
+	promotionUsecase := usecase.InitPromotionUsecase(configModel, promotionRepository, userClassRepository, paymentRepository)
 	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, enumRepository, emailRepository)
 	userUsecase := usecase.InitUserUsecase(emailUsecase, userRepository)
 	testUsecase := usecase.InitTestUsecase(testRepository, userClassRepository)
@@ -74,8 +74,8 @@ func main() {
 	learningUsecase := usecase.InitLearningUsecase(learningRepository, exerciseReadingRepository)
 	userExerciseReadingUsecase := usecase.InitUserExerciseReadingUsecase(userExerciseReadingRepository)
 	consultationUsecase := usecase.InitConsultationUsecase(userRepository, enumRepository, consultationRepository, approvalStatusRepository)
-	paymentUsecase := usecase.InitPaymentUsecase(emailUsecase, enumRepository, packageRepository, paymentRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
-	userClassUsecase := usecase.InitUserClassUsecase(emailUsecase, enumRepository, promotionRepository, userClassRepository, notificationRepository)
+	paymentUsecase := usecase.InitPaymentUsecase(configModel, emailUsecase, enumRepository, packageRepository, paymentRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
+	userClassUsecase := usecase.InitUserClassUsecase(configModel, emailUsecase, enumRepository, promotionRepository, userClassRepository, notificationRepository)
 
 	//initiate handler
 	mainHandler := handler.InitMainHandler(configModel)

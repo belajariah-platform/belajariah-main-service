@@ -12,6 +12,7 @@ import (
 )
 
 type userClassUsecase struct {
+	sytemConfig            *model.Config
 	emailUsecase           EmailUsecase
 	enumRepository         repository.EnumRepository
 	promotionRepository    repository.PromotionRepository
@@ -30,8 +31,9 @@ type UserClassUsecase interface {
 	UpdateUserClassProgress(userClass shape.UserClassPost, email string) (bool, error)
 }
 
-func InitUserClassUsecase(emailUsecase EmailUsecase, enumRepository repository.EnumRepository, promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, notificationRepository repository.NotificationRepository) UserClassUsecase {
+func InitUserClassUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, enumRepository repository.EnumRepository, promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, notificationRepository repository.NotificationRepository) UserClassUsecase {
 	return &userClassUsecase{
+		sytemConfig,
 		emailUsecase,
 		enumRepository,
 		promotionRepository,
@@ -149,6 +151,7 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 	if len(userClassResult) == 0 {
 		return classEmpty, count, err
 	}
+
 	return userClassResult, count, err
 }
 
@@ -177,30 +180,79 @@ func (userClassUsecase *userClassUsecase) UpdateUserClassProgress(userClass shap
 			Time: time.Now(),
 		},
 	}
+
 	result, err := userClassUsecase.userClassRepository.UpdateUserClassProgress(dataUserClass)
+	if err != nil {
+		return false, utils.WrapError(err, "userClassUsecase.userClassRepository.UpdateUserClassProgress : ")
+	}
+
 	return result, err
 }
 
 func (userClassUsecase *userClassUsecase) CheckAllUserClassExpired() {
 	var promoCode = "BLJEXPD"
 	var types string = "TodayClassExp"
-	var table string = "Transact user class"
-	var email string = "belajariah20@gmail.com"
+	var table string = "TRANSACT USER CLASS"
 	var emailType string = "Class Has Been Expired"
+	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
 	for {
 		if !firstloop {
 			time.Sleep(time.Minute)
 		}
+
 		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassExpired()
+		if err != nil {
+			utils.PushLogf("userClassUsecase.userClassRepository.CheckAllUserClassExpired : ", err.Error())
+		}
+
 		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.enumRepository.GetEnumSplit : ", err.Error())
+		}
+
 		firstloop = false
-		if err == nil {
-			for _, value := range userClassList {
-				dataUserClass := model.UserClass{
-					ID:       value.ID,
-					UserCode: value.UserCode,
+		for _, value := range userClassList {
+			dataUserClass := model.UserClass{
+				ID:       value.ID,
+				UserCode: value.UserCode,
+				ModifiedBy: sql.NullString{
+					String: email,
+				},
+				ModifiedDate: sql.NullTime{
+					Time: time.Now(),
+				},
+			}
+
+			_, err := userClassUsecase.userClassRepository.UpdateUserClassExpired(dataUserClass)
+			if err != nil {
+				utils.PushLogf("userClassUsecase.userClassRepository.UpdateUserClassExpired : ", err.Error())
+			}
+
+			if err == nil {
+				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
+				dataEmail := model.EmailBody{
+					BodyTemp:      emailType,
+					UserCode:      value.UserCode,
+					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				}
+
+				userClassUsecase.emailUsecase.SendEmail(dataEmail)
+
+				dataNotification := model.Notification{
+					TableRef: table,
+					UserClassCode: sql.NullInt64{
+						Int64: int64(value.ID),
+					},
+					NotificationType: enum.Code,
+					UserCode:         value.UserCode,
+					Sequence:         1,
+					ExpiredDate: sql.NullTime{
+						Time: value.ExpiredDate.Time,
+					},
+					CreatedBy:   email,
+					CreatedDate: time.Now(),
 					ModifiedBy: sql.NullString{
 						String: email,
 					},
@@ -208,43 +260,14 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClassExpired() {
 						Time: time.Now(),
 					},
 				}
-				result, err := userClassUsecase.userClassRepository.UpdateUserClassExpired(dataUserClass)
-				if err == nil {
-					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-					dataEmail := model.EmailBody{
-						BodyTemp:      emailType,
-						UserCode:      value.UserCode,
-						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
-					}
-					userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
-					dataNotification := model.Notification{
-						TableRef: table,
-						UserClassCode: sql.NullInt64{
-							Int64: int64(value.ID),
-						},
-						NotificationType: enum.Code,
-						UserCode:         value.UserCode,
-						Sequence:         1,
-						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate.Time,
-						},
-						CreatedBy:   email,
-						CreatedDate: time.Now(),
-						ModifiedBy: sql.NullString{
-							String: email,
-						},
-						ModifiedDate: sql.NullTime{
-							Time: time.Now(),
-						},
-					}
-					result, err := userClassUsecase.notificationRepository.InsertNotification(dataNotification)
-					if err != nil {
-						utils.PushLogf("ERROR : ", err, result)
-					}
-				} else {
-					utils.PushLogf("ERROR : ", err, result)
+				_, err = userClassUsecase.notificationRepository.InsertNotification(dataNotification)
+				if err != nil {
+					utils.PushLogf("userClassUsecase.notificationRepository.InsertNotification : ", err.Error())
 				}
+
+			} else {
+				utils.PushLogf("userClassUsecase.notificationRepository.CheckAllUserClassExpired : ", err.Error())
 			}
 		}
 	}
@@ -253,61 +276,74 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClassExpired() {
 func (userClassUsecase *userClassUsecase) CheckAllUserClass7DaysBeforeExpired() {
 	var minutes float64 = 11520
 	var promoCode = "BLJEXPD"
-	var table string = "Transact user class"
+	var table string = "TRANSACT USER CLASS"
 	var types string = "7DaysBeforeClassExp"
-	var email string = "belajariah20@gmail.com"
 	var emailType string = "7 Days Before Class Expired"
+	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
 	for {
 		if !firstloop {
 			time.Sleep(time.Minute)
 		}
+
 		dataInterval := model.TimeInterval{
 			Interval1: 604800,
 			Interval2: 432000,
 		}
-		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
-		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
-		firstloop = false
-		if err == nil {
-			for _, value := range userClassList {
-				filterNotif := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
-				notification, err := userClassUsecase.notificationRepository.GetNotification(filterNotif, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-					dataEmail := model.EmailBody{
-						BodyTemp:      emailType,
-						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate.Time,
-						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
-					}
-					userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
-					dataNotification := model.Notification{
-						TableRef: table,
-						UserClassCode: sql.NullInt64{
-							Int64: int64(value.ID),
-						},
-						NotificationType: enum.Code,
-						UserCode:         value.UserCode,
-						Sequence:         1,
-						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate.Time,
-						},
-						CreatedBy:   email,
-						CreatedDate: time.Now(),
-						ModifiedBy: sql.NullString{
-							String: email,
-						},
-						ModifiedDate: sql.NullTime{
-							Time: time.Now(),
-						},
-					}
-					result, err := userClassUsecase.notificationRepository.InsertNotification(dataNotification)
-					if err != nil {
-						utils.PushLogf("ERROR : ", err, result)
-					}
+		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.userClassRepository.UpdateUserClassExpired : ", err.Error())
+		}
+
+		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.enumRepository.GetEnumSplit : ", err.Error())
+		}
+
+		firstloop = false
+		for _, value := range userClassList {
+			filterNotif := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
+
+			notification, err := userClassUsecase.notificationRepository.GetNotification(filterNotif, types)
+			if err != nil {
+				utils.PushLogf("userClassUsecase.notificationRepository.GetNotification : ", err.Error())
+			}
+
+			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
+				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
+				dataEmail := model.EmailBody{
+					BodyTemp:      emailType,
+					UserCode:      value.UserCode,
+					ExpiredDate:   value.ExpiredDate.Time,
+					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				}
+				userClassUsecase.emailUsecase.SendEmail(dataEmail)
+
+				dataNotification := model.Notification{
+					TableRef: table,
+					UserClassCode: sql.NullInt64{
+						Int64: int64(value.ID),
+					},
+					NotificationType: enum.Code,
+					UserCode:         value.UserCode,
+					Sequence:         1,
+					ExpiredDate: sql.NullTime{
+						Time: value.ExpiredDate.Time,
+					},
+					CreatedBy:   email,
+					CreatedDate: time.Now(),
+					ModifiedBy: sql.NullString{
+						String: email,
+					},
+					ModifiedDate: sql.NullTime{
+						Time: time.Now(),
+					},
+				}
+				_, err = userClassUsecase.notificationRepository.InsertNotification(dataNotification)
+				if err != nil {
+					utils.PushLogf("userClassUsecase.notificationRepository.InsertNotification : ", err.Error())
 				}
 			}
 		}
@@ -317,61 +353,75 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass7DaysBeforeExpired() 
 func (userClassUsecase *userClassUsecase) CheckAllUserClass5DaysBeforeExpired() {
 	var minutes float64 = 8640
 	var promoCode = "BLJEXPD"
-	var table string = "Transact user class"
+	var table string = "TRANSACT USER CLASS"
 	var types string = "5DaysBeforeClassExp"
-	var email string = "belajariah20@gmail.com"
 	var emailType string = "5 Days Before Class Expired"
+	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
 	for {
 		if !firstloop {
 			time.Sleep(time.Minute)
 		}
+
 		dataInterval := model.TimeInterval{
 			Interval1: 432000,
 			Interval2: 172800,
 		}
-		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
-		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
-		firstloop = false
-		if err == nil {
-			for _, value := range userClassList {
-				filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
-				notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-					dataEmail := model.EmailBody{
-						BodyTemp:      emailType,
-						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate.Time,
-						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
-					}
-					userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
-					dataNotification := model.Notification{
-						TableRef: table,
-						UserClassCode: sql.NullInt64{
-							Int64: int64(value.ID),
-						},
-						NotificationType: enum.Code,
-						UserCode:         value.UserCode,
-						Sequence:         1,
-						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate.Time,
-						},
-						CreatedBy:   email,
-						CreatedDate: time.Now(),
-						ModifiedBy: sql.NullString{
-							String: email,
-						},
-						ModifiedDate: sql.NullTime{
-							Time: time.Now(),
-						},
-					}
-					result, err := userClassUsecase.notificationRepository.InsertNotification(dataNotification)
-					if err != nil {
-						utils.PushLogf("ERROR : ", err, result)
-					}
+		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired : ", err.Error())
+		}
+
+		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.enumRepository.GetEnumSplit : ", err.Error())
+		}
+
+		firstloop = false
+		for _, value := range userClassList {
+			filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
+			notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
+			if err != nil {
+				utils.PushLogf("userClassUsecase.notificationRepository.GetNotification : ", err.Error())
+			}
+
+			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
+				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
+				dataEmail := model.EmailBody{
+					BodyTemp:      emailType,
+					UserCode:      value.UserCode,
+					ExpiredDate:   value.ExpiredDate.Time,
+					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				}
+
+				userClassUsecase.emailUsecase.SendEmail(dataEmail)
+
+				dataNotification := model.Notification{
+					TableRef: table,
+					UserClassCode: sql.NullInt64{
+						Int64: int64(value.ID),
+					},
+					NotificationType: enum.Code,
+					UserCode:         value.UserCode,
+					Sequence:         1,
+					ExpiredDate: sql.NullTime{
+						Time: value.ExpiredDate.Time,
+					},
+					CreatedBy:   email,
+					CreatedDate: time.Now(),
+					ModifiedBy: sql.NullString{
+						String: email,
+					},
+					ModifiedDate: sql.NullTime{
+						Time: time.Now(),
+					},
+				}
+
+				_, err = userClassUsecase.notificationRepository.InsertNotification(dataNotification)
+				if err != nil {
+					utils.PushLogf("userClassUsecase.notificationRepository.InsertNotification : ", err.Error())
 				}
 			}
 		}
@@ -381,61 +431,74 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass5DaysBeforeExpired() 
 func (userClassUsecase *userClassUsecase) CheckAllUserClass2DaysBeforeExpired() {
 	var minutes float64 = 4320
 	var promoCode = "BLJEXPD"
-	var table string = "Transact user class"
+	var table string = "TRANSACT USER CLASS"
 	var types string = "2DaysBeforeClassExp"
-	var email string = "belajariah20@gmail.com"
 	var emailType string = "2 Days Before Class Expired"
+	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
 	for {
 		if !firstloop {
 			time.Sleep(time.Minute)
 		}
+
 		dataInterval := model.TimeInterval{
 			Interval1: 172800,
 			Interval2: 86400,
 		}
-		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
-		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
-		firstloop = false
-		if err == nil {
-			for _, value := range userClassList {
-				filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
-				notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-					dataEmail := model.EmailBody{
-						BodyTemp:      emailType,
-						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate.Time,
-						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
-					}
-					userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
-					dataNotification := model.Notification{
-						TableRef: table,
-						UserClassCode: sql.NullInt64{
-							Int64: int64(value.ID),
-						},
-						NotificationType: enum.Code,
-						UserCode:         value.UserCode,
-						Sequence:         1,
-						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate.Time,
-						},
-						CreatedBy:   email,
-						CreatedDate: time.Now(),
-						ModifiedBy: sql.NullString{
-							String: email,
-						},
-						ModifiedDate: sql.NullTime{
-							Time: time.Now(),
-						},
-					}
-					result, err := userClassUsecase.notificationRepository.InsertNotification(dataNotification)
-					if err != nil {
-						utils.PushLogf("ERROR : ", err, result)
-					}
+		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired : ", err.Error())
+		}
+
+		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.enumRepository.GetEnumSplit : ", err.Error())
+		}
+
+		firstloop = false
+		for _, value := range userClassList {
+			filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
+			notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
+			if err != nil {
+				utils.PushLogf("userClassUsecase.notificationRepository.GetNotification : ", err.Error())
+			}
+
+			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
+				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
+				dataEmail := model.EmailBody{
+					BodyTemp:      emailType,
+					UserCode:      value.UserCode,
+					ExpiredDate:   value.ExpiredDate.Time,
+					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				}
+				userClassUsecase.emailUsecase.SendEmail(dataEmail)
+
+				dataNotification := model.Notification{
+					TableRef: table,
+					UserClassCode: sql.NullInt64{
+						Int64: int64(value.ID),
+					},
+					NotificationType: enum.Code,
+					UserCode:         value.UserCode,
+					Sequence:         1,
+					ExpiredDate: sql.NullTime{
+						Time: value.ExpiredDate.Time,
+					},
+					CreatedBy:   email,
+					CreatedDate: time.Now(),
+					ModifiedBy: sql.NullString{
+						String: email,
+					},
+					ModifiedDate: sql.NullTime{
+						Time: time.Now(),
+					},
+				}
+
+				_, err = userClassUsecase.notificationRepository.InsertNotification(dataNotification)
+				if err != nil {
+					utils.PushLogf("userClassUsecase.notificationRepository.InsertNotification : ", err.Error())
 				}
 			}
 		}
@@ -445,61 +508,74 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass2DaysBeforeExpired() 
 func (userClassUsecase *userClassUsecase) CheckAllUserClass1DaysBeforeExpired() {
 	var minutes float64 = 2880
 	var promoCode = "BLJEXPD"
-	var table string = "Transact user class"
+	var table string = "TRANSACT USER CLASS"
 	var types string = "1DaysBeforeClassExp"
-	var email string = "belajariah20@gmail.com"
 	var emailType string = "1 Days Before Class Expired"
+	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
 	for {
 		if !firstloop {
 			time.Sleep(time.Minute)
 		}
+
 		dataInterval := model.TimeInterval{
 			Interval1: 86400,
 			Interval2: 0,
 		}
-		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
-		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
-		firstloop = false
-		if err == nil {
-			for _, value := range userClassList {
-				filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
-				notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
-				if err == nil && utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-					promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-					dataEmail := model.EmailBody{
-						BodyTemp:      emailType,
-						UserCode:      value.UserCode,
-						ExpiredDate:   value.ExpiredDate.Time,
-						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
-					}
-					userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
-					dataNotification := model.Notification{
-						TableRef: table,
-						UserClassCode: sql.NullInt64{
-							Int64: int64(value.ID),
-						},
-						NotificationType: enum.Code,
-						UserCode:         value.UserCode,
-						Sequence:         1,
-						ExpiredDate: sql.NullTime{
-							Time: value.ExpiredDate.Time,
-						},
-						CreatedBy:   email,
-						CreatedDate: time.Now(),
-						ModifiedBy: sql.NullString{
-							String: email,
-						},
-						ModifiedDate: sql.NullTime{
-							Time: time.Now(),
-						},
-					}
-					result, err := userClassUsecase.notificationRepository.InsertNotification(dataNotification)
-					if err != nil {
-						utils.PushLogf("ERROR : ", err, result)
-					}
+		userClassList, err := userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired(dataInterval)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.userClassRepository.CheckAllUserClassBeforeExpired : ", err.Error())
+		}
+
+		enum, err := userClassUsecase.enumRepository.GetEnumSplit(types)
+		if err != nil {
+			utils.PushLogf("userClassUsecase.enumRepository.GetEnumSplit : ", err.Error())
+		}
+
+		firstloop = false
+		for _, value := range userClassList {
+			filter := fmt.Sprintf(`AND user_class_code = %d`, value.ID)
+			notification, err := userClassUsecase.notificationRepository.GetNotification(filter, types)
+			if err != nil {
+				utils.PushLogf("userClassUsecase.notificationRepository.GetNotification : ", err.Error())
+			}
+
+			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
+				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
+				dataEmail := model.EmailBody{
+					BodyTemp:      emailType,
+					UserCode:      value.UserCode,
+					ExpiredDate:   value.ExpiredDate.Time,
+					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				}
+				userClassUsecase.emailUsecase.SendEmail(dataEmail)
+
+				dataNotification := model.Notification{
+					TableRef: table,
+					UserClassCode: sql.NullInt64{
+						Int64: int64(value.ID),
+					},
+					NotificationType: enum.Code,
+					UserCode:         value.UserCode,
+					Sequence:         1,
+					ExpiredDate: sql.NullTime{
+						Time: value.ExpiredDate.Time,
+					},
+					CreatedBy:   email,
+					CreatedDate: time.Now(),
+					ModifiedBy: sql.NullString{
+						String: email,
+					},
+					ModifiedDate: sql.NullTime{
+						Time: time.Now(),
+					},
+				}
+
+				_, err = userClassUsecase.notificationRepository.InsertNotification(dataNotification)
+				if err != nil {
+					utils.PushLogf("userClassUsecase.notificationRepository.InsertNotification : ", err.Error())
 				}
 			}
 		}

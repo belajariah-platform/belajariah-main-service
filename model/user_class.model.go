@@ -51,3 +51,20 @@ type TimeInterval struct {
 	Interval1 int
 	Interval2 int
 }
+
+type UserClassHistory struct {
+	ID            int
+	Code          string
+	UserClassCode string
+	PackageCode   string
+	PromoCode     string
+	Price         int
+	StartDate     sql.NullTime
+	ExpiredDate   sql.NullTime
+	IsActive      bool
+	CreatedBy     string
+	CreatedDate   time.Time
+	ModifiedBy    sql.NullString
+	ModifiedDate  sql.NullTime
+	IsDeleted     bool
+}

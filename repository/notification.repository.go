@@ -4,9 +4,64 @@ import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/utils"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+)
+
+const (
+	_getNotification = `
+		SELECT
+			id,
+			code,
+			user_class_code,
+			payment_code,
+			table_ref,
+			notification_type,
+			notification_type_text,
+			user_code,
+			user_name,
+			sequence,
+			is_read,
+			is_action_taken,
+			expired_date
+		FROM
+			transaction.v_t_notifications
+		WHERE 
+			is_deleted=false AND
+			split_part(notification_type_text, '|', 1)='%s' 
+			%s
+	`
+	_insertNotification = `
+		INSERT INTO transaction.transact_notification
+		(
+			table_ref,
+			user_class_code,
+			payment_code,
+			notification_type,
+			user_code,
+			sequence,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			expired_date
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5, 
+			$6, 
+			$7, 
+			$8, 
+			$9,
+			$10,
+			$11
+			)
+	`
 )
 
 type notificationRepository struct {
@@ -14,7 +69,6 @@ type notificationRepository struct {
 }
 
 type NotificationRepository interface {
-	GetNotificationCount(code, types string) (int, error)
 	GetNotification(filter, types string) (model.Notification, error)
 	InsertNotification(notification model.Notification) (bool, error)
 }
@@ -25,51 +79,9 @@ func InitNotificationRepository(db *sqlx.DB) NotificationRepository {
 	}
 }
 
-func (notificationRepository *notificationRepository) GetNotificationCount(code, types string) (int, error) {
-	var count int
-	query := fmt.Sprintf(`
-	SELECT COUNT(*) 
-	FROM 
-		v_t_notifications 
-	WHERE 
-		deleted_by IS NULL AND
-		code_ref = '%s' AND 
-		notification_type_text = '%s'
-	`, code, types)
-
-	row := notificationRepository.db.QueryRow(query)
-	sqlError := row.Scan(&count)
-	if sqlError != nil {
-		utils.PushLogf("SQL error on GetNotificationCount => ", sqlError)
-		count = 0
-	}
-	return count, sqlError
-}
-
 func (notificationRepository *notificationRepository) GetNotification(filter, types string) (model.Notification, error) {
 	var notificationRow model.Notification
-	query := fmt.Sprintf(`
-	SELECT
-		id,
-		code,
-		user_class_code,
-		payment_code,
-		table_ref,
-		notification_type,
-		notification_type_text,
-		user_code,
-		user_name,
-		sequence,
-		is_read,
-		is_action_taken,
-		expired_date
-	FROM
-		v_t_notifications
-	WHERE 
-		deleted_by IS NULL AND
-		split_part(notification_type_text, '|', 1)='%s' 
-		%s
-	`, types, filter)
+	query := fmt.Sprintf(_getNotification, types, filter)
 
 	row := notificationRepository.db.QueryRow(query)
 	var expiredDate sql.NullTime
@@ -117,60 +129,13 @@ func (notificationRepository *notificationRepository) GetNotification(filter, ty
 	}
 }
 
-func (notificationRepository *notificationRepository) InsertNotification(notification model.Notification) (bool, error) {
-	var err error
-	var result bool
-
-	tx, errTx := notificationRepository.db.Begin()
-	if errTx != nil {
-		utils.PushLogf("error in insertNotification", errTx)
-	} else {
-		err = insertNotification(tx, notification)
+func (r *notificationRepository) InsertNotification(notification model.Notification) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("notificationRepository: InsertNotification: error begin transaction")
 	}
 
-	if err == nil {
-		result = true
-		tx.Commit()
-	} else {
-		result = false
-		tx.Rollback()
-		utils.PushLogf("failed to insertNotification")
-	}
-
-	return result, err
-}
-
-func insertNotification(tx *sql.Tx, notification model.Notification) error {
-	sqlQuery := `
-	INSERT INTO transact_notification
-	(
-		table_ref,
-		user_class_code,
-		payment_code,
-		notification_type,
-		user_code,
-		sequence,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		expired_date
-	)
-	VALUES (
-		$1, 
-		$2, 
-		$3, 
-		$4, 
-		$5, 
-		$6, 
-		$7, 
-		$8, 
-		$9,
-		$10,
-		$11
-		);
-`
-	_, err := tx.Exec(sqlQuery,
+	_, err = tx.Exec(_insertNotification,
 		notification.TableRef,
 		notification.UserClassCode.Int64,
 		notification.PaymentCode,
@@ -183,5 +148,12 @@ func insertNotification(tx *sql.Tx, notification model.Notification) error {
 		notification.ModifiedDate.Time,
 		notification.ExpiredDate.Time,
 	)
-	return err
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "notificationRepository: InsertNotification: error insert")
+	}
+
+	tx.Commit()
+	return err == nil, nil
 }

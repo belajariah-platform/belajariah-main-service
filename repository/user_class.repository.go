@@ -136,7 +136,7 @@ const (
 			$8,
 			$9,
 			$10
-		)
+		) returning code
 	`
 	_updateUserClass = `
 		UPDATE
@@ -160,6 +160,7 @@ const (
 		WHERE
 			class_code=$7 AND
 			user_code=$8 
+			returning code
 	`
 	_updateUserClassExpired = `
 		UPDATE
@@ -281,8 +282,8 @@ type UserClassRepository interface {
 	GetAllUserClassCount(filter, filterUser string) (int, error)
 	GetAllUserClass(skip, take int, sorting, filter, filterUser string) ([]model.UserClass, error)
 
-	InsertUserClass(userClass model.UserClass) (bool, error)
-	UpdateUserClass(userClass model.UserClass) (bool, error)
+	InsertUserClass(userClass model.UserClass) (model.UserClass, bool, error)
+	UpdateUserClass(userClass model.UserClass) (model.UserClass, bool, error)
 	UpdateUserClassExpired(userClass model.UserClass) (bool, error)
 	UpdateUserClassProgress(userClass model.UserClass) (bool, error)
 	DeleteUserClass(userClass model.UserClass) (time.Time, bool, error)
@@ -505,13 +506,16 @@ func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, fil
 	return count, sqlError
 }
 
-func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (bool, error) {
+func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (model.UserClass, bool, error) {
+	var code string
+	var userClassRow model.UserClass
+
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return false, errors.New("userClassRepository: InsertUserClass: error begin transaction")
+		return userClassRow, false, errors.New("userClassRepository: InsertUserClass: error begin transaction")
 	}
 
-	_, err = tx.Exec(_insertUserClass,
+	err = tx.QueryRow(_insertUserClass,
 		userClass.UserCode,
 		userClass.ClassCode,
 		userClass.PackageCode,
@@ -522,24 +526,29 @@ func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (bool, 
 		userClass.CreatedDate,
 		userClass.ModifiedBy.String,
 		userClass.ModifiedDate.Time,
-	)
+	).Scan(&code)
 
 	if err != nil {
 		tx.Rollback()
-		return false, utils.WrapError(err, "userClassRepository: InsertUserClass: error insert")
+		return userClassRow, false, utils.WrapError(err, "userClassRepository: InsertUserClass: error insert")
 	}
+
+	userClassRow = model.UserClass{Code: code}
 
 	tx.Commit()
-	return err == nil, nil
+	return userClassRow, err == nil, nil
 }
 
-func (r *userClassRepository) UpdateUserClass(userClass model.UserClass) (bool, error) {
+func (r *userClassRepository) UpdateUserClass(userClass model.UserClass) (model.UserClass, bool, error) {
+	var code string
+	var userClassRow model.UserClass
+
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return false, errors.New("userClassRepository: UpdateUserClass: error begin transaction")
+		return userClassRow, false, errors.New("userClassRepository: UpdateUserClass: error begin transaction")
 	}
 
-	_, err = tx.Exec(_updateUserClass,
+	err = tx.QueryRow(_updateUserClass,
 		userClass.PackageCode,
 		userClass.StartDate,
 		userClass.ExpiredDate,
@@ -548,15 +557,17 @@ func (r *userClassRepository) UpdateUserClass(userClass model.UserClass) (bool, 
 		userClass.ModifiedDate.Time,
 		userClass.ClassCode,
 		userClass.UserCode,
-	)
+	).Scan(&code)
 
 	if err != nil {
 		tx.Rollback()
-		return false, utils.WrapError(err, "userClassRepository: UpdateUserClass: error update")
+		return userClassRow, false, utils.WrapError(err, "userClassRepository: UpdateUserClass: error update")
 	}
 
+	userClassRow = model.UserClass{Code: code}
+
 	tx.Commit()
-	return err == nil, nil
+	return userClassRow, err == nil, nil
 }
 
 func (r *userClassRepository) UpdateUserClassExpired(userClass model.UserClass) (bool, error) {
