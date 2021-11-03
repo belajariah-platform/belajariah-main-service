@@ -19,7 +19,7 @@ type Mentors struct {
 	Password     string
 	NewPassword  string
 	OldPassword  string
-	FullName     sql.NullString
+	Full_Name    string
 	Phone        NullInt64
 	VerifiedCode sql.NullString
 	IsVerified   bool
@@ -28,6 +28,20 @@ type Mentors struct {
 	CreatedDate  time.Time
 	ModifiedBy   sql.NullString
 	ModifiedDate sql.NullTime
+
+	//
+	Profession      string
+	Gender          string
+	Age             int
+	Province        string
+	City            string
+	Address         string
+	Birth           time.Time
+	Description     string
+	Account_Owner   string
+	Account_Name    string
+	Account_Number  string
+	Learning_Method string
 }
 
 type MentorInfo struct {

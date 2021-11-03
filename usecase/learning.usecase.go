@@ -70,7 +70,6 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 				var exercises []model.ExerciseReading
 				filter := fmt.Sprintf(`AND title_code='%s'`, value.Code)
 				exercises, err := learningUsecase.exerciseReadingRepository.GetAllExerciseReading(0, 100, filter)
-				fmt.Println(exercises)
 				if err == nil {
 					for _, exercise := range exercises {
 						exerciseResult = append(exerciseResult, shape.ExerciseReading{

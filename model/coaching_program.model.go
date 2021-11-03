@@ -47,8 +47,6 @@ type CoachingProgram struct {
 	Question_4          NullString `form:"question_4" json:"question_4" xml:"question_4" db:"question_4"`
 	Question_5          NullString `form:"question_5" json:"question_5" xml:"question_5" db:"question_5"`
 	Question_6          NullString `form:"question_6" json:"question_6" xml:"question_6" db:"question_6"`
-	Question_7          NullString `form:"question_7" json:"question_7" xml:"question_7" db:"question_7"`
-	Question_8          NullString `form:"question_8" json:"question_8" xml:"question_8" db:"question_8"`
 	Is_Confirmed        bool       `form:"is_confirmed" json:"is_confirmed" xml:"is_confirmed" db:"is_confirmed"`
 	Is_Active           bool       `form:"is_active" json:"is_active" xml:"is_active" db:"is_active"`
 	Created_By          string     `form:"created_by" json:"created_by" xml:"created_by" db:"created_by"`

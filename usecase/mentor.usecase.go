@@ -5,7 +5,9 @@ import (
 	"belajariah-main-service/repository"
 	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
+	"database/sql"
 	"strings"
+	"time"
 )
 
 type mentorUsecase struct {
@@ -197,10 +199,24 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 }
 
 func (mentorUsecase *mentorUsecase) RegisterMentor(r model.Mentors) (bool, error) {
+	r.CreatedDate = time.Now()
+	r.ModifiedDate = sql.NullTime{Time: time.Now()}
 
-	result, err := mentorUsecase.mentorRepository.RegisterMentor(r)
+	hashPassword, err := utils.GenerateHashPassword(r.Password)
+	if err != nil {
+		return false, utils.WrapError(err, "mentorUsecase.GenerateHashPassword : ")
+	}
+
+	r.Password = hashPassword
+	mentor, result, err := mentorUsecase.mentorRepository.RegisterMentor(r)
 	if err != nil {
 		return false, utils.WrapError(err, "mentorUsecase.mentorRepository.RegisterMentor : ")
+	}
+
+	r.Code = mentor.Code
+	result, errs := mentorUsecase.mentorRepository.InsertMentorDetail(r)
+	if errs != nil {
+		return false, utils.WrapError(errs, "mentorUsecase.mentorRepository.InsertMentorDetail : ")
 	}
 
 	return result, err

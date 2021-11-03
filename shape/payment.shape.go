@@ -6,6 +6,7 @@ import (
 
 type Payment struct {
 	ID                   int
+	Code                 string
 	User_Code            string
 	User_Name            string
 	Class_Code           string
@@ -40,6 +41,7 @@ type Payment struct {
 
 type PaymentPost struct {
 	ID                  int
+	Code                string
 	User_Code           string
 	User_Name           string
 	Class_Code          string
@@ -62,6 +64,7 @@ type PaymentPost struct {
 	Remarks             string
 	Schedule_Code_1     string
 	Schedule_Code_2     string
+	Is_Direct           bool
 	Is_Active           bool
 	Created_By          string
 	Created_Date        time.Time

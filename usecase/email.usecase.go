@@ -38,7 +38,7 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 	query.Skip = 0
 	user, err := emailUsecase.userRepository.GetUserData(email.UserCode)
 
-	if err == nil {
+	if err == nil && user != (model.UserInfo{}) {
 		dataEmail := model.EmailBody{
 			//general
 			UserName:    user.FullName.String,

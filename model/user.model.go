@@ -13,7 +13,7 @@ type Users struct {
 	Password     string
 	NewPassword  string
 	OldPassword  string
-	FullName     sql.NullString
+	Full_Name    sql.NullString
 	Phone        sql.NullInt64
 	VerifiedCode sql.NullString
 	IsVerified   bool

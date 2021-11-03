@@ -52,7 +52,7 @@ const (
 			$8,
 			$9,
 			$10
-		);
+		) returning code
 	`
 	_deleteUserClassHistory = `
 		UPDATE
@@ -74,8 +74,8 @@ type userClassHistoryRepository struct {
 
 type UserClassHistoryRepository interface {
 	GetUserClassHistory(filter string) (model.UserClassHistory, error)
-	InsertUserClassHistory(userClassHistory model.UserClassHistory) (bool, error)
 	DeleteUserClassHistory(userClass model.UserClassHistory) (bool, error)
+	InsertUserClassHistory(userClassHistory model.UserClassHistory) (model.UserClassHistory, bool, error)
 }
 
 func InitUserClassHistoryRepository(db *sqlx.DB) UserClassHistoryRepository {
@@ -121,13 +121,16 @@ func (userClassHistoryRepository *userClassHistoryRepository) GetUserClassHistor
 	}
 }
 
-func (r *userClassHistoryRepository) InsertUserClassHistory(data model.UserClassHistory) (bool, error) {
+func (r *userClassHistoryRepository) InsertUserClassHistory(data model.UserClassHistory) (model.UserClassHistory, bool, error) {
+	var code string
+	var history model.UserClassHistory
+
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return false, errors.New("userClassHistoryRepository: InsertUserClassHistory: error begin transaction")
+		return model.UserClassHistory{}, false, errors.New("userClassHistoryRepository: InsertUserClassHistory: error begin transaction")
 	}
 
-	_, err = tx.Exec(_insertUserClassHistory,
+	err = tx.QueryRow(_insertUserClassHistory,
 		data.UserClassCode,
 		data.PackageCode,
 		data.PromoCode,
@@ -138,15 +141,17 @@ func (r *userClassHistoryRepository) InsertUserClassHistory(data model.UserClass
 		data.CreatedDate,
 		data.ModifiedBy.String,
 		data.ModifiedDate.Time,
-	)
+	).Scan(&code)
 
 	if err != nil {
 		tx.Rollback()
-		return false, utils.WrapError(err, "userClassHistoryRepository: InsertUserClassHistory: error insert")
+		return model.UserClassHistory{}, false, utils.WrapError(err, "userClassHistoryRepository: InsertUserClassHistory: error insert")
 	}
 
+	history = model.UserClassHistory{Code: code}
+
 	tx.Commit()
-	return err == nil, nil
+	return history, err == nil, nil
 }
 
 func (r *userClassHistoryRepository) DeleteUserClassHistory(data model.UserClassHistory) (bool, error) {

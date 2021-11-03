@@ -74,7 +74,7 @@ func main() {
 	learningUsecase := usecase.InitLearningUsecase(learningRepository, exerciseReadingRepository)
 	userExerciseReadingUsecase := usecase.InitUserExerciseReadingUsecase(userExerciseReadingRepository)
 	consultationUsecase := usecase.InitConsultationUsecase(userRepository, enumRepository, consultationRepository, approvalStatusRepository)
-	paymentUsecase := usecase.InitPaymentUsecase(configModel, emailUsecase, enumRepository, packageRepository, paymentRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
+	paymentUsecase := usecase.InitPaymentUsecase(configModel, emailUsecase, enumRepository, packageRepository, paymentRepository, scheduleRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
 	userClassUsecase := usecase.InitUserClassUsecase(configModel, emailUsecase, enumRepository, promotionRepository, userClassRepository, notificationRepository)
 
 	//initiate handler

@@ -42,6 +42,28 @@ const (
 			transaction.v_t_schedule
 		%s
 	`
+	_getAllMasterSchedule = `
+	SELECT
+		id,
+		code,
+		mentor_code,
+		shift_name,
+		start_date AS planning_start_time,
+		end_date AS planning_end_time,
+		coalesce(sequence, 0) AS sequence,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		is_deleted
+	FROM 
+		master.master_mentor_schedule
+	WHERE 
+		is_active=true and 
+		is_deleted=false
+		%s'
+	`
 	_insertScheduleSql = `
 		INSERT INTO transaction.transact_schedule
 		(
@@ -121,6 +143,8 @@ type scheduleRepository struct {
 
 type ScheduleRepository interface {
 	GetAllSchedule(filter string) (*[]model.Schedule, error)
+	GetAllMasterSchedule(filter string) (*[]model.Schedule, error)
+
 	InsertSchedule(data model.Schedule) (bool, error)
 	UpdateScheduleUser(data model.Schedule) (bool, error)
 	UpdateScheduleMentor(data model.Schedule) (bool, error)
@@ -139,6 +163,18 @@ func (r *scheduleRepository) GetAllSchedule(filter string) (*[]model.Schedule, e
 	err := r.db.Select(&result, query)
 	if err != nil {
 		return nil, utils.WrapError(err, "scheduleRepository.GetAllSchedule :  error get")
+	}
+
+	return &result, nil
+}
+
+func (r *scheduleRepository) GetAllMasterSchedule(filter string) (*[]model.Schedule, error) {
+	var result []model.Schedule
+	query := fmt.Sprintf(_getAllScheduleSql, filter)
+
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "scheduleRepository.GetAllMasterSchedule :  error get")
 	}
 
 	return &result, nil

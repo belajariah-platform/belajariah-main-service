@@ -60,6 +60,7 @@ const (
 	_getAllPayment = `
 		SELECT
 			id,
+			code,
 			user_code,
 			user_name,
 			class_code,
@@ -121,10 +122,10 @@ const (
 			transaction.transact_payment
 		SET
 			payment_method_code=$1,
-			status_payment=$2,
+			status_payment_code=$2,
 			sender_bank=$3,
 			sender_name=$4,
-			image_code=$5,
+			image_proof=$5,
 			modified_by=$6,
 			modified_date=$7
 		WHERE
@@ -138,7 +139,7 @@ const (
 			package_code,
 			payment_method_code,
 			invoice_number,
-			status_payment,
+			status_payment_code,
 			total_transfer,
 			payment_type,
 			schedule_code_1,
@@ -155,6 +156,7 @@ const (
 			$3,
 			$4,
 			$5,
+			(SELECT code FROM master.master_status WHERE value='Waiting for Payment' AND type='payment' LIMIT 1),
 			$6,
 			$7,
 			$8,
@@ -163,8 +165,7 @@ const (
 			$11,
 			$12,
 			$13,
-			$14,
-			$15
+			$14
 		) returning code
 	`
 	_checkAllPaymentExpired = `
@@ -219,6 +220,7 @@ func InitPaymentsRepository(db *sqlx.DB) PaymentsRepository {
 func (paymentsRepository *paymentsRepository) GetPayment(filter string) (model.Payment, error) {
 	var paymentRow model.Payment
 	query := fmt.Sprintf(_getPayment, filter)
+
 	row := paymentsRepository.db.QueryRow(query)
 
 	var isActive bool
@@ -381,6 +383,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 					paymentList,
 					model.Payment{
 						ID:                 id,
+						Code:               code,
 						UserCode:           userCode,
 						UserName:           userName,
 						ClassCode:          classCode,
@@ -447,7 +450,6 @@ func (r *paymentsRepository) InsertPayment(payment model.Payment) (model.Payment
 		payment.PackageCode,
 		payment.PaymentMethodCode,
 		payment.InvoiceNumber,
-		payment.StatusPaymentCode,
 		payment.TotalTransfer,
 		payment.PaymentTypeCode,
 		payment.ScheduleCode1.String,
@@ -456,7 +458,7 @@ func (r *paymentsRepository) InsertPayment(payment model.Payment) (model.Payment
 		payment.CreatedDate,
 		payment.ModifiedBy.String,
 		payment.ModifiedDate.Time,
-		payment.PromoCode,
+		payment.PromoCode.String,
 	).Scan(&code)
 
 	if err != nil {
@@ -481,7 +483,7 @@ func (r *paymentsRepository) UploadPayment(payment model.Payment) (bool, error) 
 		payment.StatusPaymentCode,
 		payment.SenderBank.String,
 		payment.SenderName.String,
-		payment.ImageCode.Int64,
+		payment.ImageProof.String,
 		payment.ModifiedBy.String,
 		payment.ModifiedDate.Time,
 		payment.ID,

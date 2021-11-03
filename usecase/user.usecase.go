@@ -83,7 +83,7 @@ func (userUsecase *userUsecase) GoogleLogin(users shape.Users) (shape.UserInfo, 
 	dataUser := model.Users{
 		Email:    users.Email,
 		Password: hashPassword,
-		FullName: sql.NullString{
+		Full_Name: sql.NullString{
 			String: users.Full_Name,
 		},
 		Phone: sql.NullInt64{
@@ -184,13 +184,13 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 
 	hashPassword, err := utils.GenerateHashPassword(users.Password)
 	if err != nil {
-		return false, utils.WrapError(err, "utils.GenerateHashPassword : "), msg
+		return false, utils.WrapError(err, "userUsecase.GenerateHashPassword : "), msg
 	}
 
 	dataUser := model.Users{
 		Email:    users.Email,
 		Password: hashPassword,
-		FullName: sql.NullString{
+		Full_Name: sql.NullString{
 			String: users.Full_Name,
 		},
 		Phone: sql.NullInt64{
@@ -286,6 +286,9 @@ func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email s
 		},
 		City: sql.NullString{
 			String: users.City,
+		},
+		Age: sql.NullInt64{
+			Int64: int64(users.Age),
 		},
 		Address: sql.NullString{
 			String: users.Address,

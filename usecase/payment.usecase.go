@@ -17,6 +17,7 @@ type paymentUsecase struct {
 	enumRepository             repository.EnumRepository
 	packageRepository          repository.PackageRepository
 	paymentsRepository         repository.PaymentsRepository
+	scheduleRepository         repository.ScheduleRepository
 	userClassRepository        repository.UserClassRepository
 	approvalStatusRepository   repository.ApprovalStatusRepository
 	userClassHistoryRepository repository.UserClassHistoryRepository
@@ -35,13 +36,14 @@ type PaymentUsecase interface {
 	InsertPayment(payment shape.PaymentPost, email string) (shape.Payment, bool, error)
 }
 
-func InitPaymentUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
+func InitPaymentUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, scheduleRepository repository.ScheduleRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
 	return &paymentUsecase{
 		sytemConfig,
 		emailUsecase,
 		enumRepository,
 		packageRepository,
 		paymentsRepository,
+		scheduleRepository,
 		userClassRepository,
 		approvalStatusRepository,
 		userClassHistoryRepository,
@@ -146,6 +148,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentRejected(query model.Query) (
 		for _, value := range payments {
 			paymentResult = append(paymentResult, shape.Payment{
 				ID:                  value.ID,
+				Code:                value.Code,
 				User_Code:           value.UserCode,
 				User_Name:           value.UserName,
 				Class_Code:          value.ClassCode,
@@ -218,6 +221,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 		for _, value := range payments {
 			paymentResult = append(paymentResult, shape.Payment{
 				ID:                   value.ID,
+				Code:                 value.Code,
 				User_Code:            value.UserCode,
 				User_Name:            value.UserName,
 				Class_Code:           value.ClassCode,
@@ -281,6 +285,8 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 		StatusPaymentCode: payment.Status_Payment_Code,
 		TotalTransfer:     payment.Total_Transfer,
 		PaymentTypeCode:   enum.Code,
+		ScheduleCode1:     sql.NullString{String: payment.Schedule_Code_1},
+		ScheduleCode2:     sql.NullString{String: payment.Schedule_Code_2},
 		CreatedBy:         email,
 		CreatedDate:       time.Now(),
 		ModifiedBy: sql.NullString{
@@ -297,7 +303,7 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 	}
 
 	if data != (model.Payment{}) {
-		filter := fmt.Sprintf(`WHERE id = %d`, data.ID)
+		filter := fmt.Sprintf(`WHERE code = '%s'`, data.Code)
 
 		payments, err := paymentUsecase.paymentsRepository.GetPayment(filter)
 		if err != nil {
@@ -306,6 +312,7 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 
 		dataPayments = shape.Payment{
 			ID:                   payments.ID,
+			Code:                 data.Code,
 			Total_Transfer:       payments.TotalTransfer,
 			Payment_Method:       payments.PaymentMethod,
 			Payment_Method_Code:  payments.PaymentMethodCode,
@@ -346,7 +353,7 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 	if err != nil {
 		return false, utils.WrapError(err, "paymentUsecase.approvalStatusRepository.GetApprovalStatus : ")
 	}
-
+	fmt.Println((status))
 	switch strings.ToLower(payment.Action) {
 	case "approved":
 		statusCode = status.ApprovedStatus.String
@@ -367,8 +374,8 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 		SenderName: sql.NullString{
 			String: payment.Sender_Name,
 		},
-		ImageCode: sql.NullInt64{
-			Int64: payment.Image_Code,
+		ImageProof: sql.NullString{
+			String: payment.Image_Proof,
 		},
 		ModifiedBy: sql.NullString{
 			String: email,
@@ -383,7 +390,7 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.UploadPayment : ")
 	}
 
-	filters := fmt.Sprintf(`WHERE id = %d`, dataPayment.ID)
+	filters := fmt.Sprintf(`WHERE code = %d`, dataPayment.ID)
 
 	payments, err := paymentUsecase.paymentsRepository.GetPayment(filters)
 	if err != nil {
@@ -416,9 +423,18 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 	var enum model.Enum
 	var class model.UserClass
 	var packages model.Package
+	var schedules *[]model.Schedule
+	var history model.UserClassHistory
 	var userClassResult model.UserClass
 	var statusCode, paymentType, emailType string
-	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`, payment.User_Code, payment.Class_Code)
+
+	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
+		payment.User_Code,
+		payment.Class_Code)
+
+	var filterSchedule = fmt.Sprintf(`AND code IN ('%s', '%s') ORDER BY sequence ASC`,
+		payment.Schedule_Code_1,
+		payment.Schedule_Code_1)
 
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	if err != nil {
@@ -437,13 +453,14 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 		}
 
 		dataUserClass := model.UserClass{
-			UserCode:     payment.User_Code,
-			ClassCode:    payment.Class_Code,
-			PackageCode:  payment.Package_Code,
-			StatusCode:   statusCode,
-			StartDate:    sql.NullTime{Time: time.Now()},
-			ExpiredDate:  sql.NullTime{Time: utils.TimeAdd(time.Now(), packages.Duration)},
-			TimeDuration: packages.Duration * 30,
+			UserCode:    payment.User_Code,
+			ClassCode:   payment.Class_Code,
+			PackageCode: payment.Package_Code,
+			StatusCode:  statusCode,
+			StartDate:   sql.NullTime{Time: time.Now()},
+			// ExpiredDate: sql.NullTime{Time: utils.TimeAdd(time.Now(), packages.Duration)},
+			// TimeDuration: packages.Duration * 30,
+			TimeDuration: 0,
 			CreatedBy:    email,
 			CreatedDate:  time.Now(),
 			ModifiedBy: sql.NullString{
@@ -459,11 +476,10 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			return false, utils.WrapError(err, "paymentUsecase.userClassRepository.GetUserClass : ")
 		}
 
-		if class != (model.UserClass{}) && !class.IsExpired {
-			dataUserClass.TypeCode = "extend class"
-			dataUserClass.StartDate = class.StartDate
-			dataUserClass.TimeDuration = class.TimeDuration + packages.Duration*30
-			dataUserClass.ExpiredDate = sql.NullTime{Time: utils.TimeAdd(class.ExpiredDate.Time, packages.Duration)}
+		if class != (model.UserClass{}) {
+			// dataUserClass.StartDate = class.StartDate
+			// dataUserClass.TimeDuration = class.TimeDuration + packages.Duration*30
+			// dataUserClass.ExpiredDate = sql.NullTime{Time: utils.TimeAdd(class.ExpiredDate.Time, packages.Duration)}
 			// dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
 			// dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
 
@@ -472,24 +488,20 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
 			}
 
-		} else if class != (model.UserClass{}) && class.IsExpired {
-			dataUserClass.TypeCode = "extend class"
+			// } else if class != (model.UserClass{}) && class.IsExpired {
+			// 	dataUserClass.TypeCode = "extend class"
 			// dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
 			// dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
 
-			userClassResult, result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
-			if err != nil {
-				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
-			}
-
+			// userClassResult, result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
+			// if err != nil {
+			// 	return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
+			// }
 		} else if class == (model.UserClass{}) {
-			dataUserClass.TypeCode = "new class"
-
 			userClassResult, result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
 			if err != nil {
 				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
 			}
-
 		}
 
 		dataHistory := model.UserClassHistory{
@@ -505,9 +517,36 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			ModifiedDate:  dataUserClass.ModifiedDate,
 		}
 
-		result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataHistory)
+		history, result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataHistory)
 		if err != nil {
 			return false, utils.WrapError(err, "paymentUsecase.userClassHistoryRepository.InsertUserClassHistory : ")
+		}
+
+		schedules, err = paymentUsecase.scheduleRepository.GetAllMasterSchedule(filterSchedule)
+		if err != nil {
+			return false, utils.WrapError(err, "paymentUsecase.scheduleRepository.GetAllSchedule : ")
+		}
+
+		if len(*schedules) != 0 {
+			for i := 0; i < packages.Duration/len(*schedules); i++ {
+				for index, data := range *schedules {
+
+					data.User_Class_History_Code = history.Code
+					data.Class_Code = payment.Class_Code
+					data.User_Code = payment.User_Code
+					data.Sequence = i + (index + i + 1)
+					data.Created_By = email
+					data.Modified_By = email
+					data.Created_Date = dataUserClass.CreatedDate
+					data.Modified_Date.NullTime = dataUserClass.ModifiedDate
+					data.Description.NullString = sql.NullString{String: fmt.Sprintf(`Pertemuan %d`, i+(index+i+1))}
+
+					result, err = paymentUsecase.scheduleRepository.InsertSchedule(data)
+					if err != nil {
+						return false, utils.WrapError(err, "paymentUsecase.scheduleRepository.GetAllSchedule : ")
+					}
+				}
+			}
 		}
 
 	case "rejected":

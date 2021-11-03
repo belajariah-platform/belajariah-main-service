@@ -162,6 +162,52 @@ const (
 			'%s'
 		) returning code
 		`
+	_insertMentorDetail = `
+		INSERT INTO belajariah.mentor_info
+		(
+			mentor_code,
+			fullname,
+			phone,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES(
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7
+		)
+	`
+	// profession,
+	// gender,
+	// age,
+	// province,
+	// city,
+	// address,
+	// description,
+	// birth,
+	// learning_method,
+	// account_owner,
+	// account_name,
+	// account_number,
+
+	// $8,
+	// $9,
+	// $10,
+	// $11,
+	// $12,
+	// $13,
+	// $14,
+	// $15,
+	// $16,
+	// $17,
+	// $18,
+	// $19
 )
 
 type mentorRepository struct {
@@ -177,7 +223,8 @@ type MentorRepository interface {
 	GetAllMentorSchedule(code string) ([]model.MentorSchedule, error)
 	GetAllMentorExperience(code string) ([]model.MentorExperience, error)
 
-	RegisterMentor(data model.Mentors) (bool, error)
+	RegisterMentor(data model.Mentors) (model.Mentors, bool, error)
+	InsertMentorDetail(data model.Mentors) (bool, error)
 }
 
 func InitMentorRepository(db *sqlx.DB) MentorRepository {
@@ -487,26 +534,69 @@ func (r *mentorRepository) GetAllMentorCount(filter string) (int, error) {
 	return count, sqlError
 }
 
-func (r *mentorRepository) RegisterMentor(data model.Mentors) (bool, error) {
+func (r *mentorRepository) RegisterMentor(data model.Mentors) (model.Mentors, bool, error) {
 	var code string
 
 	tx, err := r.db.Beginx()
 	if err != nil {
-		return false, errors.New("mentorRepository: RegisterMentor: error begin transaction")
+		return model.Mentors{}, false, errors.New("mentorRepository: RegisterMentor: error begin transaction")
 	}
 
 	data.CreatedDate = time.Now()
 	data.ModifiedDate.Time = time.Now()
 
 	mutation := fmt.Sprintf(_registerMentor,
-		data.Email, data.Password, data.VerifiedCode.String, data.IsVerified, data.Email,
-		utils.CurrentDateString(data.CreatedDate), data.Email, utils.CurrentDateString(data.ModifiedDate.Time),
+		data.Email,
+		data.Password,
+		data.VerifiedCode.String,
+		data.IsVerified,
+		data.Email,
+		utils.CurrentDateString(data.CreatedDate.UTC()),
+		data.Email,
+		utils.CurrentDateString(data.ModifiedDate.Time.UTC()),
 	)
 
 	err = tx.QueryRow(mutation).Scan(&code)
 	if err != nil {
 		tx.Rollback()
-		return false, utils.WrapError(err, "mentorRepository: RegisterMentor: error insert")
+		return model.Mentors{}, false, utils.WrapError(err, "mentorRepository: RegisterMentor: error insert")
+	}
+
+	tx.Commit()
+	return model.Mentors{Code: code}, err == nil, nil
+}
+
+func (r *mentorRepository) InsertMentorDetail(data model.Mentors) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("mentorRepository: InsertMentorDetail: error begin transaction")
+	}
+
+	_, err = tx.Exec(_insertMentorDetail,
+		data.Code,
+		data.Full_Name,
+		data.Phone.Int64,
+		// data.Profession,
+		// data.Gender,
+		// data.Age,
+		// data.Province,
+		// data.City,
+		// data.Address,
+		// data.Description,
+		// data.Birth,
+		// data.Learning_Method,
+		// data.Account_Owner,
+		// data.Account_Name,
+		// data.Account_Number,
+		data.Email,
+		utils.CurrentDateString(data.CreatedDate.UTC()),
+		data.Email,
+		utils.CurrentDateString(data.ModifiedDate.Time.UTC()),
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "mentorRepository: InsertMentorDetail: error insert")
 	}
 
 	tx.Commit()

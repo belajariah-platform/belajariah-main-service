@@ -127,9 +127,10 @@ const (
 			province=$6,
 			city=$7,
 			address=$8,
-			modified_by=$9,
-			modified_date=$10
-		WHERE user_code=$11
+			age=$9,
+			modified_by=$10,
+			modified_date=$11
+		WHERE user_code=$12
  	`
 
 	_verifyUser = `
@@ -264,7 +265,7 @@ func (userRepository *userRepository) GetUserData(code string) (model.UserInfo, 
 		&fullname,
 	)
 	if sqlError != nil {
-		utils.PushLogf("SQL error on GetUserData => ", sqlError.Error())
+		utils.PushLogf("", "SQL error on GetUserData => ", sqlError.Error())
 		return model.UserInfo{}, nil
 	} else {
 		userRow = model.UserInfo{
@@ -466,7 +467,7 @@ func (r *userRepository) InsertUserDetail(data model.Users) (bool, error) {
 
 	_, err = tx.Exec(_insertUserDetail,
 		data.Code,
-		data.FullName.String,
+		data.Full_Name.String,
 		data.Phone.Int64,
 		data.CreatedBy,
 		data.CreatedDate,
@@ -498,6 +499,7 @@ func (r *userRepository) UpdateProfileUser(data model.UserInfo) (bool, error) {
 		data.Province.String,
 		data.City.String,
 		data.Address.String,
+		data.Age.Int64,
 		data.ModifiedBy.String,
 		data.ModifiedDate.Time,
 		data.Code,

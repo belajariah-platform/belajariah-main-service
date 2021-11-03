@@ -39,7 +39,7 @@ const (
 		WHERE 
 			is_deleted=false AND
 			is_active=true AND
-			(code = $1 OR promo_code = $1) 
+			(code = '%s' OR promo_code = '%s') 
 	`
 	_getAllPromotion = `
 		SELECT
@@ -203,7 +203,9 @@ func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, 
 
 func (promotionRepository *promotionRepository) GetPromotion(filter string) (model.Promotion, error) {
 	var promotionRow model.Promotion
-	row := promotionRepository.db.QueryRow(_getPromotion, filter)
+
+	mutation := fmt.Sprintf(_getPromotion, filter, filter)
+	row := promotionRepository.db.QueryRow(mutation)
 
 	var id int
 	var createdDate time.Time

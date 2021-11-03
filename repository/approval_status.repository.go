@@ -37,7 +37,7 @@ func (approvalStatusRepository *approvalStatusRepository) GetApprovalStatus(stat
 		revise_status,
 		revise_status_value
 	FROM 
-		v_m_approval_status
+		master.v_m_approval_status
 	WHERE
 		current_status = $1
 	;
