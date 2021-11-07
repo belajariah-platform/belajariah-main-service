@@ -62,6 +62,7 @@ Temporary Items
 .env.local
 launch.json
 belajariah-main.json
+belajariah-main-service
 
-/node_modules
+/node_modulesl
 package-lock.json

@@ -453,22 +453,18 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 		}
 
 		dataUserClass := model.UserClass{
-			UserCode:    payment.User_Code,
-			ClassCode:   payment.Class_Code,
-			PackageCode: payment.Package_Code,
-			StatusCode:  statusCode,
-			StartDate:   sql.NullTime{Time: time.Now()},
-			// ExpiredDate: sql.NullTime{Time: utils.TimeAdd(time.Now(), packages.Duration)},
-			// TimeDuration: packages.Duration * 30,
-			TimeDuration: 0,
+			StatusCode:   statusCode,
+			UserCode:     payment.User_Code,
+			ClassCode:    payment.Class_Code,
+			PackageCode:  payment.Package_Code,
+			StartDate:    sql.NullTime{Time: time.Now()},
+			PromoCode:    sql.NullString{String: payment.Promo_Code},
 			CreatedBy:    email,
 			CreatedDate:  time.Now(),
-			ModifiedBy: sql.NullString{
-				String: email,
-			},
-			ModifiedDate: sql.NullTime{
-				Time: time.Now(),
-			},
+			ModifiedBy:   sql.NullString{String: email},
+			ModifiedDate: sql.NullTime{Time: time.Now()},
+			// ExpiredDate: sql.NullTime{Time: utils.TimeAdd(time.Now(), packages.Duration)},
+			// TimeDuration: packages.Duration * 30,
 		}
 
 		class, err = paymentUsecase.userClassRepository.GetUserClass(filter)
@@ -476,17 +472,24 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			return false, utils.WrapError(err, "paymentUsecase.userClassRepository.GetUserClass : ")
 		}
 
-		if class != (model.UserClass{}) {
+		if !payment.Is_Direct {
+			if class == (model.UserClass{}) {
+				userClassResult, result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
+				if err != nil {
+					return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
+				}
+			}
+			// if class != (model.UserClass{}) {
 			// dataUserClass.StartDate = class.StartDate
 			// dataUserClass.TimeDuration = class.TimeDuration + packages.Duration*30
 			// dataUserClass.ExpiredDate = sql.NullTime{Time: utils.TimeAdd(class.ExpiredDate.Time, packages.Duration)}
 			// dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
 			// dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
 
-			userClassResult, result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
-			if err != nil {
-				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
-			}
+			// userClassResult, result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
+			// if err != nil {
+			// 	return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
+			// }
 
 			// } else if class != (model.UserClass{}) && class.IsExpired {
 			// 	dataUserClass.TypeCode = "extend class"
@@ -497,56 +500,63 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			// if err != nil {
 			// 	return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
 			// }
-		} else if class == (model.UserClass{}) {
-			userClassResult, result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
+		} else {
+			if class == (model.UserClass{}) {
+				userClassResult, result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
+				if err != nil {
+					return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
+				}
+			} else if class != (model.UserClass{}) {
+				userClassResult, result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)
+				if err != nil {
+					return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
+				}
+			}
+
+			schedules, err = paymentUsecase.scheduleRepository.GetAllMasterSchedule(filterSchedule)
 			if err != nil {
-				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
+				return false, utils.WrapError(err, "paymentUsecase.scheduleRepository.GetAllSchedule : ")
+			}
+
+			if len(*schedules) != 0 {
+				for i := 0; i < packages.Duration/len(*schedules); i++ {
+					for index, data := range *schedules {
+						data.User_Class_History_Code = history.Code
+						data.Class_Code = payment.Class_Code
+						data.User_Code = payment.User_Code
+						data.Sequence = i + (index + i + 1)
+						data.Created_By = email
+						data.Modified_By = email
+						data.Created_Date = dataUserClass.CreatedDate
+						data.Modified_Date.NullTime = dataUserClass.ModifiedDate
+						data.Description.NullString = sql.NullString{String: fmt.Sprintf(`Pertemuan %d`, i+(index+i+1))}
+
+						result, err = paymentUsecase.scheduleRepository.InsertSchedule(data)
+						if err != nil {
+							return false, utils.WrapError(err, "paymentUsecase.scheduleRepository.GetAllSchedule : ")
+						}
+					}
+				}
 			}
 		}
 
 		dataHistory := model.UserClassHistory{
-			UserClassCode: userClassResult.Code,
-			PackageCode:   dataUserClass.PackageCode,
-			PromoCode:     dataUserClass.PromoCode.String,
-			Price:         payment.Total_Transfer,
-			StartDate:     dataUserClass.StartDate,
-			ExpiredDate:   dataUserClass.ExpiredDate,
-			CreatedBy:     dataUserClass.CreatedBy,
-			CreatedDate:   dataUserClass.CreatedDate,
-			ModifiedBy:    dataUserClass.ModifiedBy,
-			ModifiedDate:  dataUserClass.ModifiedDate,
+			UserClassCode:     userClassResult.Code,
+			PackageCode:       dataUserClass.PackageCode,
+			PromoCode:         dataUserClass.PromoCode.String,
+			PaymentMethodCode: payment.Payment_Method_Code,
+			Price:             payment.Total_Transfer,
+			StartDate:         dataUserClass.StartDate,
+			ExpiredDate:       dataUserClass.ExpiredDate,
+			CreatedBy:         dataUserClass.CreatedBy,
+			CreatedDate:       dataUserClass.CreatedDate,
+			ModifiedBy:        dataUserClass.ModifiedBy,
+			ModifiedDate:      dataUserClass.ModifiedDate,
 		}
 
 		history, result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataHistory)
 		if err != nil {
 			return false, utils.WrapError(err, "paymentUsecase.userClassHistoryRepository.InsertUserClassHistory : ")
-		}
-
-		schedules, err = paymentUsecase.scheduleRepository.GetAllMasterSchedule(filterSchedule)
-		if err != nil {
-			return false, utils.WrapError(err, "paymentUsecase.scheduleRepository.GetAllSchedule : ")
-		}
-
-		if len(*schedules) != 0 {
-			for i := 0; i < packages.Duration/len(*schedules); i++ {
-				for index, data := range *schedules {
-
-					data.User_Class_History_Code = history.Code
-					data.Class_Code = payment.Class_Code
-					data.User_Code = payment.User_Code
-					data.Sequence = i + (index + i + 1)
-					data.Created_By = email
-					data.Modified_By = email
-					data.Created_Date = dataUserClass.CreatedDate
-					data.Modified_Date.NullTime = dataUserClass.ModifiedDate
-					data.Description.NullString = sql.NullString{String: fmt.Sprintf(`Pertemuan %d`, i+(index+i+1))}
-
-					result, err = paymentUsecase.scheduleRepository.InsertSchedule(data)
-					if err != nil {
-						return false, utils.WrapError(err, "paymentUsecase.scheduleRepository.GetAllSchedule : ")
-					}
-				}
-			}
 		}
 
 	case "rejected":

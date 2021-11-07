@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:12.2-alpine
+    container_name: "database"
+    hostname: rest-server
+    ports:
+      -   "5432:5432"
+    environment:
+      - POSTGRES_DB=belajariahmain
+      - POSTGRES_USER=belajariahdev
+      - POSTGRES_PASSWORD=bel4jar1ahNextPwd
+    networks:
+      - fullstack
+    volumes:
+      - database_postgres:/var/lib/postgresql/data
+  
+  web:
+    build: .
+    container_name: "rest-api"
+    environment: 
+      - SERVER_PORT=3000
+      - DB_HOST=belajariah-main.cc4rzhq9nu8q.ap-southeast-1.rds.amazonaws.com
+      - DB_PORT=5432
+      - DB_NAME=belajariahmain
+      - DB_USERNAME=belajariahdev
+      - DB_PASSWORD=bel4jar1ahNextPwd
+      - LOG_FILENAME=belajariah-main.json
+      - LOG_MAXSIZE=10
+      - LOG_MAXBACKUP=5
+      - LOG_MAXAGE=120
+      - LOG_COMPRESS=true
+      - AUTH_EMAIL=belajariah20@gmail.com
+      - AUTH_PASSWORD=qbkbmtvagxentdvr
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SENDER_NAME=Belajariah <belajariah20@gmail.com>
+      - COPY_RIGHT=2021-Belajariah
+    ports: 
+      - "3000:3000"
+    depends_on:
+        - db
+    networks: 
+        - fullstack
+
+volumes:
+  database_postgres:
+
+networks:
+  fullstack:
+    driver: bridge
