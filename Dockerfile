@@ -13,7 +13,6 @@ RUN go get -d -v
 # COPY --from=builder /app/main .
 # COPY . .
 
-#RUN go mod download
 
 #For small binnary
 

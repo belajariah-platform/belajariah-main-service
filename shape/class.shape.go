@@ -14,6 +14,7 @@ type Class struct {
 	Class_Description      string
 	Class_Image            string
 	Class_Video            string
+	Class_Document         string
 	Class_Rating           float64
 	Total_Review           int
 	Total_Video            int

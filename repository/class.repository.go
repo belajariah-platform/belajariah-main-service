@@ -38,6 +38,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 		class_description,
 		class_image,
 		class_video,
+		class_document,
 		class_rating,
 		total_review,
 		total_video,
@@ -75,7 +76,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 			var isActive, isDirect, isDeleted bool
 			var id, totalReview, totalVideo, totalVideoDuration int
 			var code, classCategoryCode, classCategory, className, createdBy string
-			var classInitial, classDescription, classImage, classVideo, instructorDescription, instructorBiografi, instructorImage, modifiedBy, instructorName sql.NullString
+			var classInitial, classDescription, classImage, classVideo, classDocument, instructorDescription, instructorBiografi, instructorImage, modifiedBy, instructorName sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -87,6 +88,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 				&classDescription,
 				&classImage,
 				&classVideo,
+				&classDocument,
 				&classRating,
 				&totalReview,
 				&totalVideo,
@@ -118,6 +120,7 @@ func (classRepository *classRepository) GetAllClass(skip, take int, filter strin
 						ClassDescription:      classDescription,
 						ClassImage:            classImage,
 						ClassVideo:            classVideo,
+						ClassDocument:         classDocument,
 						ClassRating:           classRating,
 						TotalReview:           totalReview,
 						TotalVideo:            totalVideo,

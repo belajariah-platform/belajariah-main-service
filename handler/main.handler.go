@@ -25,7 +25,7 @@ func InitMainHandler(config *model.Config) MainHandler {
 }
 
 func (mainHandler *mainHandler) NoRoute(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, "BELAJARIAH MAIN SERVICE 0.0.3")
+	ctx.JSON(http.StatusOK, "BELAJARIAH MAIN SERVICE 0.0.1")
 }
 
 func (mainHandler *mainHandler) Log(ctx *gin.Context) {
