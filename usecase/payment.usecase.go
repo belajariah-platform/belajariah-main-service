@@ -353,7 +353,7 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 	if err != nil {
 		return false, utils.WrapError(err, "paymentUsecase.approvalStatusRepository.GetApprovalStatus : ")
 	}
-	fmt.Println((status))
+
 	switch strings.ToLower(payment.Action) {
 	case "approved":
 		statusCode = status.ApprovedStatus.String
@@ -463,8 +463,6 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			CreatedDate:  time.Now(),
 			ModifiedBy:   sql.NullString{String: email},
 			ModifiedDate: sql.NullTime{Time: time.Now()},
-			// ExpiredDate: sql.NullTime{Time: utils.TimeAdd(time.Now(), packages.Duration)},
-			// TimeDuration: packages.Duration * 30,
 		}
 
 		class, err = paymentUsecase.userClassRepository.GetUserClass(filter)
@@ -479,27 +477,6 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 					return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
 				}
 			}
-			// if class != (model.UserClass{}) {
-			// dataUserClass.StartDate = class.StartDate
-			// dataUserClass.TimeDuration = class.TimeDuration + packages.Duration*30
-			// dataUserClass.ExpiredDate = sql.NullTime{Time: utils.TimeAdd(class.ExpiredDate.Time, packages.Duration)}
-			// dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
-			// dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
-
-			// userClassResult, result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
-			// if err != nil {
-			// 	return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
-			// }
-
-			// } else if class != (model.UserClass{}) && class.IsExpired {
-			// 	dataUserClass.TypeCode = "extend class"
-			// dataUserClass.TotalWebinar.Int64 = dataUserClass.TotalWebinar.Int64 + class.TotalWebinar.Int64
-			// dataUserClass.TotalConsultation.Int64 = dataUserClass.TotalConsultation.Int64 + class.TotalConsultation.Int64
-
-			// userClassResult, result, err = paymentUsecase.userClassRepository.UpdateUserClass(dataUserClass)
-			// if err != nil {
-			// 	return false, utils.WrapError(err, "paymentUsecase.userClassRepository.UpdateUserClass : ")
-			// }
 		} else {
 			if class == (model.UserClass{}) {
 				userClassResult, result, err = paymentUsecase.userClassRepository.InsertUserClass(dataUserClass)

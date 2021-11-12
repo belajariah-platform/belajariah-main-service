@@ -86,7 +86,7 @@ const (
 		FROM 
 			master.v_m_promotion
 		WHERE  
-			deleted_by IS NULL AND
+			is_deleted = false AND
 			is_active=true AND
 			promo_code <> 'BLJEXP' AND
 			expired_date <= now() OR 

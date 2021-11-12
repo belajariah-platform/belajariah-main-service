@@ -109,7 +109,7 @@ const (
 		UPDATE
 			transaction.transact_payment
 		SET
-			status_payment=$1,
+			status_payment_code=$1,
 			payment_type=$2,
 			remarks=$3,
 			modified_by=$4,
