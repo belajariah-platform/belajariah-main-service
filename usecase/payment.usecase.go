@@ -428,7 +428,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 	var userClassResult model.UserClass
 	var statusCode, paymentType, emailType string
 
-	var filter = fmt.Sprintf(`AND user_code=%d AND class_code='%s'`,
+	var filter = fmt.Sprintf(`AND user_code='%s' AND class_code='%s'`,
 		payment.User_Code,
 		payment.Class_Code)
 
@@ -476,6 +476,25 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 				if err != nil {
 					return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClass : ")
 				}
+
+				dataHistory := model.UserClassHistory{
+					UserClassCode:     userClassResult.Code,
+					PackageCode:       dataUserClass.PackageCode,
+					PromoCode:         dataUserClass.PromoCode.String,
+					PaymentMethodCode: payment.Payment_Method_Code,
+					Price:             payment.Total_Transfer,
+					StartDate:         dataUserClass.StartDate,
+					ExpiredDate:       dataUserClass.ExpiredDate,
+					CreatedBy:         dataUserClass.CreatedBy,
+					CreatedDate:       dataUserClass.CreatedDate,
+					ModifiedBy:        dataUserClass.ModifiedBy,
+					ModifiedDate:      dataUserClass.ModifiedDate,
+				}
+
+				history, result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataHistory)
+				if err != nil {
+					return false, utils.WrapError(err, "paymentUsecase.userClassHistoryRepository.InsertUserClassHistory : ")
+				}
 			}
 		} else {
 			if class == (model.UserClass{}) {
@@ -514,26 +533,26 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 						}
 					}
 				}
+
+				dataHistory := model.UserClassHistory{
+					UserClassCode:     userClassResult.Code,
+					PackageCode:       dataUserClass.PackageCode,
+					PromoCode:         dataUserClass.PromoCode.String,
+					PaymentMethodCode: payment.Payment_Method_Code,
+					Price:             payment.Total_Transfer,
+					StartDate:         dataUserClass.StartDate,
+					ExpiredDate:       dataUserClass.ExpiredDate,
+					CreatedBy:         dataUserClass.CreatedBy,
+					CreatedDate:       dataUserClass.CreatedDate,
+					ModifiedBy:        dataUserClass.ModifiedBy,
+					ModifiedDate:      dataUserClass.ModifiedDate,
+				}
+
+				history, result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataHistory)
+				if err != nil {
+					return false, utils.WrapError(err, "paymentUsecase.userClassHistoryRepository.InsertUserClassHistory : ")
+				}
 			}
-		}
-
-		dataHistory := model.UserClassHistory{
-			UserClassCode:     userClassResult.Code,
-			PackageCode:       dataUserClass.PackageCode,
-			PromoCode:         dataUserClass.PromoCode.String,
-			PaymentMethodCode: payment.Payment_Method_Code,
-			Price:             payment.Total_Transfer,
-			StartDate:         dataUserClass.StartDate,
-			ExpiredDate:       dataUserClass.ExpiredDate,
-			CreatedBy:         dataUserClass.CreatedBy,
-			CreatedDate:       dataUserClass.CreatedDate,
-			ModifiedBy:        dataUserClass.ModifiedBy,
-			ModifiedDate:      dataUserClass.ModifiedDate,
-		}
-
-		history, result, err = paymentUsecase.userClassHistoryRepository.InsertUserClassHistory(dataHistory)
-		if err != nil {
-			return false, utils.WrapError(err, "paymentUsecase.userClassHistoryRepository.InsertUserClassHistory : ")
 		}
 
 	case "rejected":

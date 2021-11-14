@@ -33,7 +33,6 @@ const (
 			user_class_code,
 			package_code,
 			promo_code,
-			payment_method_code,
 			price,
 			start_date,
 			expired_date,
@@ -52,8 +51,7 @@ const (
 			$7,
 			$8,
 			$9,
-			$10,
-			$11
+			$10
 		) returning code
 	`
 	_deleteUserClassHistory = `
@@ -136,7 +134,6 @@ func (r *userClassHistoryRepository) InsertUserClassHistory(data model.UserClass
 		data.UserClassCode,
 		data.PackageCode,
 		data.PromoCode,
-		data.PaymentMethodCode,
 		data.Price,
 		data.StartDate.Time,
 		data.ExpiredDate.Time,
