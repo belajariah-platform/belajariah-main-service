@@ -515,9 +515,10 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 			}
 
 			if len(*schedules) != 0 {
-				for i := 0; i < packages.Duration/len(*schedules); i++ {
+				for i := 0; i < int(packages.DurationFrequence.Int64)/len(*schedules); i++ {
+
 					for index, data := range *schedules {
-						data.User_Class_History_Code = history.Code
+						data.User_Class_Code = history.Code
 						data.Class_Code = payment.Class_Code
 						data.User_Code = payment.User_Code
 						data.Sequence = i + (index + i + 1)

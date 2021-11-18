@@ -14,7 +14,7 @@ const (
 		SELECT 
 			id,
 			code,
-			user_class_history_code,
+			user_class_code,
 			class_code,
 			class_name,
 			user_code,

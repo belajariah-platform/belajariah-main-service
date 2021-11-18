@@ -44,6 +44,7 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		modified_date,
 		is_deleted,
 		duration,
+		duration_frequence,
 		consultation,
 		webinar
 	FROM master.master_package
@@ -56,9 +57,9 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 	var id, duration int
 	var createdDate time.Time
 	var isActive, isDeleted bool
-	var consultation, webinar sql.NullInt64
 	var modifiedDate sql.NullTime
 	var PriceDiscount, modifiedBy sql.NullString
+	var consultation, webinar, durationFrequence sql.NullInt64
 	var types, classCode, pricePackage, code, createdBy string
 
 	sqlError := row.Scan(
@@ -75,6 +76,7 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		&modifiedDate,
 		&isDeleted,
 		&duration,
+		&durationFrequence,
 		&consultation,
 		&webinar,
 	)
@@ -83,21 +85,22 @@ func (packageRepository *packageRepository) GetPackage(codes string) (model.Pack
 		return model.Package{}, nil
 	} else {
 		packageRow = model.Package{
-			ID:            id,
-			Code:          code,
-			ClassCode:     classCode,
-			Type:          types,
-			PricePackage:  pricePackage,
-			PriceDiscount: PriceDiscount,
-			IsActive:      isActive,
-			CreatedBy:     createdBy,
-			CreatedDate:   createdDate,
-			ModifiedBy:    modifiedBy,
-			ModifiedDate:  modifiedDate,
-			IsDeleted:     isDeleted,
-			Duration:      duration,
-			Consultation:  consultation,
-			Webinar:       webinar,
+			ID:                id,
+			Code:              code,
+			ClassCode:         classCode,
+			Type:              types,
+			PricePackage:      pricePackage,
+			PriceDiscount:     PriceDiscount,
+			IsActive:          isActive,
+			CreatedBy:         createdBy,
+			CreatedDate:       createdDate,
+			ModifiedBy:        modifiedBy,
+			ModifiedDate:      modifiedDate,
+			IsDeleted:         isDeleted,
+			Duration:          duration,
+			DurationFrequence: durationFrequence,
+			Consultation:      consultation,
+			Webinar:           webinar,
 		}
 		return packageRow, sqlError
 	}
@@ -121,6 +124,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 		modified_date,
 		is_deleted,
 		duration,
+		duration_frequence,
 		consultation,
 		webinar
 	FROM master.master_package
@@ -143,8 +147,8 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 			var createdDate time.Time
 			var isActive, isDeleted bool
 			var modifiedDate sql.NullTime
-			var consultation, webinar sql.NullInt64
 			var PriceDiscount, modifiedBy, description sql.NullString
+			var consultation, webinar, durationFrequence sql.NullInt64
 			var types, classCode, pricePackage, code, createdBy string
 
 			sqlError := rows.Scan(
@@ -162,6 +166,7 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 				&modifiedDate,
 				&isDeleted,
 				&duration,
+				&durationFrequence,
 				&consultation,
 				&webinar,
 			)
@@ -172,22 +177,23 @@ func (packageRepository *packageRepository) GetAllPackage(skip, take int, filter
 				packageList = append(
 					packageList,
 					model.Package{
-						ID:            id,
-						Code:          code,
-						ClassCode:     classCode,
-						Type:          types,
-						PricePackage:  pricePackage,
-						PriceDiscount: PriceDiscount,
-						Description:   description,
-						IsActive:      isActive,
-						CreatedBy:     createdBy,
-						CreatedDate:   createdDate,
-						ModifiedBy:    modifiedBy,
-						ModifiedDate:  modifiedDate,
-						IsDeleted:     isDeleted,
-						Duration:      duration,
-						Consultation:  consultation,
-						Webinar:       webinar,
+						ID:                id,
+						Code:              code,
+						ClassCode:         classCode,
+						Type:              types,
+						PricePackage:      pricePackage,
+						PriceDiscount:     PriceDiscount,
+						Description:       description,
+						IsActive:          isActive,
+						CreatedBy:         createdBy,
+						CreatedDate:       createdDate,
+						ModifiedBy:        modifiedBy,
+						ModifiedDate:      modifiedDate,
+						IsDeleted:         isDeleted,
+						Duration:          duration,
+						DurationFrequence: durationFrequence,
+						Consultation:      consultation,
+						Webinar:           webinar,
 					},
 				)
 			}
