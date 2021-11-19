@@ -23,6 +23,7 @@ type Class struct {
 	Instructor_Description string
 	Instructor_Biografi    string
 	Instructor_Image       string
+	Color_Path             string
 	Is_Direct              bool
 	Is_Active              bool
 	Created_By             string

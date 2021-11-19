@@ -83,6 +83,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
 	mentorEmpty := make([]shape.MentorInfo, 0)
+	mentorClassEmpty := make([]shape.MentorClass, 0)
 	mentorScheduleEmpty := make([]shape.MentorSchedule, 0)
 	mentorExperienceEmpty := make([]shape.MentorExperience, 0)
 
@@ -112,6 +113,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 						ID:            schedule.ID,
 						Code:          schedule.Code,
 						Mentor_Code:   schedule.MentorCode,
+						Class_Code:    schedule.ClassCode,
 						Time_Zone:     schedule.TimeZone,
 						Shift_Name:    schedule.ShiftName,
 						Start_Date:    schedule.StartDate,
@@ -160,6 +162,39 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				mentorExperienceResult = mentorExperienceEmpty
 			}
 
+			var mentorClass []model.MentorClass
+			var mentorClassResult []shape.MentorClass
+
+			mentorClass, errc := mentorUsecase.mentorRepository.GetAllMentorClass(value.Code)
+			if errc != nil {
+				return mentorEmpty, 0, utils.WrapError(errc, "mentorUsecase.mentorRepository.GetAllMentorClass : ")
+			}
+
+			if errs == nil {
+				for _, class := range mentorClass {
+					mentorClassResult = append(mentorClassResult, shape.MentorClass{
+						ID:            class.ID,
+						Code:          class.Code,
+						Mentor_Code:   class.MentorCode,
+						Mentor_Name:   class.MentorName.String,
+						Class_Code:    class.ClassCode,
+						Class_Name:    class.ClassName,
+						Class_Initial: class.ClassInitial.String,
+						Minimum_Rate:  int(class.MinimumRate.Int64),
+						Is_Active:     class.IsActive,
+						Created_By:    class.CreatedBy,
+						Created_Date:  class.CreatedDate,
+						Modified_By:   class.ModifiedBy.String,
+						Modified_Date: class.ModifiedDate.Time,
+						Is_Deleted:    class.IsDeleted,
+					})
+				}
+			}
+
+			if len(mentorClassResult) == 0 {
+				mentorClassResult = mentorClassEmpty
+			}
+
 			mentorResult = append(mentorResult, shape.MentorInfo{
 				ID:                   value.ID,
 				Code:                 value.Code,
@@ -191,6 +226,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				Modified_Date:        value.ModifiedDate.Time,
 				Mentor_Schedule:      mentorScheduleResult,
 				Mentor_Experience:    mentorExperienceResult,
+				Mentor_Class:         mentorClassResult,
 			})
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"belajariah-main-service/utils"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ type classHandler struct {
 }
 
 type ClassHandler interface {
+	Class(ctx *gin.Context)
 	GetAllClass(ctx *gin.Context)
 }
 
@@ -25,7 +27,7 @@ func InitClassHandler(classUsecase usecase.ClassUsecase) ClassHandler {
 	}
 }
 
-func (classHandler *classHandler) GetAllClass(ctx *gin.Context) {
+func (h *classHandler) GetAllClass(ctx *gin.Context) {
 	var query model.Query
 	var count int
 	err := ctx.BindQuery(&query)
@@ -44,7 +46,7 @@ func (classHandler *classHandler) GetAllClass(ctx *gin.Context) {
 		}
 
 		var classResult []shape.Class
-		classResult, count, err = classHandler.classUsecase.GetAllClass(query)
+		classResult, count, err = h.classUsecase.GetAllClass(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
 				"data":  classResult,
@@ -62,4 +64,38 @@ func (classHandler *classHandler) GetAllClass(ctx *gin.Context) {
 	} else {
 		utils.PushLogf("err", err)
 	}
+}
+
+func (h *classHandler) Class(ctx *gin.Context) {
+	var request model.ClassQuranRequest
+	if err := ctx.ShouldBindJSON(&request); err == nil {
+		switch strings.ToUpper(request.Action) {
+		case utils.GET_ALL_CLASS_QURAN:
+			h.getAllClassQuran(ctx, request)
+		default:
+			utils.NotFoundActionResponse(ctx, request.Action)
+		}
+	} else {
+		ctx.JSON(http.StatusBadRequest, model.Response{
+			Message: model.RequestResponse{
+				Count:  0,
+				Data:   nil,
+				Error:  err.Error(),
+				Result: false,
+			},
+			Status: http.StatusBadRequest,
+			Error:  err.Error(),
+		})
+	}
+}
+
+func (h *classHandler) getAllClassQuran(ctx *gin.Context, r model.ClassQuranRequest) {
+	result, count, err := h.classUsecase.GetAllClassQuran(r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, err)
+		return
+	}
+
+	utils.Response(ctx, result, count, nil)
 }

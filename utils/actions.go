@@ -14,4 +14,7 @@ const (
 
 	// -------------- MENTOR
 	REGISTER_MENTOR = "REGISTER_MENTOR"
+
+	// -------------- CLASS
+	GET_ALL_CLASS_QURAN = "GET_ALL_CLASS_QURAN"
 )

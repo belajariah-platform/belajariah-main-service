@@ -44,3 +44,23 @@ func GetFilterOrderHandler(defaultFilter, defaultOrder string, query model.Query
 
 	return finalResult
 }
+
+func GetFilterOnlyHandler(defaultFilter string, query model.Query) string {
+
+	finalFilter := defaultFilter
+
+	if len(query.Filters) > 0 {
+		// if default filter is not empty than join the filter. else create new filter script
+		if len(defaultFilter) > 0 {
+			finalFilter = fmt.Sprintf(`WHERE %s AND (%s)`, defaultFilter, GetFilterHandler(query.Filters))
+		} else {
+			finalFilter = fmt.Sprintf(`WHERE %s `, GetFilterHandler(query.Filters))
+
+		}
+	} else {
+		finalFilter = fmt.Sprintf(`WHERE %s`, finalFilter)
+	}
+
+	return finalFilter
+
+}

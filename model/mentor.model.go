@@ -68,6 +68,7 @@ type MentorInfo struct {
 	LearningMethod     sql.NullString
 	LearningMethodText sql.NullString
 	Rating             float64
+	Class_Code         string
 	IsActive           bool
 	CreatedBy          string
 	CreatedDate        time.Time
@@ -79,6 +80,7 @@ type MentorSchedule struct {
 	ID           int
 	Code         string
 	MentorCode   string
+	ClassCode    string
 	ShiftName    string
 	StartDate    time.Time
 	EndDate      time.Time
@@ -97,6 +99,23 @@ type MentorExperience struct {
 	Code         string
 	MentorCode   string
 	Experience   string
+	IsActive     bool
+	CreatedBy    string
+	CreatedDate  time.Time
+	ModifiedBy   sql.NullString
+	ModifiedDate sql.NullTime
+	IsDeleted    bool
+}
+
+type MentorClass struct {
+	ID           int
+	Code         string
+	MentorCode   string
+	MentorName   sql.NullString
+	ClassCode    string
+	ClassName    string
+	ClassInitial sql.NullString
+	MinimumRate  sql.NullInt64
 	IsActive     bool
 	CreatedBy    string
 	CreatedDate  time.Time

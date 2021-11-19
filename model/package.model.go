@@ -39,3 +39,48 @@ type Benefit struct {
 	ModifiedDate sql.NullTime
 	IsDeleted    bool
 }
+
+type PackageQuranRequest struct {
+	Action string       `form:"action" json:"action" xml:"action"`
+	Data   PackageQuran `form:"data" json:"data" xml:"data"`
+	Query  Query        `form:"query" json:"query" xml:"query"`
+}
+
+type PackageQuran struct {
+	ID                int        `form:"id" json:"id" xml:"id" db:"id"`
+	Code              string     `form:"code" json:"code" xml:"code" db:"code"`
+	ClassCode         string     `form:"classs_code" json:"classs_code" xml:"classs_code" db:"classs_code"`
+	Type              string     `form:"type" json:"type" xml:"type" db:"type"`
+	PricePackage      string     `form:"price_package" json:"price_package" xml:"price_package" db:"price_package"`
+	PriceDiscount     NullString `form:"price_discount" json:"price_discount" xml:"price_discount" db:"price_discount"`
+	Description       NullString `form:"description" json:"description" xml:"description" db:"description"`
+	Duration          int        `form:"duration" json:"duration" xml:"duration" db:"duration"`
+	DurationFrequence NullInt64  `form:"duration_frequence" json:"duration_frequence" xml:"duration_frequence" db:"duration_frequence"`
+	IsActive          bool       `form:"is_active" json:"is_active" xml:"is_active" db:"is_active"`
+	CreatedBy         string     `form:"created_by" json:"created_by" xml:"created_by" db:"created_by"`
+	CreatedDate       time.Time  `form:"created_date" json:"created_date" xml:"created_date" db:"created_date"`
+	ModifiedBy        NullString `form:"modified_by" json:"modified_by" xml:"modified_by" db:"modified_by"`
+	ModifiedDate      NullTime   `form:"modified_date" json:"modified_date" xml:"modified_date" db:"modified_date"`
+	IsDeleted         bool       `form:"is_deleted" json:"is_deleted" xml:"is_deleted" db:"is_deleted"`
+}
+
+type BenefitQuranRequest struct {
+	Action string       `form:"action" json:"action" xml:"action"`
+	Data   BenefitQuran `form:"data" json:"data" xml:"data"`
+	Query  Query        `form:"query" json:"query" xml:"query"`
+}
+
+type BenefitQuran struct {
+	ID           int        `form:"id" json:"id" xml:"id" db:"id"`
+	Code         string     `form:"code" json:"code" xml:"code" db:"code"`
+	ClassCode    string     `form:"classs_code" json:"classs_code" xml:"classs_code" db:"classs_code"`
+	IconBenefit  NullString `form:"icon_benefit" json:"icon_benefit" xml:"icon_benefit" db:"icon_benefit"`
+	Sequence     int        `form:"sequence" json:"sequence" xml:"sequence" db:"sequence"`
+	Description  NullString `form:"description" json:"description" xml:"description" db:"description"`
+	IsActive     bool       `form:"is_active" json:"is_active" xml:"is_active" db:"is_active"`
+	CreatedBy    string     `form:"created_by" json:"created_by" xml:"created_by" db:"created_by"`
+	CreatedDate  time.Time  `form:"created_date" json:"created_date" xml:"created_date" db:"created_date"`
+	ModifiedBy   NullString `form:"modified_by" json:"modified_by" xml:"modified_by" db:"modified_by"`
+	ModifiedDate NullTime   `form:"modified_date" json:"modified_date" xml:"modified_date" db:"modified_date"`
+	IsDeleted    bool       `form:"is_deleted" json:"is_deleted" xml:"is_deleted" db:"is_deleted"`
+}

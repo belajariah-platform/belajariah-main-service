@@ -147,6 +147,7 @@ func main() {
 	router.GET("/enums", enumHandler.GetAllEnum)
 
 	// router-class
+	router.POST("/class", classHandler.Class)
 	router.GET("/classes", classHandler.GetAllClass)
 
 	// router-story
@@ -192,8 +193,6 @@ func main() {
 
 	// router-learning
 	router.GET("/learnings", learningHandler.GetAllLearning)
-
-	//
 
 	// router-promotion
 	router.GET("/promotions", promotionHandler.GetAllPromotion)

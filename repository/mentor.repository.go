@@ -51,8 +51,7 @@ const (
 	SELECT
 		id,
 		code,
-		role_code,
-		role,
+		class_code,
 		mentor_code, 
 		email,
 		fullname,
@@ -60,15 +59,11 @@ const (
 		profession,
 		gender,
 		age,
-		birth,
 		province,
 		city,
 		address,
 		image_profile,
 		description,
-		account_owner,
-		account_name,
-		account_number,
 		learning_method,
 		learning_method_text,
 		rating,
@@ -78,7 +73,7 @@ const (
 		modified_by,
 		modified_date
 	FROM 
-		belajariah.v_mentors
+		belajariah.v_mentor_class_detail
 	WHERE 
 		is_active=true
 	%s %s %s
@@ -91,6 +86,7 @@ const (
 		id,
 		code,
 		mentor_code,
+		class_code,
 		shift_name,
 		start_date,
 		end_date,
@@ -129,10 +125,33 @@ const (
 		is_deleted=false and
 		mentor_code='%s'
 	`
+	_getAllMentorClass = `
+	SELECT
+		id,
+		code,
+		mentor_code,
+		mentor_name,
+		class_code,
+		class_name,
+		class_initial,
+		coalesce(minimum_rate, 0) as minimum_rate,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		is_deleted
+	FROM 
+		belajariah.v_mentor_class
+	WHERE 
+		is_active=true and 
+		is_deleted=false and
+		mentor_code='%s'
+	`
 
 	_getAllMentorCount = `
 		SELECT COUNT(*) FROM 
-			belajariah.v_mentors  
+			belajariah.v_mentor_class_detail  
 		WHERE 
 			is_active=true
 		%s
@@ -183,31 +202,6 @@ const (
 			$7
 		)
 	`
-	// profession,
-	// gender,
-	// age,
-	// province,
-	// city,
-	// address,
-	// description,
-	// birth,
-	// learning_method,
-	// account_owner,
-	// account_name,
-	// account_number,
-
-	// $8,
-	// $9,
-	// $10,
-	// $11,
-	// $12,
-	// $13,
-	// $14,
-	// $15,
-	// $16,
-	// $17,
-	// $18,
-	// $19
 )
 
 type mentorRepository struct {
@@ -220,6 +214,7 @@ type MentorRepository interface {
 	GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error)
 	GetAllMentorCount(filter string) (int, error)
 
+	GetAllMentorClass(code string) ([]model.MentorClass, error)
 	GetAllMentorSchedule(code string) ([]model.MentorSchedule, error)
 	GetAllMentorExperience(code string) ([]model.MentorExperience, error)
 
@@ -315,8 +310,8 @@ func (r *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error)
 
 func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter string) ([]model.MentorInfo, error) {
 	var mentorList []model.MentorInfo
-	query := fmt.Sprintf(_getAllMentor, filter, search, sort, skip, take)
 
+	query := fmt.Sprintf(_getAllMentor, filter, search, sort, skip, take)
 	rows, sqlError := r.db.Query(query)
 
 	if sqlError != nil {
@@ -329,16 +324,15 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 			var id, mentorCode int
 			var createdDate time.Time
 			var phone, age sql.NullInt64
-			var modifiedDate, birth sql.NullTime
-			var emailUsr, roleCode, role, createdBy, code string
+			var modifiedDate sql.NullTime
+			var emailUsr, createdBy, code, classCode string
 			var fullname, profession, gender, province, city, address, imageProfile, modifiedBy,
-				accountName, accountOwner, accountNumber, description, learningMethod, learningMethodText sql.NullString
+				description, learningMethod, learningMethodText sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
 				&code,
-				&roleCode,
-				&role,
+				&classCode,
 				&mentorCode,
 				&emailUsr,
 				&fullname,
@@ -346,15 +340,11 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 				&profession,
 				&gender,
 				&age,
-				&birth,
 				&province,
 				&city,
 				&address,
 				&imageProfile,
 				&description,
-				&accountOwner,
-				&accountName,
-				&accountNumber,
 				&learningMethod,
 				&learningMethodText,
 				&rating,
@@ -372,8 +362,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 					model.MentorInfo{
 						ID:                 id,
 						Code:               code,
-						RoleCode:           roleCode,
-						Role:               role,
+						Class_Code:         classCode,
 						MentorCode:         mentorCode,
 						Email:              emailUsr,
 						FullName:           fullname,
@@ -386,9 +375,6 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 						Address:            address,
 						ImageProfile:       imageProfile,
 						Description:        description,
-						AccountOwner:       accountOwner,
-						AccountName:        accountName,
-						AccountNumber:      accountNumber,
 						LearningMethod:     learningMethod,
 						LearningMethodText: learningMethodText,
 						Rating:             rating,
@@ -419,7 +405,7 @@ func (r *mentorRepository) GetAllMentorSchedule(code string) ([]model.MentorSche
 			var id, sequence int
 			var isActive, isDeleted bool
 			var modifiedDate sql.NullTime
-			var modifiedBy sql.NullString
+			var modifiedBy, classCode sql.NullString
 			var startAt, endAt, createdDate time.Time
 			var createdBy, shiftName, mentorCode, code, timeZone string
 
@@ -427,6 +413,7 @@ func (r *mentorRepository) GetAllMentorSchedule(code string) ([]model.MentorSche
 				&id,
 				&code,
 				&mentorCode,
+				&classCode,
 				&shiftName,
 				&startAt,
 				&endAt,
@@ -447,6 +434,7 @@ func (r *mentorRepository) GetAllMentorSchedule(code string) ([]model.MentorSche
 					model.MentorSchedule{
 						ID:           id,
 						Code:         code,
+						ClassCode:    classCode.String,
 						MentorCode:   mentorCode,
 						ShiftName:    shiftName,
 						StartDate:    startAt,
@@ -521,6 +509,69 @@ func (r *mentorRepository) GetAllMentorExperience(code string) ([]model.MentorEx
 	return mentorList, sqlError
 }
 
+func (r *mentorRepository) GetAllMentorClass(code string) ([]model.MentorClass, error) {
+	var mentorList []model.MentorClass
+	query := fmt.Sprintf(_getAllMentorClass, code)
+
+	rows, sqlError := r.db.Query(query)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetAllMentorClass => ", sqlError.Error())
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var id int
+			var createdDate time.Time
+			var isActive, isDeleted bool
+			var minimumRate sql.NullInt64
+			var modifiedDate sql.NullTime
+			var modifiedBy, classInitial, mentorName sql.NullString
+			var createdBy, classCode, className, mentorCode, code string
+
+			sqlError := rows.Scan(
+				&id,
+				&code,
+				&mentorCode,
+				&mentorName,
+				&classCode,
+				&className,
+				&classInitial,
+				&minimumRate,
+				&isActive,
+				&createdBy,
+				&createdDate,
+				&modifiedBy,
+				&modifiedDate,
+				&isDeleted,
+			)
+
+			if sqlError != nil {
+				utils.PushLogf("SQL error on GetAllMentorExperience => ", sqlError.Error())
+			} else {
+				mentorList = append(mentorList,
+					model.MentorClass{
+						ID:           id,
+						Code:         code,
+						MentorCode:   mentorCode,
+						MentorName:   mentorName,
+						ClassCode:    classCode,
+						ClassName:    className,
+						ClassInitial: classInitial,
+						MinimumRate:  minimumRate,
+						IsActive:     isActive,
+						CreatedBy:    createdBy,
+						CreatedDate:  createdDate,
+						ModifiedBy:   modifiedBy,
+						ModifiedDate: modifiedDate,
+						IsDeleted:    isDeleted,
+					},
+				)
+			}
+		}
+	}
+	return mentorList, sqlError
+}
+
 func (r *mentorRepository) GetAllMentorCount(filter string) (int, error) {
 	var count int
 	query := fmt.Sprintf(_getAllMentorCount, filter)
@@ -576,18 +627,6 @@ func (r *mentorRepository) InsertMentorDetail(data model.Mentors) (bool, error) 
 		data.Code,
 		data.Full_Name,
 		data.Phone.Int64,
-		// data.Profession,
-		// data.Gender,
-		// data.Age,
-		// data.Province,
-		// data.City,
-		// data.Address,
-		// data.Description,
-		// data.Birth,
-		// data.Learning_Method,
-		// data.Account_Owner,
-		// data.Account_Name,
-		// data.Account_Number,
 		data.Email,
 		utils.CurrentDateString(data.CreatedDate.UTC()),
 		data.Email,

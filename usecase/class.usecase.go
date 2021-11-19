@@ -15,6 +15,7 @@ type classUsecase struct {
 
 type ClassUsecase interface {
 	GetAllClass(query model.Query) ([]shape.Class, int, error)
+	GetAllClassQuran(r model.ClassQuranRequest) ([]model.ClassQuran, int, error)
 }
 
 func InitClassUsecase(classRepository repository.ClassRepository, packageRepository repository.PackageRepository) ClassUsecase {
@@ -24,22 +25,22 @@ func InitClassUsecase(classRepository repository.ClassRepository, packageReposit
 	}
 }
 
-func (classUsecase *classUsecase) GetAllClass(query model.Query) ([]shape.Class, int, error) {
+func (u *classUsecase) GetAllClass(query model.Query) ([]shape.Class, int, error) {
 	var classes []model.Class
 	var classResult []shape.Class
 	var filterQuery, priceStart, priceStartDiscount, priceEnd, priceEndDiscount string
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
-	classes, err := classUsecase.classRepository.GetAllClass(query.Skip, query.Take, filterQuery)
-	count, errCount := classUsecase.classRepository.GetAllClassCount(filterQuery)
+	classes, err := u.classRepository.GetAllClass(query.Skip, query.Take, filterQuery)
+	count, errCount := u.classRepository.GetAllClassCount(filterQuery)
 
 	if err == nil && errCount == nil {
 		for _, value := range classes {
 			var packages []model.Package
 
 			filterQuery = fmt.Sprintf(`AND class_code = '%s'`, value.Code)
-			packages, err := classUsecase.packageRepository.GetAllPackage(query.Skip, query.Take, filterQuery)
+			packages, err := u.packageRepository.GetAllPackage(query.Skip, query.Take, filterQuery)
 			if err == nil {
 				for index, values := range packages {
 					if index == 0 {
@@ -71,6 +72,7 @@ func (classUsecase *classUsecase) GetAllClass(query model.Query) ([]shape.Class,
 				Instructor_Description: value.InstructorDescription.String,
 				Instructor_Biografi:    value.InstructorBiografi.String,
 				Instructor_Image:       value.InstructorImage.String,
+				Color_Path:             value.ColorPath.String,
 				Is_Direct:              value.IsDirect,
 				Is_Active:              value.IsActive,
 				Created_By:             value.CreatedBy,
@@ -90,4 +92,28 @@ func (classUsecase *classUsecase) GetAllClass(query model.Query) ([]shape.Class,
 		return classEmpty, count, err
 	}
 	return classResult, count, err
+}
+
+func (u *classUsecase) GetAllClassQuran(r model.ClassQuranRequest) ([]model.ClassQuran, int, error) {
+	var orderDefault = "ORDER BY code asc"
+	var filterDefault = "is_deleted = false and is_active = true"
+	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
+
+	result, err := u.classRepository.GetAllClassQuran(filterFinal)
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "classUsecase.GetAllClassQuran")
+	}
+
+	filterForTotalCount := utils.GetFilterOnlyHandler(filterDefault, r.Query)
+	totalCount, err := u.classRepository.GetAllClassQuranCount(filterForTotalCount)
+
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "CCUColorConfigUsecase: GetAllClassQuranCount")
+	}
+
+	if len(*result) == 0 {
+		return make([]model.ClassQuran, 0), totalCount, nil
+	}
+
+	return *result, totalCount, nil
 }
