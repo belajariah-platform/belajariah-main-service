@@ -49,7 +49,7 @@ type PackageQuranRequest struct {
 type PackageQuran struct {
 	ID                int        `form:"id" json:"id" xml:"id" db:"id"`
 	Code              string     `form:"code" json:"code" xml:"code" db:"code"`
-	ClassCode         string     `form:"classs_code" json:"classs_code" xml:"classs_code" db:"classs_code"`
+	ClassCode         string     `form:"class_code" json:"class_code" xml:"class_code" db:"class_code"`
 	Type              string     `form:"type" json:"type" xml:"type" db:"type"`
 	PricePackage      string     `form:"price_package" json:"price_package" xml:"price_package" db:"price_package"`
 	PriceDiscount     NullString `form:"price_discount" json:"price_discount" xml:"price_discount" db:"price_discount"`
@@ -73,7 +73,7 @@ type BenefitQuranRequest struct {
 type BenefitQuran struct {
 	ID           int        `form:"id" json:"id" xml:"id" db:"id"`
 	Code         string     `form:"code" json:"code" xml:"code" db:"code"`
-	ClassCode    string     `form:"classs_code" json:"classs_code" xml:"classs_code" db:"classs_code"`
+	ClassCode    string     `form:"class_code" json:"class_code" xml:"class_code" db:"class_code"`
 	IconBenefit  NullString `form:"icon_benefit" json:"icon_benefit" xml:"icon_benefit" db:"icon_benefit"`
 	Sequence     int        `form:"sequence" json:"sequence" xml:"sequence" db:"sequence"`
 	Description  NullString `form:"description" json:"description" xml:"description" db:"description"`

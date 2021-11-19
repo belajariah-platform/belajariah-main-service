@@ -97,6 +97,8 @@ func (u *classUsecase) GetAllClass(query model.Query) ([]shape.Class, int, error
 func (u *classUsecase) GetAllClassQuran(r model.ClassQuranRequest) ([]model.ClassQuran, int, error) {
 	var orderDefault = "ORDER BY code asc"
 	var filterDefault = "is_deleted = false and is_active = true"
+	var finalResult []model.ClassQuran
+
 	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
 
 	result, err := u.classRepository.GetAllClassQuran(filterFinal)
@@ -111,9 +113,34 @@ func (u *classUsecase) GetAllClassQuran(r model.ClassQuranRequest) ([]model.Clas
 		return nil, 0, utils.WrapError(err, "CCUColorConfigUsecase: GetAllClassQuranCount")
 	}
 
-	if len(*result) == 0 {
+	for _, v := range *result {
+		filterFinal = fmt.Sprintf(`AND class_code='%s'`, v.Code)
+		resultPack, err := u.packageRepository.GetAllPackageQuran(filterFinal)
+		if err != nil {
+			return nil, 0, utils.WrapError(err, "classUsecase.GetAllPackageQuran")
+		}
+
+		for _, p := range *resultPack {
+			v.Price = p.PriceDiscount
+		}
+
+		resultBenf, err := u.packageRepository.GetAllBenefitQuran(filterFinal)
+		if err != nil {
+			return nil, 0, utils.WrapError(err, "classUsecase.GetAllPackageQuran")
+		}
+
+		if len(*resultBenf) == 0 {
+			v.ClassBenefit = make([]model.BenefitQuran, 0)
+		} else {
+			v.ClassBenefit = *resultBenf
+		}
+
+		finalResult = append(finalResult, v)
+	}
+
+	if len(finalResult) == 0 {
 		return make([]model.ClassQuran, 0), totalCount, nil
 	}
 
-	return *result, totalCount, nil
+	return finalResult, totalCount, nil
 }
