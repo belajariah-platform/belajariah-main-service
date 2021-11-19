@@ -102,7 +102,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 			var mentorSchedule []model.MentorSchedule
 			var mentorScheduleResult []shape.MentorSchedule
 
-			mentorSchedule, err := mentorUsecase.mentorRepository.GetAllMentorSchedule(value.Code)
+			mentorSchedule, err := mentorUsecase.mentorRepository.GetAllMentorSchedule(value.Code, value.Class_Code)
 			if err != nil {
 				return mentorEmpty, 0, utils.WrapError(err, "mentorUsecase.mentorRepository.GetAllMentorSchedule : ")
 			}
@@ -219,6 +219,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				Learning_Method:      value.LearningMethod.String,
 				Learning_Method_Text: value.LearningMethodText.String,
 				Rating:               value.Rating,
+				Minimum_Rate:         int(value.MinimumRate.Int64),
 				Is_Active:            value.IsActive,
 				Created_By:           value.CreatedBy,
 				Created_Date:         value.CreatedDate,

@@ -49,6 +49,7 @@ type MentorInfo struct {
 	Learning_Method      string
 	Learning_Method_Text string
 	Rating               float64
+	Minimum_Rate         int
 	Is_Active            bool
 	Created_By           string
 	Created_Date         time.Time

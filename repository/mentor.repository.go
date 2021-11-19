@@ -67,6 +67,7 @@ const (
 		learning_method,
 		learning_method_text,
 		rating,
+		minimum_rate,
 		is_active,
 		created_by,
 		created_date,
@@ -103,7 +104,8 @@ const (
 	WHERE 
 		is_active=true and 
 		is_deleted=false and
-		mentor_code='%s'
+		mentor_code='%s' and
+		class_code='%s'
 	`
 
 	_getAllMentorExperience = `
@@ -215,8 +217,8 @@ type MentorRepository interface {
 	GetAllMentorCount(filter string) (int, error)
 
 	GetAllMentorClass(code string) ([]model.MentorClass, error)
-	GetAllMentorSchedule(code string) ([]model.MentorSchedule, error)
 	GetAllMentorExperience(code string) ([]model.MentorExperience, error)
+	GetAllMentorSchedule(code, classCode string) ([]model.MentorSchedule, error)
 
 	RegisterMentor(data model.Mentors) (model.Mentors, bool, error)
 	InsertMentorDetail(data model.Mentors) (bool, error)
@@ -324,6 +326,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 			var id, mentorCode int
 			var createdDate time.Time
 			var phone, age sql.NullInt64
+			var minimumRate sql.NullInt64
 			var modifiedDate sql.NullTime
 			var emailUsr, createdBy, code, classCode string
 			var fullname, profession, gender, province, city, address, imageProfile, modifiedBy,
@@ -348,6 +351,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 				&learningMethod,
 				&learningMethodText,
 				&rating,
+				&minimumRate,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -378,6 +382,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 						LearningMethod:     learningMethod,
 						LearningMethodText: learningMethodText,
 						Rating:             rating,
+						MinimumRate:        minimumRate,
 						IsActive:           isActive,
 						CreatedBy:          createdBy,
 						CreatedDate:        createdDate,
@@ -391,9 +396,9 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 	return mentorList, sqlError
 }
 
-func (r *mentorRepository) GetAllMentorSchedule(code string) ([]model.MentorSchedule, error) {
+func (r *mentorRepository) GetAllMentorSchedule(code, classCode string) ([]model.MentorSchedule, error) {
 	var mentorList []model.MentorSchedule
-	query := fmt.Sprintf(_getAllMentorSchedule, code)
+	query := fmt.Sprintf(_getAllMentorSchedule, code, classCode)
 
 	rows, sqlError := r.db.Query(query)
 

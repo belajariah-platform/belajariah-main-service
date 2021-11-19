@@ -48,6 +48,7 @@ const (
 		code,
 		mentor_code,
 		shift_name,
+		class_code,
 		start_date AS planning_start_time,
 		end_date AS planning_end_time,
 		coalesce(sequence, 0) AS sequence,
@@ -170,7 +171,7 @@ func (r *scheduleRepository) GetAllSchedule(filter string) (*[]model.Schedule, e
 
 func (r *scheduleRepository) GetAllMasterSchedule(filter string) (*[]model.Schedule, error) {
 	var result []model.Schedule
-	query := fmt.Sprintf(_getAllScheduleSql, filter)
+	query := fmt.Sprintf(_getAllMasterSchedule, filter)
 
 	err := r.db.Select(&result, query)
 	if err != nil {
