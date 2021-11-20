@@ -192,6 +192,65 @@ const (
 			DATE_PART('second', modified_date::timestamp - now()::timestamp) + 86400 <= 7200 AND 
 			status_payment IN ('Waiting for Payment');
 	`
+	_confirmPaymentQuran = `
+		UPDATE
+			transaction.transact_payment_quran
+		SET
+			status_payment_code=$1,
+			payment_type=$2,
+			remarks=$3,
+			modified_by=$4,
+			modified_date=$5
+		WHERE
+			id=$6
+		`
+	_uploadPaymentQuran = `
+		UPDATE
+			transaction.transact_payment_quran
+		SET
+			payment_method_code=$1,
+			status_payment_code=$2,
+			sender_bank=$3,
+			sender_name=$4,
+			image_proof=$5,
+			modified_by=$6,
+			modified_date=$7
+		WHERE
+			id=$8
+	`
+	_insertPaymentQuran = `
+		INSERT INTO transaction.transact_payment_quran
+		(
+			user_code,
+			class_code,
+			package_code,
+			payment_method_code,
+			invoice_number,
+			status_payment_code,
+			total_transfer,
+			payment_type,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			promo_code
+		)
+		VALUES(
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			(SELECT code FROM master.master_status WHERE value='Waiting for Payment' AND type='payment' LIMIT 1),
+			$6,
+			$7,
+			$8,
+			$9,
+			$10,
+			$11,
+			$12
+		) returning code
+	`
 )
 
 type paymentsRepository struct {
@@ -206,6 +265,10 @@ type PaymentsRepository interface {
 	UploadPayment(payment model.Payment) (bool, error)
 	ConfirmPayment(payment model.Payment) (bool, error)
 	InsertPayment(payment model.Payment) (model.Payment, bool, error)
+
+	UploadPaymentQuran(payment model.Payment) (bool, error)
+	ConfirmPaymentQuran(payment model.Payment) (bool, error)
+	InsertPaymentQuran(payment model.Payment) (model.Payment, bool, error)
 
 	CheckAllPaymentExpired() ([]model.Payment, error)
 	CheckAllPaymentBeforeExpired() ([]model.Payment, error)
@@ -516,6 +579,91 @@ func (r *paymentsRepository) ConfirmPayment(payment model.Payment) (bool, error)
 	if err != nil {
 		tx.Rollback()
 		return false, utils.WrapError(err, "paymentsRepository: ConfirmPayment: error update")
+	}
+
+	tx.Commit()
+	return err == nil, nil
+}
+
+func (r *paymentsRepository) InsertPaymentQuran(payment model.Payment) (model.Payment, bool, error) {
+	var code string
+	var payments model.Payment
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return payments, false, errors.New("paymentsRepository: InsertPaymentQuran: error begin transaction")
+	}
+
+	err = tx.QueryRow(_insertPaymentQuran,
+		payment.UserCode,
+		payment.ClassCode,
+		payment.PackageCode,
+		payment.PaymentMethodCode,
+		payment.InvoiceNumber,
+		payment.TotalTransfer,
+		payment.PaymentTypeCode,
+		payment.CreatedBy,
+		payment.CreatedDate,
+		payment.ModifiedBy.String,
+		payment.ModifiedDate.Time,
+		payment.PromoCode.String,
+	).Scan(&code)
+
+	if err != nil {
+		tx.Rollback()
+		return payments, false, utils.WrapError(err, "paymentsRepository: InsertPaymentQuran: error insert")
+	}
+
+	payments = model.Payment{Code: code}
+
+	tx.Commit()
+	return payments, err == nil, nil
+}
+
+func (r *paymentsRepository) UploadPaymentQuran(payment model.Payment) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("paymentsRepository: UploadPaymentQuran: error begin transaction")
+	}
+
+	_, err = tx.Exec(_uploadPaymentQuran,
+		payment.PaymentMethodCode,
+		payment.StatusPaymentCode,
+		payment.SenderBank.String,
+		payment.SenderName.String,
+		payment.ImageProof.String,
+		payment.ModifiedBy.String,
+		payment.ModifiedDate.Time,
+		payment.ID,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "paymentsRepository: UploadPaymentQuran: error update")
+	}
+
+	tx.Commit()
+	return err == nil, nil
+}
+
+func (r *paymentsRepository) ConfirmPaymentQuran(payment model.Payment) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("paymentsRepository: ConfirmPaymentQuran: error begin transaction")
+	}
+
+	_, err = tx.Exec(_confirmPayment,
+		payment.StatusPaymentCode,
+		payment.PaymentTypeCode,
+		payment.Remarks.String,
+		payment.ModifiedBy.String,
+		payment.ModifiedDate.Time,
+		payment.ID,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "paymentsRepository: ConfirmPaymentQuran: error update")
 	}
 
 	tx.Commit()

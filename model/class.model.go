@@ -52,7 +52,8 @@ type ClassQuran struct {
 	ClassVideo        NullString     `form:"class_video" json:"class_video" xml:"class_video" db:"class_video"`
 	ClassDocument     NullString     `form:"class_document" json:"class_document" xml:"class_document" db:"class_document"`
 	ColorPath         NullString     `form:"color_path" json:"color_path" xml:"color_path" db:"color_path"`
-	Price             NullString     `form:"price" json:"price" xml:"price" db:"price"`
+	PackageCode       string         `form:"package_code" json:"package_code" xml:"package_code" db:"package_code"`
+	PackagePrice      NullString     `form:"package_price" json:"package_price" xml:"package_price" db:"package_price"`
 	IsDirect          bool           `form:"is_direct" json:"is_direct" xml:"is_direct" db:"is_direct"`
 	IsActive          bool           `form:"is_active" json:"is_active" xml:"is_active" db:"is_active"`
 	CreatedBy         string         `form:"created_by" json:"created_by" xml:"created_by" db:"created_by"`

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type paymentUsecase struct {
@@ -34,6 +36,10 @@ type PaymentUsecase interface {
 	UploadPayment(payment shape.PaymentPost, email string) (bool, error)
 	ConfirmPayment(payment shape.PaymentPost, email string) (bool, error)
 	InsertPayment(payment shape.PaymentPost, email string) (shape.Payment, bool, error)
+
+	UploadPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (bool, error)
+	ConfirmPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (bool, error)
+	InsertPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (shape.Payment, bool, error)
 }
 
 func InitPaymentUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, enumRepository repository.EnumRepository, packageRepository repository.PackageRepository, paymentsRepository repository.PaymentsRepository, scheduleRepository repository.ScheduleRepository, userClassRepository repository.UserClassRepository, approvalStatusRepository repository.ApprovalStatusRepository, userClassHistoryRepository repository.UserClassHistoryRepository) PaymentUsecase {
@@ -281,7 +287,7 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 		},
 		PackageCode:       payment.Package_Code,
 		PaymentMethodCode: payment.Payment_Method_Code,
-		InvoiceNumber:     utils.GenerateInvoiceNumber(payment),
+		InvoiceNumber:     utils.GenerateInvoiceNumber(payment, "class general"),
 		StatusPaymentCode: payment.Status_Payment_Code,
 		TotalTransfer:     payment.Total_Transfer,
 		PaymentTypeCode:   enum.Code,
@@ -308,6 +314,89 @@ func (paymentUsecase *paymentUsecase) InsertPayment(payment shape.PaymentPost, e
 		payments, err := paymentUsecase.paymentsRepository.GetPayment(filter)
 		if err != nil {
 			return dataPayments, false, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetPayment : ")
+		}
+
+		dataPayments = shape.Payment{
+			ID:                   payments.ID,
+			Code:                 data.Code,
+			Total_Transfer:       payments.TotalTransfer,
+			Payment_Method:       payments.PaymentMethod,
+			Payment_Method_Code:  payments.PaymentMethodCode,
+			Payment_Method_Type:  payments.PaymentMethodType,
+			Payment_Method_Image: payments.PaymentMethodImage.String,
+			Status_Payment_Code:  payments.StatusPaymentCode,
+			Account_Name:         payments.AccountName.String,
+			Account_Number:       payments.AccountNumber.String,
+			Expired_Date:         utils.HandleAddDate(payments.ModifiedDate.Time, payments.StatusPayment),
+		}
+
+		dataEmail := model.EmailBody{
+			BodyTemp:          emailType,
+			UserCode:          payments.UserCode,
+			InvoiceNumber:     payments.InvoiceNumber,
+			PaymentMethod:     payments.PaymentMethod,
+			AccountName:       payments.AccountName.String,
+			AccountNumber:     payments.AccountNumber.String,
+			ClassName:         payments.ClassInitial,
+			ClassPrice:        int(payments.PackageDiscount.Int64),
+			ClassImage:        payments.ClassImage.String,
+			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
+			TotalConsultation: int(payments.TotalConsultation.Int64),
+			TotalWebinar:      int(payments.TotalWebinar.Int64),
+			TotalTransfer:     payments.TotalTransfer,
+		}
+
+		paymentUsecase.emailUsecase.SendEmail(dataEmail)
+	}
+
+	return dataPayments, result, err
+}
+
+func (paymentUsecase *paymentUsecase) InsertPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (shape.Payment, bool, error) {
+	var dataPayments shape.Payment
+	var emailType string = "Waiting for Payment"
+	var paymentType string = "WaitingForPayment|Waiting for Payment|Menunggu"
+
+	email := ctx.Request.Header.Get("email")
+
+	enum, err := paymentUsecase.enumRepository.GetEnum(paymentType)
+	if err != nil {
+		return dataPayments, false, utils.WrapError(err, "paymentUsecase.enumRepository.GetEnum : PaymentClassQuran ")
+	}
+
+	dataPayment := model.Payment{
+		UserCode:  payment.User_Code,
+		ClassCode: payment.Class_Code,
+		PromoCode: sql.NullString{
+			String: payment.Promo_Code,
+		},
+		PackageCode:       payment.Package_Code,
+		PaymentMethodCode: payment.Payment_Method_Code,
+		InvoiceNumber:     utils.GenerateInvoiceNumber(payment, "class quran"),
+		StatusPaymentCode: payment.Status_Payment_Code,
+		TotalTransfer:     payment.Total_Transfer,
+		PaymentTypeCode:   enum.Code,
+		CreatedBy:         email,
+		CreatedDate:       time.Now(),
+		ModifiedBy: sql.NullString{
+			String: email,
+		},
+		ModifiedDate: sql.NullTime{
+			Time: time.Now(),
+		},
+	}
+
+	data, result, err := paymentUsecase.paymentsRepository.InsertPaymentQuran(dataPayment)
+	if err != nil {
+		return dataPayments, false, utils.WrapError(err, "paymentUsecase.paymentsRepository.InsertPaymentQuran : ")
+	}
+
+	if data != (model.Payment{}) {
+		filter := fmt.Sprintf(`WHERE code = '%s'`, data.Code)
+
+		payments, err := paymentUsecase.paymentsRepository.GetPayment(filter)
+		if err != nil {
+			return dataPayments, false, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetPaymentQuran : ")
 		}
 
 		dataPayments = shape.Payment{
@@ -390,11 +479,83 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.UploadPayment : ")
 	}
 
-	filters := fmt.Sprintf(`WHERE code = %d`, dataPayment.ID)
+	filters := fmt.Sprintf(`WHERE code = '%s'`, payment.Code)
 
 	payments, err := paymentUsecase.paymentsRepository.GetPayment(filters)
 	if err != nil {
 		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetPayment : ")
+	}
+
+	dataEmail := model.EmailBody{
+		BodyTemp:          emailType,
+		UserCode:          payment.User_Code,
+		InvoiceNumber:     payments.InvoiceNumber,
+		PaymentMethod:     payments.PaymentMethod,
+		AccountName:       payments.AccountName.String,
+		AccountNumber:     payments.AccountNumber.String,
+		ClassName:         payments.ClassInitial,
+		ClassPrice:        int(payments.PackageDiscount.Int64),
+		ClassImage:        payments.ClassImage.String,
+		PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
+		TotalConsultation: int(payments.TotalConsultation.Int64),
+		TotalWebinar:      int(payments.TotalWebinar.Int64),
+		TotalTransfer:     payments.TotalTransfer,
+	}
+	paymentUsecase.emailUsecase.SendEmail(dataEmail)
+
+	return result, err
+}
+
+func (paymentUsecase *paymentUsecase) UploadPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (bool, error) {
+	var statusCode, emailType string
+	email := ctx.Request.Header.Get("email")
+
+	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
+	if err != nil {
+		return false, utils.WrapError(err, "paymentUsecase.approvalStatusRepository.GetApprovalStatus : PaymentClassQuran ")
+	}
+
+	switch strings.ToLower(payment.Action) {
+	case "approved":
+		statusCode = status.ApprovedStatus.String
+		emailType = "Payment Upload"
+	case "rejected":
+		statusCode = status.RejectStatus.String
+	default:
+		statusCode = ""
+	}
+
+	dataPayment := model.Payment{
+		ID:                payment.ID,
+		PaymentMethodCode: payment.Payment_Method_Code,
+		StatusPaymentCode: statusCode,
+		SenderBank: sql.NullString{
+			String: payment.Sender_Bank,
+		},
+		SenderName: sql.NullString{
+			String: payment.Sender_Name,
+		},
+		ImageProof: sql.NullString{
+			String: payment.Image_Proof,
+		},
+		ModifiedBy: sql.NullString{
+			String: email,
+		},
+		ModifiedDate: sql.NullTime{
+			Time: time.Now(),
+		},
+	}
+
+	result, err := paymentUsecase.paymentsRepository.UploadPaymentQuran(dataPayment)
+	if err != nil {
+		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.UploadPaymentQuran : ")
+	}
+
+	filters := fmt.Sprintf(`WHERE code = '%s'`, payment.Code)
+
+	payments, err := paymentUsecase.paymentsRepository.GetPayment(filters)
+	if err != nil {
+		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetPaymentQuran : ")
 	}
 
 	dataEmail := model.EmailBody{
@@ -595,10 +756,126 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 	}
 
 	if status.CurrentStatusValue == "Has been Payment" && payment.Action != "Rejected" {
-		filters := fmt.Sprintf(`WHERE id = %d`, dataPayment.ID)
+		filters := fmt.Sprintf(`WHERE code = '%s'`, payment.Code)
 		payments, err := paymentUsecase.paymentsRepository.GetPayment(filters)
 		if err != nil {
 			return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetPayment : ")
+		}
+
+		dataEmail := model.EmailBody{
+			BodyTemp:          emailType,
+			UserCode:          payments.UserCode,
+			InvoiceNumber:     payments.InvoiceNumber,
+			PaymentMethod:     payments.PaymentMethod,
+			AccountName:       payments.AccountName.String,
+			AccountNumber:     payments.AccountNumber.String,
+			ClassName:         payments.ClassInitial,
+			ClassPrice:        int(payments.PackageDiscount.Int64),
+			ClassImage:        payments.ClassImage.String,
+			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
+			TotalConsultation: int(payments.TotalConsultation.Int64),
+			TotalWebinar:      int(payments.TotalWebinar.Int64),
+			TotalTransfer:     payments.TotalTransfer,
+		}
+
+		paymentUsecase.emailUsecase.SendEmail(dataEmail)
+	}
+
+	return result, err
+}
+
+func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (bool, error) {
+	var err error
+	var result bool
+	var enum model.Enum
+	var class []shape.UserClass
+	var statusCode, paymentType, emailType string
+
+	var filter = fmt.Sprintf(`WHERE is_deleted=false AND user_code='%s' AND class_code='%s'`,
+		payment.User_Code,
+		payment.Class_Code)
+
+	email := ctx.Request.Header.Get("email")
+
+	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
+	if err != nil {
+		return false, utils.WrapError(err, "paymentUsecase.approvalStatusRepository.GetApprovalStatus : PaymentClassQuran ")
+	}
+
+	switch strings.ToLower(payment.Action) {
+	case "approved":
+		statusCode = status.ApprovedStatus.String
+		paymentType = "Completed|Complete|Lunas"
+		emailType = "Payment Success"
+
+		dataUserClass := model.UserClass{
+			StatusCode:   statusCode,
+			UserCode:     payment.User_Code,
+			ClassCode:    payment.Class_Code,
+			PackageCode:  payment.Package_Code,
+			StartDate:    sql.NullTime{Time: time.Now()},
+			PromoCode:    sql.NullString{String: payment.Promo_Code},
+			CreatedBy:    email,
+			CreatedDate:  time.Now(),
+			ModifiedBy:   sql.NullString{String: email},
+			ModifiedDate: sql.NullTime{Time: time.Now()},
+		}
+
+		class, err = paymentUsecase.userClassRepository.GetAllUserClassQuran(filter)
+		if err != nil {
+			return false, utils.WrapError(err, "paymentUsecase.userClassRepository.GetUserClassQuran : ")
+		}
+
+		if len(class) == 0 {
+			_, result, err = paymentUsecase.userClassRepository.InsertUserClassQuran(dataUserClass)
+			if err != nil {
+				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClassQuran : PaymentClassQuran ")
+			}
+		}
+
+	case "rejected":
+		statusCode = status.RejectStatus.String
+		paymentType = "Failed|Failed|Batal"
+		emailType = "Payment Canceled"
+	case "revised":
+		statusCode = status.ReviseStatus.String
+		paymentType = "WaitingForPayment|Waiting for Payment|Menunggu"
+		emailType = "Payment Revised"
+
+	default:
+		statusCode = ""
+	}
+
+	enum, err = paymentUsecase.enumRepository.GetEnum(paymentType)
+	if err != nil {
+		return false, utils.WrapError(err, "paymentUsecase.enumRepository.GetEnum : PaymentClassQuran ")
+	}
+
+	dataPayment := model.Payment{
+		ID:                payment.ID,
+		StatusPaymentCode: statusCode,
+		PaymentTypeCode:   enum.Code,
+		Remarks: sql.NullString{
+			String: payment.Remarks,
+		},
+		ModifiedBy: sql.NullString{
+			String: email,
+		},
+		ModifiedDate: sql.NullTime{
+			Time: time.Now(),
+		},
+	}
+
+	result, err = paymentUsecase.paymentsRepository.ConfirmPayment(dataPayment)
+	if err != nil {
+		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.ConfirmPayment : PaymentClassQuran ")
+	}
+
+	if status.CurrentStatusValue == "Has been Payment" && payment.Action != "Rejected" {
+		filters := fmt.Sprintf(`WHERE code = '%s'`, payment.Code)
+		payments, err := paymentUsecase.paymentsRepository.GetPayment(filters)
+		if err != nil {
+			return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.GetPayment : PaymentClassQuran ")
 		}
 
 		dataEmail := model.EmailBody{

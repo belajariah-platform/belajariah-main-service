@@ -2,6 +2,7 @@ package repository
 
 import (
 	"belajariah-main-service/model"
+	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
 	"database/sql"
 	"errors"
@@ -267,6 +268,54 @@ const (
 			DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
 			DATE_PART('second', expired_date::timestamp - now()::timestamp) >= $2
 	`
+	_getAllUserClassQuran = `
+		SELECT
+			id,
+			code,
+			user_code,
+			class_code,
+			class_name,
+			class_initial,
+			class_category,
+			class_description,
+			class_image,
+			package_code,
+			package_type,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM transaction.v_t_user_class_quran
+		%s
+	`
+	_getAllUserClassQuranCount = `
+		SELECT COUNT(*) FROM 
+			transaction.v_t_user_class_quran  
+		%s
+	`
+	_insertUserClassQuran = `
+		INSERT INTO transaction.transact_user_class_quran
+		(
+			user_code,
+			class_code,
+			package_code,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES(
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7
+		) returning code
+	`
 )
 
 type userClassRepository struct {
@@ -278,12 +327,17 @@ type UserClassRepository interface {
 	GetAllUserClassCount(filter, filterUser string) (int, error)
 	GetAllUserClass(skip, take int, sorting, filter, filterUser string) ([]model.UserClass, error)
 
+	DeleteUserClass(userClass model.UserClass) (time.Time, bool, error)
 	InsertUserClass(userClass model.UserClass) (model.UserClass, bool, error)
 	UpdateUserClass(userClass model.UserClass) (model.UserClass, bool, error)
+
 	UpdateUserClassExpired(userClass model.UserClass) (bool, error)
 	UpdateUserClassProgress(userClass model.UserClass) (bool, error)
-	DeleteUserClass(userClass model.UserClass) (time.Time, bool, error)
 	UpdateUserClassTest(userClass model.UserClass, types string) (bool, error)
+
+	GetAllUserClassQuran(filter string) ([]shape.UserClass, error)
+	GetAllUserClassQuranCount(filter string) (int, error)
+	InsertUserClassQuran(userClass model.UserClass) (model.UserClass, bool, error)
 
 	CheckAllUserClassExpired() ([]model.UserClass, error)
 	CheckAllUserClassBeforeExpired(interval model.TimeInterval) ([]model.UserClass, error)
@@ -494,6 +548,89 @@ func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, fil
 	return count, sqlError
 }
 
+func (userClassRepository *userClassRepository) GetAllUserClassQuran(filter string) ([]shape.UserClass, error) {
+	var userClassList []shape.UserClass
+	query := fmt.Sprintf(_getAllUserClassQuran, filter)
+
+	rows, sqlError := userClassRepository.db.Query(query)
+
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetAllUserClassQuran => ", sqlError.Error())
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var id int
+			var createdDate time.Time
+			var isActive, is_deleted bool
+			var modifiedDate sql.NullTime
+			var classInitial, classDescription, classImage, modifiedBy sql.NullString
+			var packageCode, packageType, classCode, className, classCategory, createdBy,
+				code, userCode string
+
+			sqlError := rows.Scan(
+				&id,
+				&code,
+				&userCode,
+				&classCode,
+				&className,
+				&classInitial,
+				&classCategory,
+				&classDescription,
+				&classImage,
+				&packageCode,
+				&packageType,
+				&isActive,
+				&createdBy,
+				&createdDate,
+				&modifiedBy,
+				&modifiedDate,
+				&is_deleted,
+			)
+
+			if sqlError != nil {
+				utils.PushLogf("SQL error on GetAllUserClassQuran => ", sqlError.Error())
+			} else {
+				userClassList = append(
+					userClassList,
+					shape.UserClass{
+						ID:                id,
+						Code:              code,
+						User_Code:         userCode,
+						Class_Code:        classCode,
+						Class_Name:        className,
+						Class_Initial:     classInitial.String,
+						Class_Category:    classCategory,
+						Class_Description: classDescription.String,
+						Class_Image:       classImage.String,
+						Package_Code:      packageCode,
+						Package_Type:      packageType,
+						Is_Active:         isActive,
+						Created_By:        createdBy,
+						Created_Date:      createdDate,
+						Modified_By:       modifiedBy.String,
+						Modified_Date:     modifiedDate.Time,
+						Is_Deleted:        is_deleted,
+					},
+				)
+			}
+		}
+	}
+	return userClassList, sqlError
+}
+
+func (userClassRepository *userClassRepository) GetAllUserClassQuranCount(filter string) (int, error) {
+	var count int
+	query := fmt.Sprintf(_getAllUserClassQuranCount, filter)
+
+	row := userClassRepository.db.QueryRow(query)
+	sqlError := row.Scan(&count)
+	if sqlError != nil {
+		utils.PushLogf("SQL error on GetAllUserClassQuranCount => ", sqlError.Error())
+		count = 0
+	}
+	return count, sqlError
+}
+
 func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (model.UserClass, bool, error) {
 	var code string
 	var userClassRow model.UserClass
@@ -519,6 +656,36 @@ func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (model.
 	if err != nil {
 		tx.Rollback()
 		return userClassRow, false, utils.WrapError(err, "userClassRepository: InsertUserClass: error insert")
+	}
+
+	userClassRow = model.UserClass{Code: code}
+
+	tx.Commit()
+	return userClassRow, err == nil, nil
+}
+
+func (r *userClassRepository) InsertUserClassQuran(userClass model.UserClass) (model.UserClass, bool, error) {
+	var code string
+	var userClassRow model.UserClass
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return userClassRow, false, errors.New("userClassRepository: InsertUserClassQuran: error begin transaction")
+	}
+
+	err = tx.QueryRow(_insertUserClassQuran,
+		userClass.UserCode,
+		userClass.ClassCode,
+		userClass.PackageCode,
+		userClass.CreatedBy,
+		userClass.CreatedDate,
+		userClass.ModifiedBy.String,
+		userClass.ModifiedDate.Time,
+	).Scan(&code)
+
+	if err != nil {
+		tx.Rollback()
+		return userClassRow, false, utils.WrapError(err, "userClassRepository: InsertUserClassQuran: error insert")
 	}
 
 	userClassRow = model.UserClass{Code: code}

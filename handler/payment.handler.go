@@ -7,6 +7,7 @@ import (
 	"belajariah-main-service/utils"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ type paymentHandler struct {
 }
 
 type PaymentHandler interface {
+	Payment(ctx *gin.Context)
 	GetAllPayment(ctx *gin.Context)
 	GetAllPaymentRejected(ctx *gin.Context)
 	GetAllPaymentByUserID(ctx *gin.Context)
@@ -28,6 +30,48 @@ func InitPaymentHandler(paymentUsecase usecase.PaymentUsecase) PaymentHandler {
 	return &paymentHandler{
 		paymentUsecase,
 	}
+}
+
+func (h *paymentHandler) Payment(ctx *gin.Context) {
+	var request shape.PaymentnRequest
+	if err := ctx.ShouldBindJSON(&request); err == nil {
+		switch strings.ToUpper(request.Action) {
+		case utils.INSERT_PAYMENT_QURAN:
+			h.insertPaymentQuran(ctx, request)
+		case utils.UPLOAD_PAYMENT_QURAN:
+			h.uploadPaymentQuran(ctx, request)
+		case utils.CONFIRM_PAYMENT_QURAN:
+			h.confirmPaymentQuran(ctx, request)
+		default:
+			utils.NotFoundActionResponse(ctx, request.Action)
+		}
+	} else {
+		ctx.JSON(http.StatusBadRequest, model.Response{
+			Message: model.RequestResponse{
+				Count:  0,
+				Data:   nil,
+				Error:  err.Error(),
+				Result: false,
+			},
+			Status: http.StatusBadRequest,
+			Error:  err.Error(),
+		})
+	}
+}
+
+func (h *paymentHandler) insertPaymentQuran(ctx *gin.Context, r shape.PaymentnRequest) {
+	result, _, err := h.paymentUsecase.InsertPaymentQuran(ctx, r.Data)
+	utils.Response(ctx, result, 1, err)
+}
+
+func (h *paymentHandler) uploadPaymentQuran(ctx *gin.Context, r shape.PaymentnRequest) {
+	result, err := h.paymentUsecase.UploadPaymentQuran(ctx, r.Data)
+	utils.Response(ctx, result, 1, err)
+}
+
+func (h *paymentHandler) confirmPaymentQuran(ctx *gin.Context, r shape.PaymentnRequest) {
+	result, err := h.paymentUsecase.ConfirmPaymentQuran(ctx, r.Data)
+	utils.Response(ctx, result, 1, err)
 }
 
 func (paymentHandler *paymentHandler) GetAllPayment(ctx *gin.Context) {

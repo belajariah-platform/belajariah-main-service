@@ -34,9 +34,17 @@ func GenerateVerifyCode(val string) string {
 	return strings.ToUpper(strNum)
 }
 
-func GenerateInvoiceNumber(value shape.PaymentPost) string {
+func GenerateInvoiceNumber(value shape.PaymentPost, types string) string {
+	var strNum string
 	date := time.Now()
-	strNum := "INV/" + fmt.Sprintf(`%02d`, date.Second()) +
-		GenerateRandomCode2(8) + fmt.Sprintf(`/%02d/%d`, date.Month(), date.Year())
+
+	if types == "class general" {
+		strNum = "INV/cg" + fmt.Sprintf(`%02d`, date.Second()) +
+			GenerateRandomCode2(8) + fmt.Sprintf(`/%02d/%d`, date.Month(), date.Year())
+	} else if types == "class quran" {
+		strNum = "INV/cq" + fmt.Sprintf(`%02d`, date.Second()) +
+			GenerateRandomCode2(8) + fmt.Sprintf(`/%02d/%d`, date.Month(), date.Year())
+	}
+
 	return strNum
 }

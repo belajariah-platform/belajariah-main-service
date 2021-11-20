@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+type UserClassRequest struct {
+	Action string    `form:"action" json:"action" xml:"action"`
+	Data   UserClass `form:"data" json:"data" xml:"data"`
+	Query  Query     `form:"query" json:"query" xml:"query"`
+}
+
 type UserClass struct {
 	ID                int
 	Code              string

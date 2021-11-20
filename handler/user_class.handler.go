@@ -7,6 +7,7 @@ import (
 	"belajariah-main-service/utils"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ type userClassHandler struct {
 }
 
 type UserClassHandler interface {
+	UserClass(ctx *gin.Context)
 	GetUserClass(ctx *gin.Context)
 	GetAllUserClass(ctx *gin.Context)
 	UpdateUserClassProgress(ctx *gin.Context)
@@ -25,6 +27,40 @@ func InitUserClassHandler(userClassUsecase usecase.UserClassUsecase) UserClassHa
 	return &userClassHandler{
 		userClassUsecase,
 	}
+}
+
+func (h *userClassHandler) UserClass(ctx *gin.Context) {
+	var request model.UserClassRequest
+	if err := ctx.ShouldBindJSON(&request); err == nil {
+		switch strings.ToUpper(request.Action) {
+		case utils.GET_ALL_USER_CLASS_QURAN:
+			h.getAllUserClassQuran(ctx, request)
+		default:
+			utils.NotFoundActionResponse(ctx, request.Action)
+		}
+	} else {
+		ctx.JSON(http.StatusBadRequest, model.Response{
+			Message: model.RequestResponse{
+				Count:  0,
+				Data:   nil,
+				Error:  err.Error(),
+				Result: false,
+			},
+			Status: http.StatusBadRequest,
+			Error:  err.Error(),
+		})
+	}
+}
+
+func (h *userClassHandler) getAllUserClassQuran(ctx *gin.Context, r model.UserClassRequest) {
+	result, count, err := h.userClassUsecase.GetAllUserClassQuran(ctx, r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, err)
+		return
+	}
+
+	utils.Response(ctx, result, count, nil)
 }
 
 func (userClassHandler *userClassHandler) GetUserClass(ctx *gin.Context) {

@@ -121,7 +121,8 @@ func (u *classUsecase) GetAllClassQuran(r model.ClassQuranRequest) ([]model.Clas
 		}
 
 		for _, p := range *resultPack {
-			v.Price = p.PriceDiscount
+			v.PackageCode = p.Code
+			v.PackagePrice = p.PriceDiscount
 		}
 
 		resultBenf, err := u.packageRepository.GetAllBenefitQuran(filterFinal)

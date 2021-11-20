@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+type PaymentnRequest struct {
+	Action string      `form:"action" json:"action" xml:"action"`
+	Data   PaymentPost `form:"data" json:"data" xml:"data"`
+}
+
 type Payment struct {
 	ID                   int
 	Code                 string

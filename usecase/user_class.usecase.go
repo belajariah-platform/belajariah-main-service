@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type userClassUsecase struct {
 	sytemConfig            *model.Config
 	emailUsecase           EmailUsecase
+	userRepository         repository.UserRepository
 	enumRepository         repository.EnumRepository
 	promotionRepository    repository.PromotionRepository
 	userClassRepository    repository.UserClassRepository
@@ -26,15 +29,20 @@ type UserClassUsecase interface {
 	CheckAllUserClass2DaysBeforeExpired()
 	CheckAllUserClass5DaysBeforeExpired()
 	CheckAllUserClass7DaysBeforeExpired()
+
 	GetUserClass(code string, userObj model.UserHeader) (shape.UserClass, error)
 	GetAllUserClass(query model.Query, userObj model.UserHeader) ([]shape.UserClass, int, error)
+
+	GetAllUserClassQuran(ctx *gin.Context, r model.UserClassRequest) ([]shape.UserClass, int, error)
+
 	UpdateUserClassProgress(userClass shape.UserClassPost, email string) (bool, error)
 }
 
-func InitUserClassUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, enumRepository repository.EnumRepository, promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, notificationRepository repository.NotificationRepository) UserClassUsecase {
+func InitUserClassUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, userRepository repository.UserRepository, enumRepository repository.EnumRepository, promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, notificationRepository repository.NotificationRepository) UserClassUsecase {
 	return &userClassUsecase{
 		sytemConfig,
 		emailUsecase,
+		userRepository,
 		enumRepository,
 		promotionRepository,
 		userClassRepository,
@@ -80,7 +88,7 @@ func (userClassUsecase *userClassUsecase) GetUserClass(code string, userObj mode
 	return userClassResult, err
 }
 
-func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, userObj model.UserHeader) ([]shape.UserClass, int, error) {
+func (u *userClassUsecase) GetAllUserClass(query model.Query, userObj model.UserHeader) ([]shape.UserClass, int, error) {
 	var userClass []model.UserClass
 	var userClassResult []shape.UserClass
 	var filterQuery, filterUser, sorting string
@@ -94,12 +102,12 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 	filterQuery = utils.GetFilterHandler(query.Filters)
 	filterUser = fmt.Sprintf(`AND user_code='%s'`, userObj.Code)
 
-	userClass, err := userClassUsecase.userClassRepository.GetAllUserClass(query.Skip, query.Take, sorting, filterQuery, filterUser)
+	userClass, err := u.userClassRepository.GetAllUserClass(query.Skip, query.Take, sorting, filterQuery, filterUser)
 	if err != nil {
 		return classEmpty, 0, utils.WrapError(err, "userClassUsecase.mentorRepuserClassRepositoryository.GetAllUserClass : ")
 	}
 
-	count, errCount := userClassUsecase.userClassRepository.GetAllUserClassCount(filterQuery, filterUser)
+	count, errCount := u.userClassRepository.GetAllUserClassCount(filterQuery, filterUser)
 	if err != nil {
 		return classEmpty, 0, utils.WrapError(err, "userClassUsecase.mentorRepuserClassRepositoryository.GetAllUserClassCount : ")
 	}
@@ -153,6 +161,32 @@ func (userClassUsecase *userClassUsecase) GetAllUserClass(query model.Query, use
 	}
 
 	return userClassResult, count, err
+}
+
+func (u *userClassUsecase) GetAllUserClassQuran(ctx *gin.Context, r model.UserClassRequest) ([]shape.UserClass, int, error) {
+	email := ctx.Request.Header.Get("email")
+
+	users, err := u.userRepository.GetUserInfo(email)
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "userClassUsecase.GetUserInfo")
+	}
+
+	var orderDefault = "ORDER BY code asc"
+	var filterDefault = fmt.Sprintf("is_deleted = false and is_active = true and user_code='%s'", users.Code)
+
+	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
+
+	result, err := u.userClassRepository.GetAllUserClassQuran(filterFinal)
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "userClassUsecase.GetAllMasterCoachingProgram")
+	}
+
+	userClassEmpty := make([]shape.UserClass, 0)
+	if len(result) == 0 {
+		return userClassEmpty, 0, err
+	}
+
+	return result, len(result), nil
 }
 
 func (userClassUsecase *userClassUsecase) UpdateUserClassProgress(userClass shape.UserClassPost, email string) (bool, error) {

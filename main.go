@@ -75,7 +75,7 @@ func main() {
 	userExerciseReadingUsecase := usecase.InitUserExerciseReadingUsecase(userExerciseReadingRepository)
 	consultationUsecase := usecase.InitConsultationUsecase(userRepository, enumRepository, consultationRepository, approvalStatusRepository)
 	paymentUsecase := usecase.InitPaymentUsecase(configModel, emailUsecase, enumRepository, packageRepository, paymentRepository, scheduleRepository, userClassRepository, approvalStatusRepository, userClassHistoryRepository)
-	userClassUsecase := usecase.InitUserClassUsecase(configModel, emailUsecase, enumRepository, promotionRepository, userClassRepository, notificationRepository)
+	userClassUsecase := usecase.InitUserClassUsecase(configModel, emailUsecase, userRepository, enumRepository, promotionRepository, userClassRepository, notificationRepository)
 
 	//initiate handler
 	mainHandler := handler.InitMainHandler(configModel)
@@ -175,6 +175,7 @@ func main() {
 	router.GET("/benefits", packageHandler.GetAllBenefit)
 
 	// router-payment
+	router.POST("/payments", paymentHandler.Payment)
 	router.GET("/payments", paymentHandler.GetAllPayment)
 	router.GET("/payments_reject", paymentHandler.GetAllPaymentRejected)
 	router.GET("/payment", paymentHandler.GetAllPaymentByUserID)
@@ -200,6 +201,7 @@ func main() {
 	router.POST("/promotion/claim", promotionHandler.ClaimPromotion)
 
 	// router-userClass
+	router.POST("/user_class", userClassHandler.UserClass)
 	router.GET("/user_class", userClassHandler.GetAllUserClass)
 	router.GET("/user_class/detail/:code", userClassHandler.GetUserClass)
 	router.PUT("/user_class/progress", userClassHandler.UpdateUserClassProgress)
