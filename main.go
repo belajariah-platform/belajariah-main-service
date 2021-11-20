@@ -194,6 +194,7 @@ func main() {
 
 	// router-learning
 	router.GET("/learnings", learningHandler.GetAllLearning)
+	router.POST("/learning", learningHandler.Learning)
 
 	// router-promotion
 	router.GET("/promotions", promotionHandler.GetAllPromotion)

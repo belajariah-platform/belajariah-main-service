@@ -10,6 +10,76 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	_getAllLearning = `
+		SELECT
+			id,	
+			code,
+			class_code,
+			title,
+			document_path,
+			document_name,
+			sequence,	
+			is_exercise,
+			is_direct_learning,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM master.v_m_learning
+		WHERE 
+			is_deleted=false AND
+			is_active=true
+		%s
+		OFFSET %d
+		LIMIT %d
+	`
+	_getAllSubLearning = `
+		SELECT
+			id,	
+			code,
+			title_code,
+			sub_title,
+			video_duration,
+			video,
+			document,
+			poster,
+			sequence,	
+			is_exercise,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM master.v_m_sublearning
+		WHERE 
+			is_deleted=false AND
+			is_active=true AND
+			title_code='%s'
+		ORDER BY id ASC
+	`
+	_getAllLearningQuran = `
+		SELECT
+			id,	
+			code,
+			class_code,
+			title,
+			learning_document,
+			sequence,	
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM master.master_learning_quran
+		%s
+	`
+)
+
 type learningRepository struct {
 	db *sqlx.DB
 }
@@ -17,6 +87,8 @@ type learningRepository struct {
 type LearningRepository interface {
 	GetAllLearning(skip, take int, filter string) ([]model.Learning, error)
 	GetAllSubLearning(titleCode string) ([]model.SubLearning, error)
+
+	GetAllLearningQuran(filter string) (*[]model.LearningQuran, error)
 }
 
 func InitLearningRepository(db *sqlx.DB) LearningRepository {
@@ -25,35 +97,11 @@ func InitLearningRepository(db *sqlx.DB) LearningRepository {
 	}
 }
 
-func (learningRepository *learningRepository) GetAllLearning(skip, take int, filter string) ([]model.Learning, error) {
+func (r *learningRepository) GetAllLearning(skip, take int, filter string) ([]model.Learning, error) {
 	var learningList []model.Learning
-	query := fmt.Sprintf(`
-	SELECT
-		id,	
-		code,
-		class_code,
-		title,
-		document_path,
-		document_name,
-		sequence,	
-		is_exercise,
-		is_direct_learning,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		is_deleted
-	FROM master.v_m_learning
-	WHERE 
-		is_deleted=false AND
-		is_active=true
-	%s
-	OFFSET %d
-	LIMIT %d
-	`, filter, skip, take)
+	query := fmt.Sprintf(_getAllLearning, filter, skip, take)
 
-	rows, sqlError := learningRepository.db.Query(query)
+	rows, sqlError := r.db.Query(query)
 
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllLearning => ", sqlError.Error())
@@ -115,35 +163,11 @@ func (learningRepository *learningRepository) GetAllLearning(skip, take int, fil
 	return learningList, sqlError
 }
 
-func (learningRepository *learningRepository) GetAllSubLearning(titleCode string) ([]model.SubLearning, error) {
+func (r *learningRepository) GetAllSubLearning(titleCode string) ([]model.SubLearning, error) {
 	var learningList []model.SubLearning
-	query := fmt.Sprintf(`
-	SELECT
-		id,	
-		code,
-		title_code,
-		sub_title,
-		video_duration,
-		video,
-		document,
-		poster,
-		sequence,	
-		is_exercise,
-		is_active,
-		created_by,
-		created_date,
-		modified_by,
-		modified_date,
-		is_deleted
-	FROM master.v_m_sublearning
-	WHERE 
-		is_deleted=false AND
-		is_active=true AND
-		title_code='%s'
-	ORDER BY id ASC
-	`, titleCode)
+	query := fmt.Sprintf(_getAllSubLearning, titleCode)
 
-	rows, sqlError := learningRepository.db.Query(query)
+	rows, sqlError := r.db.Query(query)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetAllSubLearning => ", sqlError)
 	} else {
@@ -203,4 +227,16 @@ func (learningRepository *learningRepository) GetAllSubLearning(titleCode string
 		}
 	}
 	return learningList, sqlError
+}
+
+func (r *learningRepository) GetAllLearningQuran(filter string) (*[]model.LearningQuran, error) {
+	var result []model.LearningQuran
+	query := fmt.Sprintf(_getAllLearningQuran, filter)
+
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "learningRepository.GetAllLearningQuran :  error get")
+	}
+
+	return &result, nil
 }

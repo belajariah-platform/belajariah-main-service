@@ -7,6 +7,7 @@ import (
 	"belajariah-main-service/utils"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ type learningHandler struct {
 }
 
 type LearningHandler interface {
+	Learning(ctx *gin.Context)
 	GetAllLearning(ctx *gin.Context)
 }
 
@@ -25,7 +27,7 @@ func InitLearningHandler(learningUsecase usecase.LearningUsecase) LearningHandle
 	}
 }
 
-func (learningHandler *learningHandler) GetAllLearning(ctx *gin.Context) {
+func (h *learningHandler) GetAllLearning(ctx *gin.Context) {
 	var count int
 	var query model.Query
 	err := ctx.BindQuery(&query)
@@ -44,7 +46,7 @@ func (learningHandler *learningHandler) GetAllLearning(ctx *gin.Context) {
 		}
 
 		var learningResult []shape.Learning
-		learningResult, count, err = learningHandler.learningUsecase.GetAllLearning(query)
+		learningResult, count, err = h.learningUsecase.GetAllLearning(query)
 		if err == nil {
 			ctx.JSON(http.StatusOK, gin.H{
 				"data":  learningResult,
@@ -62,4 +64,38 @@ func (learningHandler *learningHandler) GetAllLearning(ctx *gin.Context) {
 	} else {
 		utils.PushLogf("err", err)
 	}
+}
+
+func (h *learningHandler) Learning(ctx *gin.Context) {
+	var request model.LearningQuranRequest
+	if err := ctx.ShouldBindJSON(&request); err == nil {
+		switch strings.ToUpper(request.Action) {
+		case utils.GET_ALL_LEARNING_QURAN:
+			h.getAllLearningQuran(ctx, request)
+		default:
+			utils.NotFoundActionResponse(ctx, request.Action)
+		}
+	} else {
+		ctx.JSON(http.StatusBadRequest, model.Response{
+			Message: model.RequestResponse{
+				Count:  0,
+				Data:   nil,
+				Error:  err.Error(),
+				Result: false,
+			},
+			Status: http.StatusBadRequest,
+			Error:  err.Error(),
+		})
+	}
+}
+
+func (h *learningHandler) getAllLearningQuran(ctx *gin.Context, r model.LearningQuranRequest) {
+	result, err := h.learningUsecase.GetAllLearningQuran(r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, err)
+		return
+	}
+
+	utils.Response(ctx, result, len(result), nil)
 }

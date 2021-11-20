@@ -15,6 +15,7 @@ type learningUsecase struct {
 
 type LearningUsecase interface {
 	GetAllLearning(query model.Query) ([]shape.Learning, int, error)
+	GetAllLearningQuran(r model.LearningQuranRequest) ([]model.LearningQuran, error)
 }
 
 func InitLearningUsecase(learningRepository repository.LearningRepository, exerciseReadingRepository repository.ExerciseReadingRepository) LearningUsecase {
@@ -24,7 +25,7 @@ func InitLearningUsecase(learningRepository repository.LearningRepository, exerc
 	}
 }
 
-func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]shape.Learning, int, error) {
+func (u *learningUsecase) GetAllLearning(query model.Query) ([]shape.Learning, int, error) {
 	var count int
 	var isDone bool
 	var filterQuery string
@@ -33,13 +34,13 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 
 	filterQuery = utils.GetFilterHandler(query.Filters)
 
-	learnings, err := learningUsecase.learningRepository.GetAllLearning(query.Skip, query.Take, filterQuery)
+	learnings, err := u.learningRepository.GetAllLearning(query.Skip, query.Take, filterQuery)
 
 	if err == nil {
 		for _, value := range learnings {
 			var subLearning []model.SubLearning
 			var subLearningResult []shape.SubLearning
-			subLearning, err := learningUsecase.learningRepository.GetAllSubLearning(value.Code)
+			subLearning, err := u.learningRepository.GetAllSubLearning(value.Code)
 			if err == nil {
 				for _, sublearn := range subLearning {
 					subLearningResult = append(subLearningResult, shape.SubLearning{
@@ -69,7 +70,7 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 			if value.IsExercise {
 				var exercises []model.ExerciseReading
 				filter := fmt.Sprintf(`AND title_code='%s'`, value.Code)
-				exercises, err := learningUsecase.exerciseReadingRepository.GetAllExerciseReading(0, 100, filter)
+				exercises, err := u.exerciseReadingRepository.GetAllExerciseReading(0, 100, filter)
 				if err == nil {
 					for _, exercise := range exercises {
 						exerciseResult = append(exerciseResult, shape.ExerciseReading{
@@ -128,4 +129,22 @@ func (learningUsecase *learningUsecase) GetAllLearning(query model.Query) ([]sha
 	}
 
 	return learningResult, count, err
+}
+
+func (u *learningUsecase) GetAllLearningQuran(r model.LearningQuranRequest) ([]model.LearningQuran, error) {
+	var orderDefault = "ORDER BY code asc"
+	var filterDefault = "is_deleted = false and is_active = true"
+	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
+
+	result, err := u.learningRepository.GetAllLearningQuran(filterFinal)
+	if err != nil {
+		return nil, utils.WrapError(err, "coachingProgramUsecase.GetAllLearningQuran")
+	}
+
+	learningEmpty := make([]model.LearningQuran, 0)
+	if len(*result) == 0 {
+		return learningEmpty, err
+	}
+
+	return *result, nil
 }
