@@ -27,12 +27,14 @@ func GetFilterOrderHandler(defaultFilter, defaultOrder string, query model.Query
 	finalFilter := defaultFilter
 	if len(query.Orders) > 0 {
 		finalOrder = GetOrderHandler(query.Orders)
+	} else {
+		finalOrder = ""
 	}
 
 	if len(query.Filters) > 0 {
 		// if default filter is not empty than join the filter. else create new filter script
 		if len(defaultFilter) > 0 {
-			finalFilter = fmt.Sprintf(`WHERE %s AND (%s)`, defaultFilter, GetFilterHandler(query.Filters))
+			finalFilter = fmt.Sprintf(`WHERE %s %s`, defaultFilter, GetFilterHandler(query.Filters))
 		} else {
 			finalFilter = fmt.Sprintf(`WHERE %s `, GetFilterHandler(query.Filters))
 

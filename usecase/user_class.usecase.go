@@ -178,7 +178,7 @@ func (u *userClassUsecase) GetAllUserClassQuran(ctx *gin.Context, r model.UserCl
 
 	result, err := u.userClassRepository.GetAllUserClassQuran(filterFinal)
 	if err != nil {
-		return nil, 0, utils.WrapError(err, "userClassUsecase.GetAllMasterCoachingProgram")
+		return nil, 0, utils.WrapError(err, "userClassUsecase.GetAllUserClassQuran")
 	}
 
 	userClassEmpty := make([]shape.UserClass, 0)
