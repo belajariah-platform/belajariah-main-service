@@ -21,6 +21,7 @@ const (
 			class_initial,
 			class_description,
 			class_image,
+			class_image_header,
 			class_video,
 			class_document,
 			class_rating,
@@ -57,6 +58,7 @@ const (
 			class_initial,
 			class_description,
 			class_image,
+			class_image_header,
 			class_video,
 			class_document,
 			color_path,
@@ -80,7 +82,7 @@ const (
 	`
 	_getCountClassQuran = `
 		SELECT COUNT(*) FROM 
-			master.v_m_class  
+			master.v_m_class_quran  
 		%s
 	`
 )
@@ -120,7 +122,7 @@ func (r *classRepository) GetAllClass(skip, take int, filter string) ([]model.Cl
 			var isActive, isDirect, isDeleted bool
 			var id, totalReview, totalVideo, totalVideoDuration int
 			var code, classCategoryCode, classCategory, className, createdBy string
-			var classInitial, classDescription, classImage, classVideo, classDocument, instructorDescription, instructorBiografi, instructorImage, modifiedBy, instructorName, colorPath sql.NullString
+			var classInitial, classDescription, classImage, classImageHeader, classVideo, classDocument, instructorDescription, instructorBiografi, instructorImage, modifiedBy, instructorName, colorPath sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -131,6 +133,7 @@ func (r *classRepository) GetAllClass(skip, take int, filter string) ([]model.Cl
 				&classInitial,
 				&classDescription,
 				&classImage,
+				&classImageHeader,
 				&classVideo,
 				&classDocument,
 				&classRating,
@@ -164,6 +167,7 @@ func (r *classRepository) GetAllClass(skip, take int, filter string) ([]model.Cl
 						ClassInitial:          classInitial,
 						ClassDescription:      classDescription,
 						ClassImage:            classImage,
+						ClassImageHeader:      classImageHeader,
 						ClassVideo:            classVideo,
 						ClassDocument:         classDocument,
 						ClassRating:           classRating,
@@ -220,6 +224,7 @@ func (r *classRepository) GetAllClassQuranCount(filter string) (int, error) {
 	var count int
 
 	query := fmt.Sprintf(_getCountClassQuran, filter)
+
 	row := r.db.QueryRow(query)
 	err := row.Scan(&count)
 	if err != nil {

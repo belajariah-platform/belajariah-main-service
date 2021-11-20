@@ -13,6 +13,7 @@ type Class struct {
 	Class_Initial          string
 	Class_Description      string
 	Class_Image            string
+	Class_Image_Header     string
 	Class_Video            string
 	Class_Document         string
 	Class_Rating           float64

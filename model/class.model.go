@@ -14,6 +14,7 @@ type Class struct {
 	ClassInitial          sql.NullString
 	ClassDescription      sql.NullString
 	ClassImage            sql.NullString
+	ClassImageHeader      sql.NullString
 	ClassVideo            sql.NullString
 	ClassDocument         sql.NullString
 	ClassRating           float64
@@ -49,6 +50,7 @@ type ClassQuran struct {
 	ClassInitial      NullString     `form:"class_initial" json:"class_initial" xml:"class_initial" db:"class_initial"`
 	ClassDescription  NullString     `form:"class_description" json:"class_description" xml:"class_description" db:"class_description"`
 	ClassImage        NullString     `form:"class_image" json:"class_image" xml:"class_image" db:"class_image"`
+	ClassImageHeader  NullString     `form:"class_image_header" json:"class_image_header" xml:"class_image_header" db:"class_image_header"`
 	ClassVideo        NullString     `form:"class_video" json:"class_video" xml:"class_video" db:"class_video"`
 	ClassDocument     NullString     `form:"class_document" json:"class_document" xml:"class_document" db:"class_document"`
 	ColorPath         NullString     `form:"color_path" json:"color_path" xml:"color_path" db:"color_path"`

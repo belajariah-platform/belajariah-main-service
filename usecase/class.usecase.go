@@ -62,6 +62,7 @@ func (u *classUsecase) GetAllClass(query model.Query) ([]shape.Class, int, error
 				Class_Initial:          value.ClassInitial.String,
 				Class_Description:      value.ClassDescription.String,
 				Class_Image:            value.ClassImage.String,
+				Class_Image_Header:     value.ClassImage.String,
 				Class_Video:            value.ClassVideo.String,
 				Class_Document:         value.ClassDocument.String,
 				Class_Rating:           value.ClassRating,
