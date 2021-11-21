@@ -151,7 +151,7 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 
 		errs := dialer.DialAndSend(mail)
 		if errs != nil {
-			utils.PushLogf("", "ERROR SEND EMAIL : ", err.Error())
+			utils.PushLogf("", "ERROR SEND EMAIL : ", errs.Error())
 		} else {
 			utils.PushLogf("", "SUCCESS SEND EMAIL : ", user.Email)
 		}

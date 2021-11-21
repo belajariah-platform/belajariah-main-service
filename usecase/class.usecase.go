@@ -111,7 +111,7 @@ func (u *classUsecase) GetAllClassQuran(r model.ClassQuranRequest) ([]model.Clas
 	totalCount, err := u.classRepository.GetAllClassQuranCount(filterForTotalCount)
 
 	if err != nil {
-		return nil, 0, utils.WrapError(err, "CCUColorConfigUsecase: GetAllClassQuranCount")
+		return nil, 0, utils.WrapError(err, "classUsecase: GetAllClassQuranCount")
 	}
 
 	for _, v := range *result {
