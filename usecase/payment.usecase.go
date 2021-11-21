@@ -65,6 +65,7 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 		sorting = strings.Replace(query.Order, "|", " ", 1)
 		sorting = "ORDER BY " + sorting
 	}
+
 	if len(query.Search) > 0 {
 		search = `AND LOWER(user_name) LIKE LOWER('%` + query.Search + `%') 
 		OR LOWER(invoice_number) LIKE LOWER('%` + query.Search + `%')
@@ -105,6 +106,7 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 				Payment_Type:         value.PaymentType,
 				Schedule_Code_1:      value.ScheduleCode1.String,
 				Schedule_Code_2:      value.ScheduleCode2.String,
+				Payment_Reference:    value.PaymentReference.String,
 				Is_Active:            value.IsActive,
 				Created_By:           value.CreatedBy,
 				Created_Date:         value.CreatedDate,
@@ -177,6 +179,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentRejected(query model.Query) (
 				Payment_Type:        value.PaymentType,
 				Schedule_Code_1:     value.ScheduleCode1.String,
 				Schedule_Code_2:     value.ScheduleCode2.String,
+				Payment_Reference:   value.PaymentReference.String,
 				Is_Active:           value.IsActive,
 				Created_By:          value.CreatedBy,
 				Created_Date:        value.CreatedDate,
@@ -252,6 +255,7 @@ func (paymentUsecase *paymentUsecase) GetAllPaymentByUserID(query model.Query, u
 				Image_Proof:          value.ImageProof.String,
 				Schedule_Code_1:      value.ScheduleCode1.String,
 				Schedule_Code_2:      value.ScheduleCode2.String,
+				Payment_Reference:    value.PaymentReference.String,
 				Is_Active:            value.IsActive,
 				Created_By:           value.CreatedBy,
 				Created_Date:         value.CreatedDate,

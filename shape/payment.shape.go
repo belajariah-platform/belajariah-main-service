@@ -37,6 +37,7 @@ type Payment struct {
 	Expired_Date         string
 	Schedule_Code_1      string
 	Schedule_Code_2      string
+	Payment_Reference    string
 	Is_Active            bool
 	Created_By           string
 	Created_Date         time.Time

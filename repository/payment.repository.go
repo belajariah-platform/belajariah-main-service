@@ -86,6 +86,7 @@ const (
 			remarks,
 			schedule_code_1,
 			schedule_code_2,
+			payment_reference,
 			is_active,
 			created_by,
 			created_date,
@@ -402,7 +403,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 			var modifiedDate sql.NullTime
 			var scheduleCode1, scheduleCode2 sql.NullString
 			var userName, classCode, className, classInitial, paymentMethodCode, paymentMethod, invoiceNumber, paymentTypeCode, paymentType, statusPaymentCode, statusPayment, packageCode, packageType, createdBy, paymentMethodType, code, userCode string
-			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy, paymentMethodImage sql.NullString
+			var accounName, accountNumber, remarks, senderBank, senderName, imageProof, modifiedBy, paymentMethodImage, paymentReference sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -432,6 +433,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 				&remarks,
 				&scheduleCode1,
 				&scheduleCode2,
+				&paymentReference,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -472,6 +474,7 @@ func (paymentsRepository *paymentsRepository) GetAllPayment(skip, take int, sort
 						Remarks:            remarks,
 						ScheduleCode1:      scheduleCode1,
 						ScheduleCode2:      scheduleCode2,
+						PaymentReference:   paymentReference,
 						IsActive:           isActive,
 						CreatedBy:          createdBy,
 						CreatedDate:        createdDate,
