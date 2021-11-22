@@ -6,6 +6,7 @@ import (
 	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -456,6 +457,7 @@ func (paymentUsecase *paymentUsecase) UploadPayment(payment shape.PaymentPost, e
 		statusCode = status.RejectStatus.String
 	default:
 		statusCode = ""
+		return false, utils.WrapError(errors.New("No action needed"), "paymentUsecase")
 	}
 
 	dataPayment := model.Payment{
@@ -528,6 +530,7 @@ func (paymentUsecase *paymentUsecase) UploadPaymentQuran(ctx *gin.Context, payme
 		statusCode = status.RejectStatus.String
 	default:
 		statusCode = ""
+		return false, utils.WrapError(errors.New("No action needed"), "paymentUsecase")
 	}
 
 	dataPayment := model.Payment{
@@ -733,6 +736,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 
 	default:
 		statusCode = ""
+		return false, utils.WrapError(errors.New("No action needed"), "paymentUsecase")
 	}
 
 	enum, err = paymentUsecase.enumRepository.GetEnum(paymentType)
@@ -849,6 +853,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 
 	default:
 		statusCode = ""
+		return false, utils.WrapError(errors.New("No action needed"), "paymentUsecase")
 	}
 
 	enum, err = paymentUsecase.enumRepository.GetEnum(paymentType)
