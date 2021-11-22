@@ -82,6 +82,7 @@ func (paymentUsecase *paymentUsecase) GetAllPayment(query model.Query) ([]shape.
 		for _, value := range payments {
 			paymentResult = append(paymentResult, shape.Payment{
 				ID:                   value.ID,
+				Code:                 value.Code,
 				User_Code:            value.UserCode,
 				User_Name:            value.UserName,
 				Class_Code:           value.ClassCode,
