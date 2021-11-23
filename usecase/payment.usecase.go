@@ -863,6 +863,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 
 	dataPayment := model.Payment{
 		ID:                payment.ID,
+		Code:              payment.Code,
 		StatusPaymentCode: statusCode,
 		PaymentTypeCode:   enum.Code,
 		Remarks: sql.NullString{
@@ -876,7 +877,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 		},
 	}
 
-	result, err = paymentUsecase.paymentsRepository.ConfirmPayment(dataPayment)
+	result, err = paymentUsecase.paymentsRepository.ConfirmPaymentQuran(dataPayment)
 	if err != nil {
 		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.ConfirmPayment : PaymentClassQuran ")
 	}

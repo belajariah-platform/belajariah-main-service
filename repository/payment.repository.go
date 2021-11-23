@@ -203,7 +203,7 @@ const (
 			modified_by=$4,
 			modified_date=$5
 		WHERE
-			id=$6
+			code=$6
 		`
 	_uploadPaymentQuran = `
 		UPDATE
@@ -655,13 +655,13 @@ func (r *paymentsRepository) ConfirmPaymentQuran(payment model.Payment) (bool, e
 		return false, errors.New("paymentsRepository: ConfirmPaymentQuran: error begin transaction")
 	}
 
-	_, err = tx.Exec(_confirmPayment,
+	_, err = tx.Exec(_confirmPaymentQuran,
 		payment.StatusPaymentCode,
 		payment.PaymentTypeCode,
 		payment.Remarks.String,
 		payment.ModifiedBy.String,
 		payment.ModifiedDate.Time,
-		payment.ID,
+		payment.Code,
 	)
 
 	if err != nil {
