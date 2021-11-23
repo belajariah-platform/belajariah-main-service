@@ -159,6 +159,7 @@ func main() {
 	router.POST("/mentors", mentorHandler.Mentor)
 
 	// router-rating
+	router.POST("/rating", ratingHandler.Rating)
 	router.POST("/rating_class", ratingHandler.GiveRatingClass)
 	router.GET("/rating_class", ratingHandler.GetAllRatingClass)
 	router.POST("/rating_mentor", ratingHandler.GiveRatingMentor)

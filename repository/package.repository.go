@@ -137,6 +137,27 @@ const (
 		%s
 		ORDER BY sequence ASC
 	`
+	_getAllTermConditionQuran = `
+		SELECT
+			id,
+			code,
+			class_code,
+			description,
+			icon_term,
+			sequence,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM master.master_term_condition_quran
+		WHERE 
+			is_deleted = false AND
+			is_active=true
+		%s
+		ORDER BY sequence ASC
+	`
 )
 
 type packageRepository struct {
@@ -152,6 +173,8 @@ type PackageRepository interface {
 
 	GetAllBenefit(skip, take int, filter string) ([]model.Benefit, error)
 	GetAllBenefitQuran(filter string) (*[]model.BenefitQuran, error)
+
+	GetAllTermConditionQuran(filter string) (*[]model.TermConditionQuran, error)
 }
 
 func InitPackageRepository(db *sqlx.DB) PackageRepository {
@@ -377,6 +400,18 @@ func (r *packageRepository) GetAllBenefitQuran(filter string) (*[]model.BenefitQ
 	err := r.db.Select(&result, query)
 	if err != nil {
 		return nil, utils.WrapError(err, "packageRepository.GetAllBenefitQuran :  error get")
+	}
+
+	return &result, nil
+}
+
+func (r *packageRepository) GetAllTermConditionQuran(filter string) (*[]model.TermConditionQuran, error) {
+	var result []model.TermConditionQuran
+	query := fmt.Sprintf(_getAllTermConditionQuran, filter)
+
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "packageRepository.GetAllTermConditionQuran :  error get")
 	}
 
 	return &result, nil

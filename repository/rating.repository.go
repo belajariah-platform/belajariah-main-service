@@ -90,6 +90,55 @@ const (
 			$8
 			)
 	`
+	_getAllRatingClassQuran = `
+		SELECT
+			id,
+			code,
+			class_code,
+			class_name,
+			class_initial,
+			user_code,
+			user_name,
+			rating,
+			comment,
+			is_active,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			is_deleted
+		FROM 
+			transaction.v_t_class_rating_quran
+		%s
+	`
+	_getAllRatingClassQuranCount = `
+		SELECT COUNT(*) FROM 
+			transaction.v_t_class_rating_quran  
+		%s
+	`
+	_giveRatingClassQuran = `
+		INSERT INTO transaction.transact_class_quran_rating
+		(
+			class_code,
+			user_code,
+			rating,
+			comment,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4, 
+			$5, 
+			$6, 
+			$7, 
+			$8
+			)
+	`
 )
 
 type ratingRepository struct {
@@ -99,8 +148,13 @@ type ratingRepository struct {
 type RatingRepository interface {
 	GetAllRatingClass(skip, take int, filter string) ([]model.Rating, error)
 	GetAllRatingClassCount(filter string) (int, error)
+
+	GetAllClassRatingQuran(filter string) (*[]model.RatingQuran, error)
+	GetAllClassRatingQuranCount(filter string) (int, error)
+
 	GiveRatingClass(rating model.RatingPost) (bool, error)
 	GiveRatingMentor(rating model.RatingPost) (bool, error)
+	GiveRatingClassQuran(data model.RatingQuran) (bool, error)
 }
 
 func InitRatingRepository(db *sqlx.DB) RatingRepository {
@@ -234,6 +288,58 @@ func (r *ratingRepository) GiveRatingMentor(data model.RatingPost) (bool, error)
 	if err != nil {
 		tx.Rollback()
 		return false, utils.WrapError(err, "ratingRepository: GiveRatingMentor: error insert")
+	}
+
+	tx.Commit()
+	return err == nil, nil
+}
+
+func (r *ratingRepository) GetAllClassRatingQuran(filter string) (*[]model.RatingQuran, error) {
+	var result []model.RatingQuran
+	query := fmt.Sprintf(_getAllRatingClassQuran, filter)
+
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "ratingRepository.GetAllClassRatingQuran :  error get")
+	}
+
+	return &result, nil
+}
+
+func (r *ratingRepository) GetAllClassRatingQuranCount(filter string) (int, error) {
+	var count int
+
+	query := fmt.Sprintf(_getAllRatingClassQuranCount, filter)
+
+	row := r.db.QueryRow(query)
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, utils.WrapError(err, "ratingRepository: GetCount: error query row")
+	}
+
+	return count, err
+}
+
+func (r *ratingRepository) GiveRatingClassQuran(data model.RatingQuran) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("ratingRepository: GiveRatingClassQuran: error begin transaction")
+	}
+
+	_, err = tx.Exec(_giveRatingClassQuran,
+		data.ClassCode,
+		data.UserCode,
+		data.Rating,
+		data.Comment.String,
+		data.ModifiedBy.String,
+		data.ModifiedDate.Time,
+		data.ModifiedBy.String,
+		data.ModifiedDate.Time,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "ratingRepository: GiveRatingClassQuran: error insert")
 	}
 
 	tx.Commit()

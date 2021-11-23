@@ -137,6 +137,17 @@ func (u *classUsecase) GetAllClassQuran(r model.ClassQuranRequest) ([]model.Clas
 			v.ClassBenefit = *resultBenf
 		}
 
+		resultTerm, err := u.packageRepository.GetAllTermConditionQuran(filterFinal)
+		if err != nil {
+			return nil, 0, utils.WrapError(err, "classUsecase.GetAllPackageQuran")
+		}
+
+		if len(*resultTerm) == 0 {
+			v.TermCondition = make([]model.TermConditionQuran, 0)
+		} else {
+			v.TermCondition = *resultTerm
+		}
+
 		finalResult = append(finalResult, v)
 	}
 

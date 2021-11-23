@@ -7,6 +7,8 @@ import (
 	"belajariah-main-service/utils"
 	"database/sql"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ratingUsecase struct {
@@ -17,6 +19,9 @@ type RatingUsecase interface {
 	GetAllRatingClass(query model.Query) ([]shape.Rating, int, error)
 	GiveRatingClass(rating shape.RatingPost, email string) (bool, error)
 	GiveRatingMentor(rating shape.RatingPost, email string) (bool, error)
+
+	GetAllRatingClassQuran(r model.RatingQuranRequest) ([]model.RatingQuran, int, error)
+	GiveRatingClassQuran(ctx *gin.Context, r model.RatingQuranRequest) (bool, error)
 }
 
 func InitRatingUsecase(ratingRepository repository.RatingRepository) RatingUsecase {
@@ -119,4 +124,35 @@ func (ratingUsecase *ratingUsecase) GiveRatingMentor(rating shape.RatingPost, em
 	}
 
 	return result, err
+}
+
+func (u *ratingUsecase) GetAllRatingClassQuran(r model.RatingQuranRequest) ([]model.RatingQuran, int, error) {
+	var orderDefault = "ORDER BY code asc"
+	var filterDefault = "is_deleted = false and is_active = true"
+
+	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
+	result, err := u.ratingRepository.GetAllClassRatingQuran(filterFinal)
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "ratingUsecase.GetAllClassRatingQuran")
+	}
+
+	ratingEmpty := make([]model.RatingQuran, 0)
+	if len(*result) == 0 {
+		return ratingEmpty, 0, err
+	}
+
+	return *result, len(*result), nil
+}
+
+func (u *ratingUsecase) GiveRatingClassQuran(ctx *gin.Context, r model.RatingQuranRequest) (bool, error) {
+	email := ctx.Request.Header.Get("email")
+
+	r.Data.ModifiedBy.String = email
+
+	result, err := u.ratingRepository.GiveRatingClassQuran(r.Data)
+	if err != nil {
+		return false, utils.WrapError(err, "ratingUsecase.GiveRatingClassQuran")
+	}
+
+	return result, nil
 }
