@@ -92,18 +92,19 @@ type MentorExperience struct {
 }
 
 type MentorClass struct {
-	ID            int
-	Code          string
-	Mentor_Code   string
-	Mentor_Name   string
-	Class_Code    string
-	Class_Name    string
-	Class_Initial string
-	Minimum_Rate  int
-	Is_Active     bool
-	Created_By    string
-	Created_Date  time.Time
-	Modified_By   string
-	Modified_Date time.Time
-	Is_Deleted    bool
+	ID                 int
+	Code               string
+	Mentor_Code        string
+	Mentor_Name        string
+	Class_Code         string
+	Class_Name         string
+	Class_Initial      string
+	Minimum_Rate       int
+	Allow_Contact_From string
+	Is_Active          bool
+	Created_By         string
+	Created_Date       time.Time
+	Modified_By        string
+	Modified_Date      time.Time
+	Is_Deleted         bool
 }

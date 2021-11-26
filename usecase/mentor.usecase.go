@@ -173,20 +173,21 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 			if errs == nil {
 				for _, class := range mentorClass {
 					mentorClassResult = append(mentorClassResult, shape.MentorClass{
-						ID:            class.ID,
-						Code:          class.Code,
-						Mentor_Code:   class.MentorCode,
-						Mentor_Name:   class.MentorName.String,
-						Class_Code:    class.ClassCode,
-						Class_Name:    class.ClassName,
-						Class_Initial: class.ClassInitial.String,
-						Minimum_Rate:  int(class.MinimumRate.Int64),
-						Is_Active:     class.IsActive,
-						Created_By:    class.CreatedBy,
-						Created_Date:  class.CreatedDate,
-						Modified_By:   class.ModifiedBy.String,
-						Modified_Date: class.ModifiedDate.Time,
-						Is_Deleted:    class.IsDeleted,
+						ID:                 class.ID,
+						Code:               class.Code,
+						Mentor_Code:        class.MentorCode,
+						Mentor_Name:        class.MentorName.String,
+						Class_Code:         class.ClassCode,
+						Class_Name:         class.ClassName,
+						Class_Initial:      class.ClassInitial.String,
+						Minimum_Rate:       int(class.MinimumRate.Int64),
+						Allow_Contact_From: class.AllowContactFrom.String,
+						Is_Active:          class.IsActive,
+						Created_By:         class.CreatedBy,
+						Created_Date:       class.CreatedDate,
+						Modified_By:        class.ModifiedBy.String,
+						Modified_Date:      class.ModifiedDate.Time,
+						Is_Deleted:         class.IsDeleted,
 					})
 				}
 			}

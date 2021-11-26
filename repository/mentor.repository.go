@@ -137,6 +137,7 @@ const (
 		class_name,
 		class_initial,
 		coalesce(minimum_rate, 0) as minimum_rate,
+		allow_contact_from,
 		is_active,
 		created_by,
 		created_date,
@@ -530,8 +531,8 @@ func (r *mentorRepository) GetAllMentorClass(code string) ([]model.MentorClass, 
 			var isActive, isDeleted bool
 			var minimumRate sql.NullInt64
 			var modifiedDate sql.NullTime
-			var modifiedBy, classInitial, mentorName sql.NullString
 			var createdBy, classCode, className, mentorCode, code string
+			var modifiedBy, classInitial, mentorName, allowContactFrom sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -542,6 +543,7 @@ func (r *mentorRepository) GetAllMentorClass(code string) ([]model.MentorClass, 
 				&className,
 				&classInitial,
 				&minimumRate,
+				&allowContactFrom,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -555,20 +557,21 @@ func (r *mentorRepository) GetAllMentorClass(code string) ([]model.MentorClass, 
 			} else {
 				mentorList = append(mentorList,
 					model.MentorClass{
-						ID:           id,
-						Code:         code,
-						MentorCode:   mentorCode,
-						MentorName:   mentorName,
-						ClassCode:    classCode,
-						ClassName:    className,
-						ClassInitial: classInitial,
-						MinimumRate:  minimumRate,
-						IsActive:     isActive,
-						CreatedBy:    createdBy,
-						CreatedDate:  createdDate,
-						ModifiedBy:   modifiedBy,
-						ModifiedDate: modifiedDate,
-						IsDeleted:    isDeleted,
+						ID:               id,
+						Code:             code,
+						MentorCode:       mentorCode,
+						MentorName:       mentorName,
+						ClassCode:        classCode,
+						ClassName:        className,
+						ClassInitial:     classInitial,
+						MinimumRate:      minimumRate,
+						AllowContactFrom: allowContactFrom,
+						IsActive:         isActive,
+						CreatedBy:        createdBy,
+						CreatedDate:      createdDate,
+						ModifiedBy:       modifiedBy,
+						ModifiedDate:     modifiedDate,
+						IsDeleted:        isDeleted,
 					},
 				)
 			}

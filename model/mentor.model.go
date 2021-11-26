@@ -109,18 +109,19 @@ type MentorExperience struct {
 }
 
 type MentorClass struct {
-	ID           int
-	Code         string
-	MentorCode   string
-	MentorName   sql.NullString
-	ClassCode    string
-	ClassName    string
-	ClassInitial sql.NullString
-	MinimumRate  sql.NullInt64
-	IsActive     bool
-	CreatedBy    string
-	CreatedDate  time.Time
-	ModifiedBy   sql.NullString
-	ModifiedDate sql.NullTime
-	IsDeleted    bool
+	ID               int
+	Code             string
+	MentorCode       string
+	MentorName       sql.NullString
+	ClassCode        string
+	ClassName        string
+	ClassInitial     sql.NullString
+	MinimumRate      sql.NullInt64
+	AllowContactFrom sql.NullString
+	IsActive         bool
+	CreatedBy        string
+	CreatedDate      time.Time
+	ModifiedBy       sql.NullString
+	ModifiedDate     sql.NullTime
+	IsDeleted        bool
 }
