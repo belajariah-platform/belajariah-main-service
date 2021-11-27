@@ -796,6 +796,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPayment(payment shape.PaymentPost, 
 func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, payment shape.PaymentPost) (bool, error) {
 	var err error
 	var result bool
+	var email string
 	var enum model.Enum
 	var class []shape.UserClass
 	var statusCode, paymentType, emailType string
@@ -804,8 +805,6 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 		payment.User_Code,
 		payment.Class_Code)
 
-	email := ctx.Request.Header.Get("email")
-
 	status, err := paymentUsecase.approvalStatusRepository.GetApprovalStatus(payment.Status_Payment_Code)
 	if err != nil {
 		return false, utils.WrapError(err, "paymentUsecase.approvalStatusRepository.GetApprovalStatus : PaymentClassQuran ")
@@ -813,6 +812,8 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 
 	switch strings.ToLower(payment.Action) {
 	case "approved":
+		email = ctx.Request.Header.Get("email")
+
 		statusCode = status.ApprovedStatus.String
 		paymentType = "Completed|Complete|Lunas"
 		emailType = "Payment Success"
@@ -841,15 +842,21 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClassQuran : PaymentClassQuran ")
 			}
 		}
-
 	case "rejected":
+		email = ctx.Request.Header.Get("email")
 		statusCode = status.RejectStatus.String
 		paymentType = "Failed|Failed|Batal"
 		emailType = "Payment Canceled"
 	case "revised":
+		email = ctx.Request.Header.Get("email")
 		statusCode = status.ReviseStatus.String
 		paymentType = "WaitingForPayment|Waiting for Payment|Menunggu"
 		emailType = "Payment Revised"
+	case "system rejected":
+		email = payment.Modified_By
+		statusCode = status.RejectStatus.String
+		paymentType = "Failed|Failed|Batal"
+		emailType = "Payment Failed"
 
 	default:
 		statusCode = ""
@@ -882,7 +889,7 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 		return false, utils.WrapError(err, "paymentUsecase.paymentsRepository.ConfirmPayment : PaymentClassQuran ")
 	}
 
-	if status.CurrentStatusValue == "Has been Payment" && payment.Action != "Rejected" {
+	if (status.CurrentStatusValue == "Has been Payment" && payment.Action != "Rejected") || payment.Action == "System Rejected" {
 		filters := fmt.Sprintf(`WHERE code = '%s'`, payment.Code)
 		payments, err := paymentUsecase.paymentsRepository.GetPayment(filters)
 		if err != nil {
@@ -890,21 +897,18 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 		}
 
 		dataEmail := model.EmailBody{
-			BodyTemp:          emailType,
-			UserCode:          payments.UserCode,
-			InvoiceNumber:     payments.InvoiceNumber,
-			PaymentMethod:     payments.PaymentMethod,
-			AccountName:       payments.AccountName.String,
-			AccountNumber:     payments.AccountNumber.String,
-			ClassName:         payments.ClassInitial,
-			ClassPrice:        int(payments.PackageDiscount.Int64),
-			ClassImage:        payments.ClassImage.String,
-			PromoDiscount:     fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
-			TotalConsultation: int(payments.TotalConsultation.Int64),
-			TotalWebinar:      int(payments.TotalWebinar.Int64),
-			TotalTransfer:     payments.TotalTransfer,
+			BodyTemp:      emailType,
+			UserCode:      payments.UserCode,
+			InvoiceNumber: payments.InvoiceNumber,
+			PaymentMethod: payments.PaymentMethod,
+			AccountName:   payments.AccountName.String,
+			AccountNumber: payments.AccountNumber.String,
+			ClassName:     payments.ClassInitial,
+			ClassImage:    payments.ClassImage.String,
+			ClassPrice:    int(payments.PackageDiscount.Int64),
+			TotalTransfer: payments.TotalTransfer,
+			PromoDiscount: fmt.Sprintf("%d", int(payments.PromoDiscount.Float64)),
 		}
-
 		paymentUsecase.emailUsecase.SendEmail(dataEmail)
 	}
 
@@ -913,9 +917,8 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 
 func (paymentUsecase *paymentUsecase) CheckAllPaymentExpired() {
 	var err error
-	var action string = "Rejected"
+	var ctx *gin.Context
 	var paymentList []model.Payment
-	var emailType string = "Payment Failed"
 
 	firstloop := true
 	for {
@@ -933,30 +936,17 @@ func (paymentUsecase *paymentUsecase) CheckAllPaymentExpired() {
 			for _, value := range paymentList {
 				dataPayment := shape.PaymentPost{
 					ID:                  value.ID,
-					Action:              action,
+					Code:                value.Code,
+					Action:              "System Rejected",
 					Status_Payment_Code: value.StatusPaymentCode,
+					Modified_By:         paymentUsecase.sytemConfig.System.EmailSystem,
 				}
 
-				_, err := paymentUsecase.ConfirmPayment(dataPayment, paymentUsecase.sytemConfig.System.EmailSystem)
+				_, err := paymentUsecase.ConfirmPaymentQuran(ctx, dataPayment)
 				if err != nil {
-					utils.PushLogf("paymentUsecase.paymentsRepository.ConfirmPayment : ", err.Error())
-				} else {
-					if value != (model.Payment{}) {
-						filter := fmt.Sprintf(`WHERE id = %d`, value.ID)
-						payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
-
-						dataEmail := model.EmailBody{
-							BodyTemp:          emailType,
-							UserCode:          payments.UserCode,
-							InvoiceNumber:     payments.InvoiceNumber,
-							ClassName:         payments.ClassInitial,
-							TotalConsultation: int(payments.TotalConsultation.Int64),
-							TotalWebinar:      int(payments.TotalWebinar.Int64),
-						}
-
-						paymentUsecase.emailUsecase.SendEmail(dataEmail)
-					}
+					utils.PushLogf("paymentUsecase.CheckAllPaymentExpired.ConfirmPayment : ", err.Error())
 				}
+
 			}
 		}
 	}
@@ -981,37 +971,21 @@ func (paymentUsecase *paymentUsecase) CheckAllPayment2HourBeforeExpired() {
 		firstloop = false
 		if err == nil {
 			for _, value := range paymentList {
-				dataPayment := shape.PaymentPost{
-					ID:                  value.ID,
-					Action:              "Rejected",
-					Status_Payment_Code: value.StatusPaymentCode,
-				}
+				filter := fmt.Sprintf(`WHERE code = '%s'`, value.Code)
+				payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
 
-				_, err := paymentUsecase.ConfirmPayment(dataPayment, paymentUsecase.sytemConfig.System.EmailSystem)
-				if err != nil {
-					utils.PushLogf("paymentUsecase.paymentsRepository.ConfirmPayment : ", err.Error())
-				} else {
-					if value != (model.Payment{}) {
-						filter := fmt.Sprintf(`WHERE id = %d`, value.ID)
-						payments, _ := paymentUsecase.paymentsRepository.GetPayment(filter)
-
-						dataEmail := model.EmailBody{
-							BodyTemp:          emailType,
-							UserCode:          payments.UserCode,
-							InvoiceNumber:     payments.InvoiceNumber,
-							PaymentMethod:     payments.PaymentMethod,
-							AccountName:       payments.AccountName.String,
-							AccountNumber:     payments.AccountNumber.String,
-							ClassName:         payments.ClassInitial,
-							ClassPrice:        int(payments.PackageDiscount.Int64),
-							TotalConsultation: int(payments.TotalConsultation.Int64),
-							TotalWebinar:      int(payments.TotalWebinar.Int64),
-							TotalTransfer:     payments.TotalTransfer,
-							ExpiredDate:       payments.ModifiedDate.Time,
-						}
-						paymentUsecase.emailUsecase.SendEmail(dataEmail)
-					}
+				dataEmail := model.EmailBody{
+					BodyTemp:      emailType,
+					UserCode:      payments.UserCode,
+					InvoiceNumber: payments.InvoiceNumber,
+					PaymentMethod: payments.PaymentMethod,
+					AccountName:   payments.AccountName.String,
+					AccountNumber: payments.AccountNumber.String,
+					ClassName:     payments.ClassInitial,
+					ClassPrice:    int(payments.PackageDiscount.Int64),
 				}
+				paymentUsecase.emailUsecase.SendEmail(dataEmail)
+
 			}
 		}
 	}

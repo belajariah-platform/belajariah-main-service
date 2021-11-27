@@ -4,7 +4,6 @@ import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/repository"
 	"belajariah-main-service/utils"
-	"fmt"
 	"strings"
 
 	"gopkg.in/gomail.v2"
@@ -49,18 +48,16 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 			UserEmail:        email.UserEmail,
 			VerificationCode: email.VerificationCode,
 			//payment
-			InvoiceNumber:     email.InvoiceNumber,
-			PaymentMethod:     email.PaymentMethod,
-			AccountName:       email.AccountName,
-			AccountNumber:     email.AccountNumber,
-			ClassName:         email.ClassName,
-			ClassPrice:        email.ClassPrice,
-			ClassImage:        email.ClassImage,
-			TotalConsultation: email.TotalConsultation,
-			TotalWebinar:      email.TotalWebinar,
-			TotalTransfer:     email.TotalTransfer,
-			PromoDiscount:     email.PromoDiscount + "%",
-			PromoPrice:        email.ClassPrice - email.TotalTransfer,
+			InvoiceNumber: email.InvoiceNumber,
+			PaymentMethod: email.PaymentMethod,
+			AccountName:   email.AccountName,
+			AccountNumber: email.AccountNumber,
+			ClassName:     email.ClassName,
+			ClassPrice:    email.ClassPrice,
+			ClassImage:    email.ClassImage,
+			TotalTransfer: email.TotalTransfer,
+			PromoDiscount: email.PromoDiscount + "%",
+			PromoPrice:    email.ClassPrice - email.TotalTransfer,
 		}
 
 		enums, err := emailUsecase.enumRepository.GetAllEnum(query.Skip, query.Take, filter)
@@ -144,8 +141,6 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 		mail.SetBody("text/html", bodyTemp)
 		// mail.Attach("./sample.png")
 
-		fmt.Println(emailUsecase.mailConfig.Mail.AuthPassword, emailUsecase.mailConfig.Mail.AuthEmail)
-
 		dialer := gomail.NewDialer(
 			emailUsecase.mailConfig.Mail.SMTPHost,
 			emailUsecase.mailConfig.Mail.SMTPPort,
@@ -154,7 +149,6 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 		)
 
 		errs := dialer.DialAndSend(mail)
-		fmt.Println(errs)
 		if errs != nil {
 			utils.PushLogf("", "ERROR SEND EMAIL : ", errs.Error())
 		} else {

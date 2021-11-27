@@ -172,6 +172,7 @@ const (
 	_checkAllPaymentExpired = `
 		SELECT
 			id,
+			code,
 			user_code,
 			status_payment_code
 		FROM transaction.v_t_payment
@@ -182,6 +183,7 @@ const (
 	_checkAllPaymentBeforeExpired = `
 		SELECT
 			id,
+			code,
 			user_code,
 			status_payment_code,
 			modified_date
@@ -688,6 +690,7 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentExpired() ([]model.
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&userCode,
 				&statusPaymentCode,
 			)
@@ -723,6 +726,7 @@ func (paymentsRepository *paymentsRepository) CheckAllPaymentBeforeExpired() ([]
 
 			sqlError := rows.Scan(
 				&id,
+				&code,
 				&userCode,
 				&statusPaymentCode,
 				&modifiedDate,
