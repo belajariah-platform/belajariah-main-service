@@ -69,6 +69,7 @@ type MentorInfo struct {
 	LearningMethodText sql.NullString
 	Rating             float64
 	MinimumRate        sql.NullInt64
+	AllowContactFrom   sql.NullString
 	Class_Code         string
 	IsActive           bool
 	CreatedBy          string

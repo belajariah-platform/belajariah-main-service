@@ -68,6 +68,7 @@ const (
 		learning_method_text,
 		rating,
 		minimum_rate,
+		allow_contact_from,
 		is_active,
 		created_by,
 		created_date,
@@ -331,7 +332,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 			var modifiedDate sql.NullTime
 			var emailUsr, createdBy, code, classCode string
 			var fullname, profession, gender, province, city, address, imageProfile, modifiedBy,
-				description, learningMethod, learningMethodText sql.NullString
+				description, learningMethod, learningMethodText, allowContactFrom sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -353,6 +354,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 				&learningMethodText,
 				&rating,
 				&minimumRate,
+				&allowContactFrom,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -384,6 +386,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 						LearningMethodText: learningMethodText,
 						Rating:             rating,
 						MinimumRate:        minimumRate,
+						AllowContactFrom:   allowContactFrom,
 						IsActive:           isActive,
 						CreatedBy:          createdBy,
 						CreatedDate:        createdDate,

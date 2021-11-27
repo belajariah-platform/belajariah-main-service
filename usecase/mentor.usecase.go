@@ -221,6 +221,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				Learning_Method_Text: value.LearningMethodText.String,
 				Rating:               value.Rating,
 				Minimum_Rate:         int(value.MinimumRate.Int64),
+				Allow_Contact_From:   value.AllowContactFrom.String,
 				Is_Active:            value.IsActive,
 				Created_By:           value.CreatedBy,
 				Created_Date:         value.CreatedDate,
