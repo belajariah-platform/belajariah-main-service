@@ -115,6 +115,7 @@ const (
 		code,
 		mentor_code,
 		experience,
+		experience_type,
 		is_active,
 		created_by,
 		created_date,
@@ -479,7 +480,7 @@ func (r *mentorRepository) GetAllMentorExperience(code string) ([]model.MentorEx
 			var createdDate time.Time
 			var isActive, isDeleted bool
 			var modifiedDate sql.NullTime
-			var modifiedBy sql.NullString
+			var modifiedBy, experienceType sql.NullString
 			var createdBy, experience, mentorCode, code string
 
 			sqlError := rows.Scan(
@@ -487,6 +488,7 @@ func (r *mentorRepository) GetAllMentorExperience(code string) ([]model.MentorEx
 				&code,
 				&mentorCode,
 				&experience,
+				&experienceType,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -500,16 +502,17 @@ func (r *mentorRepository) GetAllMentorExperience(code string) ([]model.MentorEx
 			} else {
 				mentorList = append(mentorList,
 					model.MentorExperience{
-						ID:           id,
-						Code:         code,
-						MentorCode:   mentorCode,
-						Experience:   experience,
-						IsActive:     isActive,
-						CreatedBy:    createdBy,
-						CreatedDate:  createdDate,
-						ModifiedBy:   modifiedBy,
-						ModifiedDate: modifiedDate,
-						IsDeleted:    isDeleted,
+						ID:             id,
+						Code:           code,
+						MentorCode:     mentorCode,
+						Experience:     experience,
+						ExperienceType: experienceType,
+						IsActive:       isActive,
+						CreatedBy:      createdBy,
+						CreatedDate:    createdDate,
+						ModifiedBy:     modifiedBy,
+						ModifiedDate:   modifiedDate,
+						IsDeleted:      isDeleted,
 					},
 				)
 			}

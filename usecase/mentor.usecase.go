@@ -144,16 +144,17 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 			if errs == nil {
 				for _, experience := range mentorExperience {
 					mentorExperienceResult = append(mentorExperienceResult, shape.MentorExperience{
-						ID:            experience.ID,
-						Code:          experience.Code,
-						Mentor_Code:   experience.MentorCode,
-						Experience:    experience.Experience,
-						Is_Active:     experience.IsActive,
-						Created_By:    experience.CreatedBy,
-						Created_Date:  experience.CreatedDate,
-						Modified_By:   experience.ModifiedBy.String,
-						Modified_Date: experience.ModifiedDate.Time,
-						Is_Deleted:    experience.IsDeleted,
+						ID:              experience.ID,
+						Code:            experience.Code,
+						Mentor_Code:     experience.MentorCode,
+						Experience:      experience.Experience,
+						Experience_Type: experience.ExperienceType.String,
+						Is_Active:       experience.IsActive,
+						Created_By:      experience.CreatedBy,
+						Created_Date:    experience.CreatedDate,
+						Modified_By:     experience.ModifiedBy.String,
+						Modified_Date:   experience.ModifiedDate.Time,
+						Is_Deleted:      experience.IsDeleted,
 					})
 				}
 			}

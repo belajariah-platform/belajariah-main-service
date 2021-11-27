@@ -97,16 +97,17 @@ type MentorSchedule struct {
 }
 
 type MentorExperience struct {
-	ID           int
-	Code         string
-	MentorCode   string
-	Experience   string
-	IsActive     bool
-	CreatedBy    string
-	CreatedDate  time.Time
-	ModifiedBy   sql.NullString
-	ModifiedDate sql.NullTime
-	IsDeleted    bool
+	ID             int
+	Code           string
+	MentorCode     string
+	Experience     string
+	ExperienceType sql.NullString
+	IsActive       bool
+	CreatedBy      string
+	CreatedDate    time.Time
+	ModifiedBy     sql.NullString
+	ModifiedDate   sql.NullTime
+	IsDeleted      bool
 }
 
 type MentorClass struct {
