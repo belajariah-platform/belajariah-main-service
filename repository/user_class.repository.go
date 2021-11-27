@@ -279,6 +279,7 @@ const (
 			class_category,
 			class_description,
 			class_image,
+			color_path,
 			package_code,
 			package_type,
 			is_active,
@@ -563,7 +564,7 @@ func (userClassRepository *userClassRepository) GetAllUserClassQuran(filter stri
 			var createdDate time.Time
 			var isActive, is_deleted bool
 			var modifiedDate sql.NullTime
-			var classInitial, classDescription, classImage, modifiedBy sql.NullString
+			var classInitial, classDescription, classImage, modifiedBy, colorPath sql.NullString
 			var packageCode, packageType, classCode, className, classCategory, createdBy,
 				code, userCode string
 
@@ -577,6 +578,7 @@ func (userClassRepository *userClassRepository) GetAllUserClassQuran(filter stri
 				&classCategory,
 				&classDescription,
 				&classImage,
+				&colorPath,
 				&packageCode,
 				&packageType,
 				&isActive,
@@ -602,6 +604,7 @@ func (userClassRepository *userClassRepository) GetAllUserClassQuran(filter stri
 						Class_Category:    classCategory,
 						Class_Description: classDescription.String,
 						Class_Image:       classImage.String,
+						Color_Path:        colorPath.String,
 						Package_Code:      packageCode,
 						Package_Type:      packageType,
 						Is_Active:         isActive,

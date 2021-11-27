@@ -86,7 +86,7 @@ type UserClassQuran struct {
 	ID           int        `form:"id" json:"id" xml:"id" db:"id"`
 	Code         string     `form:"code" json:"code" xml:"code" db:"code"`
 	ClassCode    string     `form:"classs_code" json:"classs_code" xml:"classs_code" db:"classs_code"`
-	user_code    string     `form:"user_code" json:"user_code" xml:"user_code" db:"user_code"`
+	User_Code    string     `form:"user_code" json:"user_code" xml:"user_code" db:"user_code"`
 	PackageCode  string     `form:"package_code" json:"package_code" xml:"package_code" db:"package_code"`
 	PromoCode    NullString `form:"promo_code" json:"promo_code" xml:"promo_code" db:"promo_code"`
 	IsActive     bool       `form:"is_active" json:"is_active" xml:"is_active" db:"is_active"`

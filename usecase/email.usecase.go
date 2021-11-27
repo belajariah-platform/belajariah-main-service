@@ -4,6 +4,7 @@ import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/repository"
 	"belajariah-main-service/utils"
+	"fmt"
 	"strings"
 
 	"gopkg.in/gomail.v2"
@@ -134,6 +135,7 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 			bodyTemp = utils.TemplatePaymentRevised(dataEmail)
 			subject = "Perbaiki pembayaranmu"
 		}
+
 		mail := gomail.NewMessage()
 		mail.SetHeader("From", emailUsecase.mailConfig.Mail.SenderName)
 		mail.SetHeader("To", user.Email)
@@ -141,6 +143,8 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 		mail.SetHeader("Subject", subject)
 		mail.SetBody("text/html", bodyTemp)
 		// mail.Attach("./sample.png")
+
+		fmt.Println(emailUsecase.mailConfig.Mail.AuthPassword, emailUsecase.mailConfig.Mail.AuthEmail)
 
 		dialer := gomail.NewDialer(
 			emailUsecase.mailConfig.Mail.SMTPHost,
@@ -150,6 +154,7 @@ func (emailUsecase *emailUsecase) SendEmail(email model.EmailBody) {
 		)
 
 		errs := dialer.DialAndSend(mail)
+		fmt.Println(errs)
 		if errs != nil {
 			utils.PushLogf("", "ERROR SEND EMAIL : ", errs.Error())
 		} else {
