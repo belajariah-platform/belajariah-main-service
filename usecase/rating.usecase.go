@@ -148,6 +148,7 @@ func (u *ratingUsecase) GiveRatingClassQuran(ctx *gin.Context, r model.RatingQur
 	email := ctx.Request.Header.Get("email")
 
 	r.Data.ModifiedBy.String = email
+	r.Data.ModifiedDate.Time = time.Now()
 
 	result, err := u.ratingRepository.GiveRatingClassQuran(r.Data)
 	if err != nil {
