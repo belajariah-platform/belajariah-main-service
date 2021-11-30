@@ -248,6 +248,7 @@ func (mentorUsecase *mentorUsecase) RegisterMentor(r model.Mentors) (bool, error
 	}
 
 	r.Password = hashPassword
+	r.IsVerified = true
 	mentor, result, err := mentorUsecase.mentorRepository.RegisterMentor(r)
 	if err != nil {
 		return false, utils.WrapError(err, "mentorUsecase.mentorRepository.RegisterMentor : ")

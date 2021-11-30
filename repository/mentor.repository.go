@@ -195,7 +195,13 @@ const (
 			created_by,
 			created_date,
 			modified_by,
-			modified_date
+			modified_date,
+			profession,
+			gender,
+			province,
+			city,
+			description,
+			age
 		)
 		VALUES(
 			$1,
@@ -204,7 +210,13 @@ const (
 			$4,
 			$5,
 			$6,
-			$7
+			$7,
+			$8,
+			$9,
+			$10,
+			$11,
+			$12,
+			$13
 		)
 	`
 )
@@ -645,6 +657,12 @@ func (r *mentorRepository) InsertMentorDetail(data model.Mentors) (bool, error) 
 		utils.CurrentDateString(data.CreatedDate.UTC()),
 		data.Email,
 		utils.CurrentDateString(data.ModifiedDate.Time.UTC()),
+		data.Profession,
+		data.Gender,
+		data.Province,
+		data.City,
+		data.Description,
+		data.Age,
 	)
 
 	if err != nil {
