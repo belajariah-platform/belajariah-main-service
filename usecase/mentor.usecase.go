@@ -99,35 +99,35 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 
 	if err == nil && errCount == nil {
 		for _, value := range mentors {
-			var mentorSchedule []model.MentorSchedule
+			// var mentorSchedule []model.MentorSchedule
 			var mentorScheduleResult []shape.MentorSchedule
 
-			mentorSchedule, err := mentorUsecase.mentorRepository.GetAllMentorSchedule(value.Code, value.Class_Code)
-			if err != nil {
-				return mentorEmpty, 0, utils.WrapError(err, "mentorUsecase.mentorRepository.GetAllMentorSchedule : ")
-			}
+			// mentorSchedule, err := mentorUsecase.mentorRepository.GetAllMentorSchedule(value.Code, value.Class_Code)
+			// if err != nil {
+			// 	return mentorEmpty, 0, utils.WrapError(err, "mentorUsecase.mentorRepository.GetAllMentorSchedule : ")
+			// }
 
-			if err == nil {
-				for _, schedule := range mentorSchedule {
-					mentorScheduleResult = append(mentorScheduleResult, shape.MentorSchedule{
-						ID:            schedule.ID,
-						Code:          schedule.Code,
-						Mentor_Code:   schedule.MentorCode,
-						Class_Code:    schedule.ClassCode,
-						Time_Zone:     schedule.TimeZone,
-						Shift_Name:    schedule.ShiftName,
-						Start_Date:    schedule.StartDate,
-						End_Date:      schedule.EndDate,
-						Sequence:      schedule.Sequence,
-						Is_Active:     schedule.IsActive,
-						Created_By:    schedule.CreatedBy,
-						Created_Date:  schedule.CreatedDate,
-						Modified_By:   schedule.ModifiedBy.String,
-						Modified_Date: schedule.ModifiedDate.Time,
-						Is_Deleted:    schedule.IsDeleted,
-					})
-				}
-			}
+			// if err == nil {
+			// 	for _, schedule := range mentorSchedule {
+			// 		mentorScheduleResult = append(mentorScheduleResult, shape.MentorSchedule{
+			// 			ID:            schedule.ID,
+			// 			Code:          schedule.Code,
+			// 			Mentor_Code:   schedule.MentorCode,
+			// 			Class_Code:    schedule.ClassCode,
+			// 			Time_Zone:     schedule.TimeZone,
+			// 			Shift_Name:    schedule.ShiftName,
+			// 			Start_Date:    schedule.StartDate,
+			// 			End_Date:      schedule.EndDate,
+			// 			Sequence:      schedule.Sequence,
+			// 			Is_Active:     schedule.IsActive,
+			// 			Created_By:    schedule.CreatedBy,
+			// 			Created_Date:  schedule.CreatedDate,
+			// 			Modified_By:   schedule.ModifiedBy.String,
+			// 			Modified_Date: schedule.ModifiedDate.Time,
+			// 			Is_Deleted:    schedule.IsDeleted,
+			// 		})
+			// 	}
+			// }
 
 			if len(mentorScheduleResult) == 0 {
 				mentorScheduleResult = mentorScheduleEmpty
