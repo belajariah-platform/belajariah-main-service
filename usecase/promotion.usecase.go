@@ -126,10 +126,12 @@ func (u *promotionUsecase) ClaimPromotion(ctx *gin.Context, r model.PromotionReq
 					message = "Mohon maaf anda belum bisa menggunakan kode promo ini"
 				} else {
 					message = ""
+					result.Code = promo.Code
 					result.Discount = promo.Discount
 				}
 			} else {
 				message = ""
+				result.Code = promo.Code
 				result.Discount = promo.Discount
 			}
 		}
