@@ -55,19 +55,19 @@ func (h *scheduleHandler) getAllSchedule(ctx *gin.Context, r model.ScheduleReque
 	result, err := h.scheduleUsecase.GetAllSchedule(r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, len(result), nil)
+	utils.Response(ctx, result, len(result), "", nil)
 }
 
 func (h *scheduleHandler) updateScheuleUser(ctx *gin.Context, r model.ScheduleRequest) {
 	result, err := h.scheduleUsecase.UpdateScheduleUser(ctx, r)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (h *scheduleHandler) updateScheuleMentor(ctx *gin.Context, r model.ScheduleRequest) {
 	result, err := h.scheduleUsecase.UpdateScheduleMentor(ctx, r)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }

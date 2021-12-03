@@ -56,11 +56,11 @@ func (h *userClassHandler) getAllUserClassQuran(ctx *gin.Context, r model.UserCl
 	result, count, err := h.userClassUsecase.GetAllUserClassQuran(ctx, r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, count, nil)
+	utils.Response(ctx, result, count, "", nil)
 }
 
 func (userClassHandler *userClassHandler) GetUserClass(ctx *gin.Context) {

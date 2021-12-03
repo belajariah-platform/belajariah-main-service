@@ -228,6 +228,8 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClassExpired() {
 	var types string = "TodayClassExp"
 	var table string = "TRANSACT USER CLASS"
 	var emailType string = "Class Has Been Expired"
+
+	var dataEmail model.EmailBody
 	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
@@ -264,12 +266,17 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClassExpired() {
 				utils.PushLogf("userClassUsecase.userClassRepository.UpdateUserClassExpired : ", err.Error())
 			}
 
+			filterDefault := fmt.Sprintf(`is_deleted=false AND is_active=true AND class_code='%s' 
+				AND (code = '%s' OR promo_code = '%s') LIMIT 1`, dataUserClass.ClassCode, "", promoCode)
+
 			if err == nil {
-				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-				dataEmail := model.EmailBody{
-					BodyTemp:      emailType,
-					UserCode:      value.UserCode,
-					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				promotions, err := userClassUsecase.promotionRepository.GetAllPromotions(filterDefault)
+				for _, promotion := range *promotions {
+					dataEmail = model.EmailBody{
+						BodyTemp:      emailType,
+						UserCode:      value.UserCode,
+						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount)),
+					}
 				}
 
 				userClassUsecase.emailUsecase.SendEmail(dataEmail)
@@ -313,6 +320,8 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass7DaysBeforeExpired() 
 	var table string = "TRANSACT USER CLASS"
 	var types string = "7DaysBeforeClassExp"
 	var emailType string = "7 Days Before Class Expired"
+
+	var dataEmail model.EmailBody
 	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
@@ -346,13 +355,15 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass7DaysBeforeExpired() 
 			}
 
 			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-				dataEmail := model.EmailBody{
-					BodyTemp:      emailType,
-					UserCode:      value.UserCode,
-					ExpiredDate:   value.ExpiredDate.Time,
-					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				promotions, err := userClassUsecase.promotionRepository.GetAllPromotions(promoCode)
+				for _, promotion := range *promotions {
+					dataEmail = model.EmailBody{
+						BodyTemp:      emailType,
+						UserCode:      value.UserCode,
+						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount)),
+					}
 				}
+
 				userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
 				dataNotification := model.Notification{
@@ -390,6 +401,8 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass5DaysBeforeExpired() 
 	var table string = "TRANSACT USER CLASS"
 	var types string = "5DaysBeforeClassExp"
 	var emailType string = "5 Days Before Class Expired"
+
+	var dataEmail model.EmailBody
 	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
@@ -422,12 +435,13 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass5DaysBeforeExpired() 
 			}
 
 			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-				dataEmail := model.EmailBody{
-					BodyTemp:      emailType,
-					UserCode:      value.UserCode,
-					ExpiredDate:   value.ExpiredDate.Time,
-					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				promotions, err := userClassUsecase.promotionRepository.GetAllPromotions(promoCode)
+				for _, promotion := range *promotions {
+					dataEmail = model.EmailBody{
+						BodyTemp:      emailType,
+						UserCode:      value.UserCode,
+						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount)),
+					}
 				}
 
 				userClassUsecase.emailUsecase.SendEmail(dataEmail)
@@ -468,6 +482,8 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass2DaysBeforeExpired() 
 	var table string = "TRANSACT USER CLASS"
 	var types string = "2DaysBeforeClassExp"
 	var emailType string = "2 Days Before Class Expired"
+
+	var dataEmail model.EmailBody
 	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
@@ -500,13 +516,15 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass2DaysBeforeExpired() 
 			}
 
 			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-				dataEmail := model.EmailBody{
-					BodyTemp:      emailType,
-					UserCode:      value.UserCode,
-					ExpiredDate:   value.ExpiredDate.Time,
-					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				promotions, err := userClassUsecase.promotionRepository.GetAllPromotions(promoCode)
+				for _, promotion := range *promotions {
+					dataEmail = model.EmailBody{
+						BodyTemp:      emailType,
+						UserCode:      value.UserCode,
+						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount)),
+					}
 				}
+
 				userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
 				dataNotification := model.Notification{
@@ -545,6 +563,8 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass1DaysBeforeExpired() 
 	var table string = "TRANSACT USER CLASS"
 	var types string = "1DaysBeforeClassExp"
 	var emailType string = "1 Days Before Class Expired"
+
+	var dataEmail model.EmailBody
 	var email = userClassUsecase.sytemConfig.System.EmailSystem
 
 	firstloop := true
@@ -577,13 +597,15 @@ func (userClassUsecase *userClassUsecase) CheckAllUserClass1DaysBeforeExpired() 
 			}
 
 			if utils.GetDuration(notification.ExpiredDate.Time, value.ExpiredDate.Time) > minutes {
-				promotion, err := userClassUsecase.promotionRepository.GetPromotion(promoCode)
-				dataEmail := model.EmailBody{
-					BodyTemp:      emailType,
-					UserCode:      value.UserCode,
-					ExpiredDate:   value.ExpiredDate.Time,
-					PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount.Float64)),
+				promotions, err := userClassUsecase.promotionRepository.GetAllPromotions(promoCode)
+				for _, promotion := range *promotions {
+					dataEmail = model.EmailBody{
+						BodyTemp:      emailType,
+						UserCode:      value.UserCode,
+						PromoDiscount: fmt.Sprintf(`%d`, int(promotion.Discount)),
+					}
 				}
+
 				userClassUsecase.emailUsecase.SendEmail(dataEmail)
 
 				dataNotification := model.Notification{

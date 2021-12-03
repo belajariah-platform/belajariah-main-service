@@ -65,7 +65,7 @@ func main() {
 	scheduleUsecase := usecase.InitScheduleUsecase(scheduleRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
 	coachingProgramUsecase := usecase.InitCoachingProgramUsecase(coachingProgramRepository)
-	promotionUsecase := usecase.InitPromotionUsecase(configModel, promotionRepository, userClassRepository, paymentRepository)
+	promotionUsecase := usecase.InitPromotionUsecase(configModel, userRepository, promotionRepository, userClassRepository, paymentRepository)
 	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, enumRepository, emailRepository)
 	userUsecase := usecase.InitUserUsecase(emailUsecase, userRepository)
 	testUsecase := usecase.InitTestUsecase(testRepository, userClassRepository)
@@ -198,9 +198,7 @@ func main() {
 	router.POST("/learning", learningHandler.Learning)
 
 	// router-promotion
-	router.GET("/promotions", promotionHandler.GetAllPromotion)
-	router.GET("/promotion/:code", promotionHandler.GetPromotion)
-	router.POST("/promotion/claim", promotionHandler.ClaimPromotion)
+	router.POST("/promotion", promotionHandler.Promotion)
 
 	// router-userClass
 	router.POST("/user_class", userClassHandler.UserClass)
@@ -229,9 +227,9 @@ func main() {
 	// router-schedule
 	router.POST("/schedule", scheduleHandler.Schedule)
 
-	go paymentUsecase.CheckAllPaymentExpired()
+	// go paymentUsecase.CheckAllPaymentExpired()
 	// go paymentUsecase.CheckAllPayment2HourBeforeExpired()
-	go promotionUsecase.CheckAllPromotionExpired()
+	// go promotionUsecase.CheckAllPromotionExpired()
 	// go consultationUsecase.CheckAllConsultationExpired()
 	// go userClassUsecase.CheckAllUserClassExpired()
 	// go userClassUsecase.CheckAllUserClass1DaysBeforeExpired()

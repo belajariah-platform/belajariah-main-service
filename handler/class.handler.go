@@ -93,9 +93,9 @@ func (h *classHandler) getAllClassQuran(ctx *gin.Context, r model.ClassQuranRequ
 	result, count, err := h.classUsecase.GetAllClassQuran(r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, count, nil)
+	utils.Response(ctx, result, count, "", nil)
 }

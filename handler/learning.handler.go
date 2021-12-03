@@ -93,9 +93,9 @@ func (h *learningHandler) getAllLearningQuran(ctx *gin.Context, r model.Learning
 	result, err := h.learningUsecase.GetAllLearningQuran(r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, len(result), nil)
+	utils.Response(ctx, result, len(result), "", nil)
 }

@@ -8,13 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Response(ctx *gin.Context, data interface{}, count int, err error) {
+func Response(ctx *gin.Context, data interface{}, count int, msg string, err error) {
 	if err == nil {
 		ctx.JSON(http.StatusOK, model.Response{
 			Message: model.RequestResponse{
-				Data:   data,
-				Count:  count,
-				Result: true,
+				Data:    data,
+				Count:   count,
+				Result:  true,
+				Message: msg,
 			},
 			Status: http.StatusOK,
 		})

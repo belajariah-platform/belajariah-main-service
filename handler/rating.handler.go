@@ -58,16 +58,16 @@ func (h *ratingHandler) getAllRatingClassQuran(ctx *gin.Context, r model.RatingQ
 	result, count, err := h.ratingUsecase.GetAllRatingClassQuran(r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, count, nil)
+	utils.Response(ctx, result, count, "", nil)
 }
 
 func (h *ratingHandler) giveRatingClassQuran(ctx *gin.Context, r model.RatingQuranRequest) {
 	result, err := h.ratingUsecase.GiveRatingClassQuran(ctx, r)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (ratingHandler *ratingHandler) GetAllRatingClass(ctx *gin.Context) {

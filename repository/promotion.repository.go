@@ -3,81 +3,67 @@ package repository
 import (
 	"belajariah-main-service/model"
 	"belajariah-main-service/utils"
-	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
 const (
-	_getPromotion = `
-		SELECT
-			id,
-			code,
-			class_code,
-			title,
-			description,
-			promo_code,
-			promotion_type_code,
-			promo_type,
-			discount,
-			image_banner,
-			image_header,
-			expired_date,
-			quota_user,
-			quota_used,
-			is_active,
-			created_by,
-			created_date,
-			modified_by,
-			modified_date,
-			is_deleted
-		FROM 
-			master.v_m_promotion
-		WHERE 
-			is_deleted=false AND
-			is_active=true AND
-			(code = '%s' OR promo_code = '%s') 
-	`
 	_getAllPromotion = `
 		SELECT
 			id,
 			code,
 			class_code,
 			title,
-			description,
+			coalesce(description, '') as description,
 			promo_code,
-			promotion_type_code,
-			promo_type,
-			discount,
-			image_banner,
-			image_header,
-			expired_date,
-			quota_user,
-			quota_used,
+			coalesce(promo_type_code, '') as promo_type_code,
+			coalesce(promo_type, '') as promo_type,
+			coalesce(discount, 0) as discount,
+			coalesce(image_banner, '') as image_banner,
+			coalesce(image_header, '') as image_header,
+			coalesce(expired_date, to_timestamp(0)) as expired_date,
+			coalesce(quota_user, 0) as quota_user,
+			coalesce(quota_used, 0) as quota_used,
 			is_active,
 			created_by,
 			created_date,
-			modified_by,
-			modified_date,
+			coalesce(modified_by, '') as modified_by,
+			coalesce(modified_date, to_timestamp(0)) as modified_date,
 			is_deleted
 		FROM 
 			master.v_m_promotion
-		WHERE 
-			is_deleted=false AND
-			is_active=true
 		%s
-		OFFSET %d
-	LIMIT %d
 	`
-	_getAllPromotionCount = `
+	_getAllPromotionHeader = `
+		SELECT
+			id,
+			code,
+			title,
+			coalesce(description, '') as description,
+			promo_code,
+			coalesce(promo_type_code, '') as promo_type_code,
+			coalesce(promo_type, '') as promo_type,
+			coalesce(discount, 0) as discount,
+			coalesce(image_banner, '') as image_banner,
+			coalesce(image_header, '') as image_header,
+			coalesce(expired_date, to_timestamp(0)) as expired_date,
+			coalesce(quota_user, 0) as quota_user,
+			coalesce(quota_used, 0) as quota_used,
+			is_active,
+			created_by,
+			created_date,
+			coalesce(modified_by, '') as modified_by,
+			coalesce(modified_date, to_timestamp(0)) as modified_date,
+			is_deleted
+		FROM 
+			master.v_m_promotion_header
+		%s
+	`
+	_getAllPromotionHeaderCount = `
 		SELECT COUNT(*) FROM 
-			master.v_m_promotion  
-		WHERE 
-			is_deleted=false AND
-			is_active=true
+			master.v_m_promotion_header  
 		%s
 	`
 	_checkAllPromotionExpired = `
@@ -110,10 +96,9 @@ type promotionRepository struct {
 }
 
 type PromotionRepository interface {
-	GetPromotion(filter string) (model.Promotion, error)
-
-	GetAllPromotion(skip, take int, filter string) ([]model.Promotion, error)
-	GetAllPromotionCount(filter string) (int, error)
+	GetAllPromotions(filter string) (*[]model.Promotion, error)
+	GetAllPromotionHeader(filter string) (*[]model.Promotion, error)
+	GetAllPromotionHeaderCount(filter string) (int, error)
 
 	CheckAllPromotionExpired() ([]model.Promotion, error)
 	UpdatePromotionActivated(payment model.Promotion) (bool, error)
@@ -125,161 +110,42 @@ func InitPromotionRepository(db *sqlx.DB) PromotionRepository {
 	}
 }
 
-func (promotionRepository *promotionRepository) GetAllPromotion(skip, take int, filter string) ([]model.Promotion, error) {
-	var promotionList []model.Promotion
-	query := fmt.Sprintf(_getAllPromotion, filter, skip, take)
+func (r *promotionRepository) GetAllPromotions(filter string) (*[]model.Promotion, error) {
+	var result []model.Promotion
+	query := fmt.Sprintf(_getAllPromotion, filter)
 
-	rows, sqlError := promotionRepository.db.Query(query)
-
-	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPromotion => ", sqlError.Error())
-	} else {
-		defer rows.Close()
-		for rows.Next() {
-			var id int
-			var createdDate time.Time
-			var isActive, isDeleted bool
-			var discount sql.NullFloat64
-			var quoteUser, quotaUsed sql.NullInt64
-			var modifiedDate, expiredDate sql.NullTime
-			var code, classCode, title, promoCode, createdBy string
-			var promoType, promoTypeCode, bannerImage, headerImage, description, modifiedBy sql.NullString
-
-			sqlError := rows.Scan(
-				&id,
-				&code,
-				&classCode,
-				&title,
-				&description,
-				&promoCode,
-				&promoTypeCode,
-				&promoType,
-				&discount,
-				&bannerImage,
-				&headerImage,
-				&expiredDate,
-				&quoteUser,
-				&quotaUsed,
-				&isActive,
-				&createdBy,
-				&createdDate,
-				&modifiedBy,
-				&modifiedDate,
-				&isDeleted,
-			)
-			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllPromotion => ", sqlError.Error())
-			} else {
-				promotionList = append(
-					promotionList,
-					model.Promotion{
-						ID:            id,
-						Code:          code,
-						ClassCode:     classCode,
-						Title:         title,
-						Description:   description,
-						PromoCode:     promoCode,
-						PromoTypeCode: promoTypeCode,
-						PromoType:     promoType,
-						Discount:      discount,
-						ImageBanner:   bannerImage,
-						ImageHeader:   headerImage,
-						ExpiredDate:   expiredDate,
-						QuotaUser:     quoteUser,
-						QuotaUsed:     quotaUsed,
-						IsActive:      isActive,
-						CreatedBy:     createdBy,
-						CreatedDate:   createdDate,
-						ModifiedBy:    modifiedBy,
-						ModifiedDate:  modifiedDate,
-						IsDeleted:     isDeleted,
-					},
-				)
-			}
-		}
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "promotionRepository.GetAllPromotions :  error get")
 	}
-	return promotionList, sqlError
+
+	return &result, nil
 }
 
-func (promotionRepository *promotionRepository) GetPromotion(filter string) (model.Promotion, error) {
-	var promotionRow model.Promotion
+func (r *promotionRepository) GetAllPromotionHeader(filter string) (*[]model.Promotion, error) {
+	var result []model.Promotion
+	query := fmt.Sprintf(_getAllPromotionHeader, filter)
 
-	mutation := fmt.Sprintf(_getPromotion, filter, filter)
-	row := promotionRepository.db.QueryRow(mutation)
-
-	var id int
-	var createdDate time.Time
-	var isActive, isDeleted bool
-	var discount sql.NullFloat64
-	var quoteUser, quotaUsed sql.NullInt64
-	var modifiedDate, expiredDate sql.NullTime
-	var code, classCode, title, promoCode, createdBy string
-	var promoType, promoTypeCode, bannerImage, headerImage, description, modifiedBy sql.NullString
-
-	sqlError := row.Scan(
-		&id,
-		&code,
-		&classCode,
-		&title,
-		&description,
-		&promoCode,
-		&promoTypeCode,
-		&promoType,
-		&discount,
-		&bannerImage,
-		&headerImage,
-		&expiredDate,
-		&quoteUser,
-		&quotaUsed,
-		&isActive,
-		&createdBy,
-		&createdDate,
-		&modifiedBy,
-		&modifiedDate,
-		&isDeleted,
-	)
-
-	if sqlError != nil {
-		utils.PushLogf("SQL error on GetPromotion => ", sqlError.Error())
-		return model.Promotion{}, nil
-	} else {
-		promotionRow = model.Promotion{
-			ID:            id,
-			Code:          code,
-			ClassCode:     classCode,
-			Title:         title,
-			Description:   description,
-			PromoCode:     promoCode,
-			PromoTypeCode: promoTypeCode,
-			PromoType:     promoType,
-			Discount:      discount,
-			ImageBanner:   bannerImage,
-			ImageHeader:   headerImage,
-			ExpiredDate:   expiredDate,
-			QuotaUser:     quoteUser,
-			QuotaUsed:     quotaUsed,
-			IsActive:      isActive,
-			CreatedBy:     createdBy,
-			CreatedDate:   createdDate,
-			ModifiedBy:    modifiedBy,
-			ModifiedDate:  modifiedDate,
-			IsDeleted:     isDeleted,
-		}
-		return promotionRow, sqlError
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "promotionRepository.GetAllPromotionHeader :  error get")
 	}
+
+	return &result, nil
 }
 
-func (promotionRepository *promotionRepository) GetAllPromotionCount(filter string) (int, error) {
+func (r *promotionRepository) GetAllPromotionHeaderCount(filter string) (int, error) {
 	var count int
-	query := fmt.Sprintf(_getAllPromotionCount, filter)
 
-	row := promotionRepository.db.QueryRow(query)
-	sqlError := row.Scan(&count)
-	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllPromotionCount => ", sqlError.Error())
-		count = 0
+	query := fmt.Sprintf(_getAllPromotionHeaderCount, filter)
+
+	row := r.db.QueryRow(query)
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, utils.WrapError(err, "promotionRepository: GetCount: error query row")
 	}
-	return count, sqlError
+
+	return count, err
 }
 
 func (r *promotionRepository) UpdatePromotionActivated(promotion model.Promotion) (bool, error) {
@@ -289,8 +155,8 @@ func (r *promotionRepository) UpdatePromotionActivated(promotion model.Promotion
 	}
 
 	_, err = tx.Exec(_updatePromotionActivated,
-		promotion.ModifiedBy.String,
-		promotion.ModifiedDate.Time,
+		promotion.ModifiedBy,
+		promotion.ModifiedDate,
 		promotion.Code,
 	)
 
@@ -303,19 +169,19 @@ func (r *promotionRepository) UpdatePromotionActivated(promotion model.Promotion
 	return err == nil, nil
 }
 
-func (promotionRepository *promotionRepository) CheckAllPromotionExpired() ([]model.Promotion, error) {
+func (r *promotionRepository) CheckAllPromotionExpired() ([]model.Promotion, error) {
 	var promotionList []model.Promotion
 	var code string
 
-	rows, sqlError := promotionRepository.db.Query(_checkAllPromotionExpired)
-	if sqlError != nil {
-		utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError.Error())
+	rows, err := r.db.Query(_checkAllPromotionExpired)
+	if err != nil {
+		utils.PushLogf("promotionRepository.CheckAllPromotionExpired : err query ", err.Error())
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			sqlError := rows.Scan(&code)
-			if sqlError != nil {
-				utils.PushLogf("SQL error on CheckAllPromotionExpired => ", sqlError.Error())
+			err := rows.Scan(&code)
+			if err != nil {
+				utils.PushLogf("promotionRepository.CheckAllPromotionExpired : err scan ", err.Error())
 			} else {
 				promotionList = append(promotionList, model.Promotion{
 					Code: code,
@@ -323,5 +189,5 @@ func (promotionRepository *promotionRepository) CheckAllPromotionExpired() ([]mo
 			}
 		}
 	}
-	return promotionList, sqlError
+	return promotionList, err
 }

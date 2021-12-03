@@ -54,7 +54,7 @@ func (h *mentorHandler) Mentor(ctx *gin.Context) {
 
 func (h *mentorHandler) registerMentor(ctx *gin.Context, r model.MentorRequest) {
 	result, err := h.mentorUsecase.RegisterMentor(r.Data)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (mentorHandler *mentorHandler) GetMentor(ctx *gin.Context) {

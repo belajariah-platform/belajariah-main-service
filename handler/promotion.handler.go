@@ -2,11 +2,10 @@ package handler
 
 import (
 	"belajariah-main-service/model"
-	"belajariah-main-service/shape"
 	"belajariah-main-service/usecase"
 	"belajariah-main-service/utils"
-	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,9 +15,7 @@ type promotionHandler struct {
 }
 
 type PromotionHandler interface {
-	GetAllPromotion(ctx *gin.Context)
-	ClaimPromotion(ctx *gin.Context)
-	GetPromotion(ctx *gin.Context)
+	Promotion(ctx *gin.Context)
 }
 
 func InitPromotionHandler(promotionUsecase usecase.PromotionUsecase) PromotionHandler {
@@ -27,91 +24,55 @@ func InitPromotionHandler(promotionUsecase usecase.PromotionUsecase) PromotionHa
 	}
 }
 
-func (promotionHandler *promotionHandler) GetAllPromotion(ctx *gin.Context) {
-	var query model.Query
-	var count int
-	err := ctx.BindQuery(&query)
-
-	if err == nil {
-		var array []map[string]interface{}
-		if err := json.Unmarshal([]byte(query.Filter), &array); err != nil {
-			panic(err)
+func (h *promotionHandler) Promotion(ctx *gin.Context) {
+	var request model.PromotionRequest
+	if err := ctx.ShouldBindJSON(&request); err == nil {
+		switch strings.ToUpper(request.Action) {
+		case utils.GET_ALL_PROMOTION:
+			h.getAllPromotions(ctx, request)
+		case utils.GET_ALL_PROMOTION_HEADER:
+			h.getAllPromotionHeader(ctx, request)
+		case utils.CLAIM_PROMOTION:
+			h.claimPromotion(ctx, request)
+		default:
+			utils.NotFoundActionResponse(ctx, request.Action)
 		}
-		for _, arr := range array {
-			query.Filters = append(query.Filters, model.Filter{
-				Type:  arr["type"].(string),
-				Field: arr["field"].(string),
-				Value: arr["value"].(string),
-			})
-		}
-
-		var promotionResult []shape.Promotion
-		promotionResult, count, err = promotionHandler.promotionUsecase.GetAllPromotion(query)
-		if err == nil {
-			ctx.JSON(http.StatusOK, gin.H{
-				"data":  promotionResult,
-				"count": count,
-				"error": "",
-			})
-		} else {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"data":  promotionResult,
-				"count": count,
-				"error": err.Error(),
-			})
-		}
-
 	} else {
-		utils.PushLogf("err", err)
-	}
-}
-
-func (promotionHandler *promotionHandler) GetPromotion(ctx *gin.Context) {
-	code := ctx.Param("code")
-
-	result, err := promotionHandler.promotionUsecase.GetPromotion(code)
-	if err == nil {
-		ctx.JSON(http.StatusOK, gin.H{
-			"result": result,
-			"error":  "",
-		})
-	} else {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"result": result,
-			"error":  err.Error(),
+		ctx.JSON(http.StatusBadRequest, model.Response{
+			Message: model.RequestResponse{
+				Count:  0,
+				Data:   nil,
+				Error:  err.Error(),
+				Result: false,
+			},
+			Status: http.StatusBadRequest,
+			Error:  err.Error(),
 		})
 	}
 }
 
-func (promotionHandler *promotionHandler) ClaimPromotion(ctx *gin.Context) {
-	var promotion shape.PromotionClaim
-	var userObj model.UserHeader
-
-	for _, valueUser := range ctx.Request.Header["User"] {
-		itemInfoBytes := []byte(valueUser)
-
-		er := json.Unmarshal(itemInfoBytes, &userObj)
-		if er != nil {
-			utils.PushLogf("[Error Unmarshal] :", er)
-		}
+func (h *promotionHandler) getAllPromotions(ctx *gin.Context, r model.PromotionRequest) {
+	result, err := h.promotionUsecase.GetAllPromotion(r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, "", err)
+		return
 	}
 
-	if err := ctx.ShouldBindJSON(&promotion); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	utils.Response(ctx, result, len(result), "", nil)
+}
+
+func (h *promotionHandler) getAllPromotionHeader(ctx *gin.Context, r model.PromotionRequest) {
+	result, err := h.promotionUsecase.GetAllPromotionHeader(r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, "", err)
+		return
 	}
-	var promotions shape.Promotion
-	promotions, message, err := promotionHandler.promotionUsecase.ClaimPromotion(promotion, userObj)
-	if err == nil {
-		ctx.JSON(http.StatusOK, gin.H{
-			"message": message,
-			"error":   "",
-			"data":    promotions,
-		})
-	} else {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": message,
-			"error":   err.Error(),
-			"data":    promotions,
-		})
-	}
+
+	utils.Response(ctx, result, len(result), "", nil)
+}
+func (h *promotionHandler) claimPromotion(ctx *gin.Context, r model.PromotionRequest) {
+	result, message, err := h.promotionUsecase.ClaimPromotion(ctx, r)
+	utils.Response(ctx, result, 1, message, err)
 }

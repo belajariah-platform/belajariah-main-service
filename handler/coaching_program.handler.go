@@ -57,30 +57,30 @@ func (h *coachingProgramHandler) getAllMasterCoachingProgram(ctx *gin.Context, r
 	result, err := h.coachingProgramUsecase.GetAllMasterCoachingProgram(r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, len(result), nil)
+	utils.Response(ctx, result, len(result), "", nil)
 }
 
 func (h *coachingProgramHandler) getAllCoachingProgram(ctx *gin.Context, r model.CoachingProgramRequest) {
 	result, err := h.coachingProgramUsecase.GetAllCoachingProgram(r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
-		utils.Response(ctx, struct{}{}, 0, err)
+		utils.Response(ctx, struct{}{}, 0, "", err)
 		return
 	}
 
-	utils.Response(ctx, result, len(result), nil)
+	utils.Response(ctx, result, len(result), "", nil)
 }
 
 func (h *coachingProgramHandler) confirmCoachingProgram(ctx *gin.Context, r model.CoachingProgramRequest) {
 	result, err := h.coachingProgramUsecase.ConfirmCoachingProgram(ctx, r)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (h *coachingProgramHandler) insertCoachingProgram(ctx *gin.Context, r model.CoachingProgramRequest) {
 	result, err := h.coachingProgramUsecase.InsertCoachingProgram(ctx, r)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }

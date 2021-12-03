@@ -61,17 +61,17 @@ func (h *paymentHandler) Payment(ctx *gin.Context) {
 
 func (h *paymentHandler) insertPaymentQuran(ctx *gin.Context, r shape.PaymentnRequest) {
 	result, _, err := h.paymentUsecase.InsertPaymentQuran(ctx, r.Data)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (h *paymentHandler) uploadPaymentQuran(ctx *gin.Context, r shape.PaymentnRequest) {
 	result, err := h.paymentUsecase.UploadPaymentQuran(ctx, r.Data)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (h *paymentHandler) confirmPaymentQuran(ctx *gin.Context, r shape.PaymentnRequest) {
 	result, err := h.paymentUsecase.ConfirmPaymentQuran(ctx, r.Data)
-	utils.Response(ctx, result, 1, err)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (paymentHandler *paymentHandler) GetAllPayment(ctx *gin.Context) {
