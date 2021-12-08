@@ -233,7 +233,7 @@ func main() {
 	// router-schedule
 	router.POST("/schedule", scheduleHandler.Schedule)
 
-	// go paymentUsecase.CheckAllPaymentExpired()
+	go paymentUsecase.CheckAllPaymentExpired()
 	// go paymentUsecase.CheckAllPayment2HourBeforeExpired()
 	// go promotionUsecase.CheckAllPromotionExpired()
 	// go consultationUsecase.CheckAllConsultationExpired()
