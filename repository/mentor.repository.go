@@ -36,6 +36,7 @@ const (
 		account_number,
 		learning_method,
 		learning_method_text,
+		country_number_code,
 		rating,
 		is_active,
 		created_by,
@@ -69,6 +70,7 @@ const (
 		rating,
 		minimum_rate,
 		allow_contact_from,
+		country_number_code,
 		is_active,
 		created_by,
 		created_date,
@@ -256,7 +258,7 @@ func (r *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error)
 	var modifiedDate, birth sql.NullTime
 	var emailUsr, roleCode, role, createdBy, code string
 	var fullname, profession, gender, province, city, address, imageProfile, modifiedBy,
-		accountName, accountOwner, accountNumber, description, learningMethod, learningMethodText sql.NullString
+		accountName, accountOwner, accountNumber, description, learningMethod, learningMethodText, countryNumberCode sql.NullString
 
 	sqlError := row.Scan(
 		&id,
@@ -287,6 +289,7 @@ func (r *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error)
 		&createdDate,
 		&modifiedBy,
 		&modifiedDate,
+		&countryNumberCode,
 	)
 	if sqlError != nil {
 		utils.PushLogf("SQL error on GetMentorInfo => ", sqlError.Error())
@@ -320,6 +323,7 @@ func (r *mentorRepository) GetMentorInfo(email string) (model.MentorInfo, error)
 			CreatedDate:        createdDate,
 			ModifiedBy:         modifiedBy,
 			ModifiedDate:       modifiedDate,
+			CountryNumberCode:  countryNumberCode,
 		}
 		return mentorRow, sqlError
 	}
@@ -345,7 +349,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 			var modifiedDate sql.NullTime
 			var emailUsr, createdBy, code, classCode string
 			var fullname, profession, gender, province, city, address, imageProfile, modifiedBy,
-				description, learningMethod, learningMethodText, allowContactFrom sql.NullString
+				description, learningMethod, learningMethodText, allowContactFrom, countryNumberCode sql.NullString
 
 			sqlError := rows.Scan(
 				&id,
@@ -368,6 +372,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 				&rating,
 				&minimumRate,
 				&allowContactFrom,
+				&countryNumberCode,
 				&isActive,
 				&createdBy,
 				&createdDate,
@@ -400,6 +405,7 @@ func (r *mentorRepository) GetAllMentor(skip, take int, sort, search, filter str
 						Rating:             rating,
 						MinimumRate:        minimumRate,
 						AllowContactFrom:   allowContactFrom,
+						CountryNumberCode:  countryNumberCode,
 						IsActive:           isActive,
 						CreatedBy:          createdBy,
 						CreatedDate:        createdDate,

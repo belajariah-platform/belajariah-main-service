@@ -45,6 +45,7 @@ func main() {
 	learningRepository := repository.InitLearningRepository(db)
 	promotionRepository := repository.InitPromotionRepository(db)
 	userClassRepository := repository.InitUserClassRepository(db)
+	countryCodeRepository := repository.InitCountryCodeRepository(db)
 	notificationRepository := repository.InitNotificationRepository(db)
 	consultationRepository := repository.InitConsultationRepository(db)
 	paymentMethodRepository := repository.InitPaymentMethodRepository(db)
@@ -64,6 +65,7 @@ func main() {
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
 	scheduleUsecase := usecase.InitScheduleUsecase(scheduleRepository)
 	exerciseUsecase := usecase.InitExerciseUsecase(exerciseRepository)
+	countryCodeUsecase := usecase.InitCountryCodeUsecase(countryCodeRepository)
 	coachingProgramUsecase := usecase.InitCoachingProgramUsecase(coachingProgramRepository)
 	promotionUsecase := usecase.InitPromotionUsecase(configModel, userRepository, promotionRepository, userClassRepository, paymentRepository)
 	emailUsecase := usecase.InitEmailUsecase(configModel, userRepository, enumRepository, emailRepository)
@@ -94,6 +96,7 @@ func main() {
 	learningHandler := handler.InitLearningHandler(learningUsecase)
 	promotionHandler := handler.InitPromotionHandler(promotionUsecase)
 	userClassHandler := handler.InitUserClassHandler(userClassUsecase)
+	countryCodeHandler := handler.InitCountryCodeHandler(countryCodeUsecase)
 	consultationHandler := handler.InitConsultationHandler(consultationUsecase)
 	paymentMethodHandler := handler.InitPaymentMethodHandler(paymentMethodUsecase)
 	coachingProgramHandler := handler.InitCoachingProgramHandler(coachingProgramUsecase)
@@ -172,6 +175,9 @@ func main() {
 	// router-package
 	router.GET("/packages", packageHandler.GetAllPackage)
 
+	// router-country_code
+	router.POST("/country_code", countryCodeHandler.CountryCode)
+
 	//router-benefit
 	router.GET("/benefits", packageHandler.GetAllBenefit)
 
@@ -227,7 +233,7 @@ func main() {
 	// router-schedule
 	router.POST("/schedule", scheduleHandler.Schedule)
 
-	go paymentUsecase.CheckAllPaymentExpired()
+	// go paymentUsecase.CheckAllPaymentExpired()
 	// go paymentUsecase.CheckAllPayment2HourBeforeExpired()
 	// go promotionUsecase.CheckAllPromotionExpired()
 	// go consultationUsecase.CheckAllConsultationExpired()

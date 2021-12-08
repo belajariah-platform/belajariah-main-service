@@ -71,6 +71,7 @@ type MentorInfo struct {
 	MinimumRate        sql.NullInt64
 	AllowContactFrom   sql.NullString
 	Class_Code         string
+	CountryNumberCode  sql.NullString
 	IsActive           bool
 	CreatedBy          string
 	CreatedDate        time.Time

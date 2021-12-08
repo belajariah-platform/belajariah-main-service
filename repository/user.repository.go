@@ -42,6 +42,7 @@ const (
 			city,
 			address,
 			image_profile,
+			country_number_code,
 			is_verified,
 			is_active,
 			created_by,
@@ -129,8 +130,9 @@ const (
 			address=$8,
 			age=$9,
 			modified_by=$10,
-			modified_date=$11
-		WHERE user_code=$12
+			modified_date=$11,
+			country_code=$12
+		WHERE user_code=$13
  	`
 
 	_verifyUser = `
@@ -175,7 +177,8 @@ const (
 			created_by,
 			created_date,
 			modified_by,
-			modified_date
+			modified_date,
+			country_code
 		)
 		VALUES(
 			$1,
@@ -184,7 +187,8 @@ const (
 			$4,
 			$5,
 			$6,
-			$7
+			$7,
+			$8
 		)
 	`
 )
@@ -290,7 +294,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 	var isVerified, isActive bool
 	var modifiedDate, births sql.NullTime
 	var emailUsr, roleCode, role, createdBy, code string
-	var fullname, profession, gender, province, city, address, imageProfile, modifiedBy sql.NullString
+	var fullname, profession, gender, province, city, address, imageProfile, modifiedBy, countryNumberCode sql.NullString
 
 	sqlError := row.Scan(
 		&id,
@@ -308,6 +312,7 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 		&city,
 		&address,
 		&imageProfile,
+		&countryNumberCode,
 		&isVerified,
 		&isActive,
 		&createdBy,
@@ -319,27 +324,28 @@ func (userRepository *userRepository) GetUserInfo(email string) (model.UserInfo,
 		return model.UserInfo{}, nil
 	} else {
 		userRow = model.UserInfo{
-			ID:           id,
-			Code:         code,
-			RoleCode:     roleCode,
-			Role:         role,
-			Email:        emailUsr,
-			FullName:     fullname,
-			Phone:        phone,
-			Profession:   profession,
-			Gender:       gender,
-			Age:          age,
-			Birth:        births,
-			Province:     province,
-			City:         city,
-			Address:      address,
-			ImageProfile: imageProfile,
-			IsVerified:   isVerified,
-			IsActive:     isActive,
-			CreatedBy:    createdBy,
-			CreatedDate:  createdDate,
-			ModifiedBy:   modifiedBy,
-			ModifiedDate: modifiedDate,
+			ID:                id,
+			Code:              code,
+			RoleCode:          roleCode,
+			Role:              role,
+			Email:             emailUsr,
+			FullName:          fullname,
+			Phone:             phone,
+			Profession:        profession,
+			Gender:            gender,
+			Age:               age,
+			Birth:             births,
+			Province:          province,
+			City:              city,
+			Address:           address,
+			ImageProfile:      imageProfile,
+			CountryNumberCode: countryNumberCode,
+			IsVerified:        isVerified,
+			IsActive:          isActive,
+			CreatedBy:         createdBy,
+			CreatedDate:       createdDate,
+			ModifiedBy:        modifiedBy,
+			ModifiedDate:      modifiedDate,
 		}
 
 		return userRow, sqlError
@@ -445,7 +451,8 @@ func (r *userRepository) RegisterUser(data model.Users) (model.Users, bool, erro
 		data.CreatedBy,
 		utils.CurrentDateString(data.CreatedDate.UTC()),
 		data.ModifiedBy.String,
-		utils.CurrentDateString(data.ModifiedDate.Time.UTC()))
+		utils.CurrentDateString(data.ModifiedDate.Time.UTC()),
+	)
 
 	err = tx.QueryRow(mutation).Scan(&code)
 	user = model.Users{Code: code}
@@ -473,6 +480,7 @@ func (r *userRepository) InsertUserDetail(data model.Users) (bool, error) {
 		data.CreatedDate,
 		data.ModifiedBy.String,
 		data.ModifiedDate.Time,
+		data.CountryNumberCode.String,
 	)
 
 	if err != nil {
@@ -502,6 +510,7 @@ func (r *userRepository) UpdateProfileUser(data model.UserInfo) (bool, error) {
 		data.Age.Int64,
 		data.ModifiedBy.String,
 		data.ModifiedDate.Time,
+		data.CountryNumberCode.String,
 		data.Code,
 	)
 

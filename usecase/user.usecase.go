@@ -196,6 +196,9 @@ func (userUsecase *userUsecase) RegisterUser(users shape.Users) (bool, error, st
 		Phone: sql.NullInt64{
 			Int64: users.Phone,
 		},
+		CountryNumberCode: sql.NullString{
+			String: users.Country_Number_Code,
+		},
 		VerifiedCode: sql.NullString{
 			String: utils.
 				GenerateVerifyCode(users.Email),
@@ -271,6 +274,9 @@ func (userUsecase *userUsecase) UpdateProfileUser(users shape.UsersPost, email s
 		},
 		Phone: sql.NullInt64{
 			Int64: users.Phone,
+		},
+		CountryNumberCode: sql.NullString{
+			String: users.Country_Number_Code,
 		},
 		Profession: sql.NullString{
 			String: users.Profession,
@@ -459,27 +465,28 @@ func (userUsecase *userUsecase) GetUserInfo(email string) (shape.UserInfo, error
 	}
 
 	userResult := shape.UserInfo{
-		ID:            user.ID,
-		Code:          user.Code,
-		Role_Code:     user.RoleCode,
-		Role:          user.Role,
-		Email:         user.Email,
-		Full_Name:     user.FullName.String,
-		Phone:         int(user.Phone.Int64),
-		Profession:    user.Profession.String,
-		Gender:        user.Gender.String,
-		Age:           int(user.Age.Int64),
-		Birth:         utils.HandleNullableDate(user.Birth.Time),
-		Province:      user.Province.String,
-		City:          user.City.String,
-		Address:       user.Address.String,
-		Image_Profile: user.ImageProfile.String,
-		Is_Verified:   user.IsVerified,
-		Is_Active:     user.IsActive,
-		Created_By:    user.CreatedBy,
-		Created_Date:  user.CreatedDate,
-		Modified_By:   user.ModifiedBy.String,
-		Modified_Date: user.ModifiedDate.Time,
+		ID:                  user.ID,
+		Code:                user.Code,
+		Role_Code:           user.RoleCode,
+		Role:                user.Role,
+		Email:               user.Email,
+		Full_Name:           user.FullName.String,
+		Phone:               int(user.Phone.Int64),
+		Profession:          user.Profession.String,
+		Gender:              user.Gender.String,
+		Age:                 int(user.Age.Int64),
+		Birth:               utils.HandleNullableDate(user.Birth.Time),
+		Province:            user.Province.String,
+		City:                user.City.String,
+		Address:             user.Address.String,
+		Image_Profile:       user.ImageProfile.String,
+		Country_Number_Code: user.CountryNumberCode.String,
+		Is_Verified:         user.IsVerified,
+		Is_Active:           user.IsActive,
+		Created_By:          user.CreatedBy,
+		Created_Date:        user.CreatedDate,
+		Modified_By:         user.ModifiedBy.String,
+		Modified_Date:       user.ModifiedDate.Time,
 	}
 
 	return userResult, err

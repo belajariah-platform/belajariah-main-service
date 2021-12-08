@@ -51,6 +51,7 @@ type MentorInfo struct {
 	Rating               float64
 	Minimum_Rate         int
 	Allow_Contact_From   string
+	Country_Number_Code  string
 	Is_Active            bool
 	Created_By           string
 	Created_Date         time.Time
