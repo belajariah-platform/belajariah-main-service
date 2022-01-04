@@ -32,6 +32,7 @@ func main() {
 	userRepository := repository.InitUserRepository(db)
 	testRepository := repository.InitTestRepository(db)
 	enumRepository := repository.InitEnumRepository(db)
+	eventRepository := repository.InitEventRepository(db)
 	emailRepository := repository.InitEmailRepository(db)
 	classRepository := repository.InitClassRepository(db)
 	quranRepository := repository.InitQuranRepository(db)
@@ -57,6 +58,7 @@ func main() {
 
 	//initiate usecase
 	enumUsecase := usecase.InitEnumUsecase(enumRepository)
+	eventUsecase := usecase.InitEventUsecase(eventRepository)
 	quranUsecase := usecase.InitQuranUsecase(quranRepository)
 	storyUsecase := usecase.InitStoryUsecase(storyRepository)
 	classUsecase := usecase.InitClassUsecase(classRepository, packageRepository)
@@ -84,6 +86,7 @@ func main() {
 	userHandler := handler.InitUserHandler(userUsecase)
 	testHandler := handler.InitTestHandler(testUsecase)
 	enumHandler := handler.InitEnumHandler(enumUsecase)
+	eventHandler := handler.InitEventHandler(eventUsecase)
 	quranHandler := handler.InitQuranHandler(quranUsecase)
 	storyHandler := handler.InitStoryHandler(storyUsecase)
 	classHandler := handler.InitClassHandler(classUsecase)
@@ -232,6 +235,9 @@ func main() {
 
 	// router-schedule
 	router.POST("/schedule", scheduleHandler.Schedule)
+
+	// router-event
+	router.POST("/event", eventHandler.Event)
 
 	// go paymentUsecase.CheckAllPaymentExpired()
 	// go paymentUsecase.CheckAllPayment2HourBeforeExpired()
