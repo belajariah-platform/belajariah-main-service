@@ -35,6 +35,7 @@ const (
 		event_form_code,
 		question,
 		question_type,
+		coalesce(question_field, '') AS question_field,
 		choice,
 		is_required,
 		sort,

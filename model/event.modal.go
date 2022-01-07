@@ -34,6 +34,7 @@ type EventMappingForm struct {
 	Event_Form_Code string     `form:"event_form_code" json:"event_form_code" xml:"event_form_code" db:"event_form_code"`
 	Question        string     `form:"question" json:"question" xml:"question" db:"question"`
 	Question_Type   string     `form:"question_type" json:"question_type" xml:"question_type" db:"question_type"`
+	Question_Field  string     `form:"question_field" json:"question_field" xml:"question_field" db:"question_field"`
 	Choice          NullString `form:"choice" json:"choice" xml:"choice" db:"choice"`
 	Answer          NullString `form:"answer" json:"answer" xml:"answer" db:"answer"`
 	Is_Required     string     `form:"is_required" json:"is_required" xml:"is_required" db:"is_required"`
