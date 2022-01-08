@@ -239,7 +239,7 @@ func main() {
 	// router-event
 	router.POST("/event", eventHandler.Event)
 
-	// go paymentUsecase.CheckAllPaymentExpired()
+	go paymentUsecase.CheckAllPaymentExpired()
 	// go paymentUsecase.CheckAllPayment2HourBeforeExpired()
 	// go promotionUsecase.CheckAllPromotionExpired()
 	// go consultationUsecase.CheckAllConsultationExpired()
