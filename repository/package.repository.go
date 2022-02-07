@@ -75,6 +75,7 @@ const (
 			id,
 			code,
 			class_code,
+			mentor_code,
 			type,
 			price_package,
 			price_discount,
