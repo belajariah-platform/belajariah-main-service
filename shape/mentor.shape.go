@@ -60,6 +60,7 @@ type MentorInfo struct {
 	Mentor_Schedule      []MentorSchedule
 	Mentor_Experience    []MentorExperience
 	Mentor_Class         []MentorClass
+	Mentor_Package       []MentorPackage
 }
 
 type MentorSchedule struct {
@@ -104,6 +105,25 @@ type MentorClass struct {
 	Class_Initial      string
 	Minimum_Rate       int
 	Allow_Contact_From string
+	Is_Active          bool
+	Created_By         string
+	Created_Date       time.Time
+	Modified_By        string
+	Modified_Date      time.Time
+	Is_Deleted         bool
+}
+
+type MentorPackage struct {
+	ID                 int
+	Code               string
+	Class_Code         string
+	Mentor_Code        string
+	Type               string
+	Price_Package      string
+	Price_Discount     string
+	Description        string
+	Duration           int
+	Duration_Frequence int
 	Is_Active          bool
 	Created_By         string
 	Created_Date       time.Time

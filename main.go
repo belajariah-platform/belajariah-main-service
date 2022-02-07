@@ -62,7 +62,7 @@ func main() {
 	quranUsecase := usecase.InitQuranUsecase(quranRepository)
 	storyUsecase := usecase.InitStoryUsecase(storyRepository)
 	classUsecase := usecase.InitClassUsecase(classRepository, packageRepository)
-	mentorUsecase := usecase.InitMentorUsecase(mentorRepository)
+	mentorUsecase := usecase.InitMentorUsecase(mentorRepository, packageRepository)
 	ratingUsecase := usecase.InitRatingUsecase(ratingRepository)
 	packageUsecase := usecase.InitPackageUsecase(packageRepository)
 	scheduleUsecase := usecase.InitScheduleUsecase(scheduleRepository)

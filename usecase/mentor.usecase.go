@@ -6,12 +6,14 @@ import (
 	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 )
 
 type mentorUsecase struct {
-	mentorRepository repository.MentorRepository
+	mentorRepository  repository.MentorRepository
+	packageRepository repository.PackageRepository
 }
 
 type MentorUsecase interface {
@@ -21,9 +23,10 @@ type MentorUsecase interface {
 	RegisterMentor(r model.Mentors) (bool, error)
 }
 
-func InitMentorUsecase(mentorRepository repository.MentorRepository) MentorUsecase {
+func InitMentorUsecase(mentorRepository repository.MentorRepository, packageRepository repository.PackageRepository) MentorUsecase {
 	return &mentorUsecase{
 		mentorRepository,
+		packageRepository,
 	}
 }
 
@@ -85,6 +88,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 
 	mentorEmpty := make([]shape.MentorInfo, 0)
 	mentorClassEmpty := make([]shape.MentorClass, 0)
+	mentorPackageEmpty := make([]shape.MentorPackage, 0)
 	mentorScheduleEmpty := make([]shape.MentorSchedule, 0)
 	mentorExperienceEmpty := make([]shape.MentorExperience, 0)
 
@@ -134,6 +138,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				mentorScheduleResult = mentorScheduleEmpty
 			}
 
+			// --------------- MENTOR EXPERIENCE
 			var mentorExperience []model.MentorExperience
 			var mentorExperienceResult []shape.MentorExperience
 
@@ -164,6 +169,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				mentorExperienceResult = mentorExperienceEmpty
 			}
 
+			// --------------- MENTOR CLASS
 			var mentorClass []model.MentorClass
 			var mentorClassResult []shape.MentorClass
 
@@ -196,6 +202,43 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 
 			if len(mentorClassResult) == 0 {
 				mentorClassResult = mentorClassEmpty
+			}
+
+			// --------------- MENTOR PACKAGE
+			var mentorPackageResult []shape.MentorPackage
+
+			// fmt.Println(value.Code)
+			filterPackage := fmt.Sprintf(`AND mentor_code = '%s' %s`, value.Code, filterQuery)
+			mentorPackage, errp := mentorUsecase.packageRepository.GetAllPackageQuran(filterPackage)
+			if errp != nil {
+				return mentorEmpty, 0, utils.WrapError(errp, "mentorUsecase.mentorRepository.GetAllMentorClass : ")
+			}
+
+			if errs == nil {
+				for _, packages := range *mentorPackage {
+					mentorPackageResult = append(mentorPackageResult, shape.MentorPackage{
+						ID:                 packages.ID,
+						Code:               packages.Code,
+						Class_Code:         packages.ClassCode,
+						Mentor_Code:        packages.MentorCode,
+						Type:               packages.Type,
+						Price_Package:      packages.PricePackage,
+						Price_Discount:     packages.PriceDiscount.String,
+						Description:        packages.Description.String,
+						Duration:           packages.Duration,
+						Duration_Frequence: int(packages.DurationFrequence.Int64),
+						Is_Active:          packages.IsActive,
+						Created_By:         packages.CreatedBy,
+						Created_Date:       packages.CreatedDate,
+						Modified_By:        packages.ModifiedBy.String,
+						Modified_Date:      packages.ModifiedDate.Time,
+						Is_Deleted:         packages.IsDeleted,
+					})
+				}
+			}
+
+			if len(mentorPackageResult) == 0 {
+				mentorPackageResult = mentorPackageEmpty
 			}
 
 			mentorResult = append(mentorResult, shape.MentorInfo{
@@ -233,6 +276,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 				Mentor_Schedule:      mentorScheduleResult,
 				Mentor_Experience:    mentorExperienceResult,
 				Mentor_Class:         mentorClassResult,
+				Mentor_Package:       mentorPackageResult,
 			})
 		}
 	}

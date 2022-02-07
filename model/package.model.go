@@ -50,6 +50,7 @@ type PackageQuran struct {
 	ID                int        `form:"id" json:"id" xml:"id" db:"id"`
 	Code              string     `form:"code" json:"code" xml:"code" db:"code"`
 	ClassCode         string     `form:"class_code" json:"class_code" xml:"class_code" db:"class_code"`
+	MentorCode        string     `form:"mentor_code" json:"mentor_code" xml:"mentor_code" db:"mentor_code"`
 	Type              string     `form:"type" json:"type" xml:"type" db:"type"`
 	PricePackage      string     `form:"price_package" json:"price_package" xml:"price_package" db:"price_package"`
 	PriceDiscount     NullString `form:"price_discount" json:"price_discount" xml:"price_discount" db:"price_discount"`
