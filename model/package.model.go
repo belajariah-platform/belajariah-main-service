@@ -63,6 +63,8 @@ type PackageQuran struct {
 	ModifiedBy        NullString `form:"modified_by" json:"modified_by" xml:"modified_by" db:"modified_by"`
 	ModifiedDate      NullTime   `form:"modified_date" json:"modified_date" xml:"modified_date" db:"modified_date"`
 	IsDeleted         bool       `form:"is_deleted" json:"is_deleted" xml:"is_deleted" db:"is_deleted"`
+	TotalMembers      NullInt64  `form:"total_members" json:"total_members" xml:"total_members" db:"total_members"`
+	TotalHours        NullString `form:"total_hours" json:"total_hours" xml:"total_hours" db:"total_hours"`
 }
 
 type BenefitQuranRequest struct {

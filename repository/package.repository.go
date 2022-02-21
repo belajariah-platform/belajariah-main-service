@@ -81,13 +81,15 @@ const (
 			price_discount,
 			description,
 			duration,
-			duration_frequence
+			duration_frequence,
 			is_active,
 			created_by,
 			created_date,
 			modified_by,
 			modified_date,
-			is_deleted
+			is_deleted,
+			total_members,
+			total_hours
 		FROM master.master_package_quran
 		WHERE 
 			is_deleted = false AND

@@ -130,4 +130,6 @@ type MentorPackage struct {
 	Modified_By        string
 	Modified_Date      time.Time
 	Is_Deleted         bool
+	Total_Hours        string
+	Total_Members      int
 }
