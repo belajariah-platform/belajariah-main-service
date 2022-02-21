@@ -65,6 +65,7 @@ type PackageQuran struct {
 	IsDeleted         bool       `form:"is_deleted" json:"is_deleted" xml:"is_deleted" db:"is_deleted"`
 	TotalMembers      NullInt64  `form:"total_members" json:"total_members" xml:"total_members" db:"total_members"`
 	TotalHours        NullString `form:"total_hours" json:"total_hours" xml:"total_hours" db:"total_hours"`
+	AgeRange          NullString `form:"age_range" json:"age_range" xml:"age_range" db:"age_range"`
 }
 
 type BenefitQuranRequest struct {

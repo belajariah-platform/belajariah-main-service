@@ -89,7 +89,8 @@ const (
 			modified_date,
 			is_deleted,
 			total_members,
-			total_hours
+			total_hours,
+			age_range
 		FROM master.master_package_quran
 		WHERE 
 			is_deleted = false AND

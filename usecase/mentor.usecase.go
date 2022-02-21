@@ -235,6 +235,7 @@ func (mentorUsecase *mentorUsecase) GetAllMentor(query model.Query) ([]shape.Men
 						Is_Deleted:         packages.IsDeleted,
 						Total_Hours:        packages.TotalHours.String,
 						Total_Members:      int(packages.TotalMembers.Int64),
+						Age_Range:          packages.AgeRange.String,
 					})
 				}
 			}
