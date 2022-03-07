@@ -91,11 +91,12 @@ const (
 			total_members,
 			total_hours,
 			age_range
-		FROM master.master_package_quran
+		FROM master.v_m_package_quran
 		WHERE 
 			is_deleted = false AND
 			is_active=true
 		%s
+
 	`
 	_getAllBenefit = `
 		SELECT
