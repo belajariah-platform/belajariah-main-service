@@ -2,7 +2,6 @@ package repository
 
 import (
 	"belajariah-main-service/model"
-	"belajariah-main-service/shape"
 	"belajariah-main-service/utils"
 	"database/sql"
 	"errors"
@@ -170,23 +169,6 @@ const (
 			code=$3 AND
 			user_code=$4 
 	`
-	_updateUserClassProgress = `
-		UPDATE
-			transaction.transact_user_class
-		SET
-			progress=$1,
-			status_code=(SELECT code 
-				FROM master_enum me 
-				WHERE value=$2 LIMIT 1),
-			modified_by=$3,
-			modified_date=$4,
-			progress_index=$5,
-			progress_subindex=$6,
-			progress_count=$7
-		WHERE
-			code=$8 AND
-			user_code=$9
-	`
 	_updateUserClassPreTest = `
 		UPDATE
 			transaction.transact_user_class
@@ -268,6 +250,7 @@ const (
 			DATE_PART('minute', expired_date::timestamp - now()::timestamp) * 60 +
 			DATE_PART('second', expired_date::timestamp - now()::timestamp) >= $2
 	`
+	//--------------------------------------------------------------
 	_getAllUserClassQuran = `
 		SELECT
 			id,
@@ -296,6 +279,50 @@ const (
 			transaction.v_t_user_class_quran  
 		%s
 	`
+	_getAllUserClassQuranDetail = `
+	SELECT
+		id,
+		code,
+		user_class_code,
+		mentor_code,
+		mentor_name,
+		mentor_image,
+		mentor_city,
+		package_code,
+		package_type,
+		is_completed,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		is_deleted,
+		phone,
+		user_name
+	FROM transaction.v_t_user_class_quran_detail
+	%s
+	`
+	_getAllUserClassQuranSchedule = `
+	SELECT
+		id,
+		code,
+		user_class_detail_code,
+		start_date,
+		finsih_date,
+		user_message,
+		mentor_message,
+		sequence,
+		is_active,
+		created_by,
+		created_date,
+		modified_by,
+		modified_date,
+		is_deleted,
+		material,
+		user_score
+	FROM transaction.v_t_user_class_quran_schedule
+	%s
+	`
 	_insertUserClassQuran = `
 		INSERT INTO transaction.transact_user_class_quran
 		(
@@ -310,12 +337,81 @@ const (
 		VALUES(
 			$1,
 			$2,
+			'',
 			$3,
 			$4,
 			$5,
-			$6,
-			$7
+			$6
 		) returning code
+	`
+	_insertUserClassQuranDetail = `
+		INSERT INTO transaction.transact_user_class_quran_detail
+		(
+			user_class_code,
+			package_code,
+			created_by,
+			created_date,
+			modified_by,
+			modified_date
+		)
+		VALUES(
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6
+		) returning code
+	`
+	_insertUserClassQuranSchedule = `
+		INSERT INTO transaction.transact_user_class_quran_schedule
+		(
+			user_class_detail_code,
+			start_date,
+			finsih_date,
+			mentor_message,
+			"sequence",
+			created_by,
+			created_date,
+			modified_by,
+			modified_date,
+			material
+		)
+		VALUES(
+			$1,
+			$2,
+			$3,
+			$4,
+			(SELECT max(sequence)+1 FROM transaction.transact_user_class_quran_schedule WHERE user_class_detail_code=$1)
+			$5,
+			$6,
+			$7,
+			$8,
+			$9
+		) returning code
+	`
+	_updateUserClassQuranSchedule = `
+		UPDATE
+			transaction.transact_user_class_quran_schedule
+		SET
+			start_date=$1,
+			finsih_date=$2,
+			mentor_message=$3,
+			material=$4,
+			modified_by=$5,
+			modified_date=$6
+		WHERE
+			code=$7
+	`
+	_updateUserClassProgress = `
+		UPDATE
+			transaction.transact_user_class_quran_detail
+		SET
+			is_completed=true,
+			modified_by=$1,
+			modified_date=$2
+		WHERE
+			code=$3
 	`
 )
 
@@ -333,12 +429,20 @@ type UserClassRepository interface {
 	UpdateUserClass(userClass model.UserClass) (model.UserClass, bool, error)
 
 	UpdateUserClassExpired(userClass model.UserClass) (bool, error)
-	UpdateUserClassProgress(userClass model.UserClass) (bool, error)
 	UpdateUserClassTest(userClass model.UserClass, types string) (bool, error)
 
-	GetAllUserClassQuran(filter string) ([]shape.UserClass, error)
+	//------------------------------------------------------------------------
+
 	GetAllUserClassQuranCount(filter string) (int, error)
-	InsertUserClassQuran(userClass model.UserClass) (model.UserClass, bool, error)
+	GetAllUserClassQuran(filter string) (*[]model.UserClassQuran, error)
+	GetAllUserClassQuranDetail(filter string) (*[]model.UserClassQuranDetail, error)
+	GetAllUserClassQuranSchedule(filter string) (*[]model.UserClassQuranSchedule, error)
+
+	InsertUserClassQuran(userClass model.UserClassQuran) (model.UserClassQuran, bool, error)
+	InsertUserClassQuranDetail(userClass model.UserClassQuran) (model.UserClassQuran, bool, error)
+	InsertUserClassQuranSchedule(userClass model.UserClassQuranSchedule) (model.UserClassQuranSchedule, bool, error)
+	UpdateUserClassQuranSchedule(userClass model.UserClassQuranSchedule) (bool, error)
+	UpdateUserClassQuranProgress(userClass model.UserClassQuran) (bool, error)
 
 	CheckAllUserClassExpired() ([]model.UserClass, error)
 	CheckAllUserClassBeforeExpired(interval model.TimeInterval) ([]model.UserClass, error)
@@ -549,76 +653,16 @@ func (userClassRepository *userClassRepository) GetAllUserClassCount(filter, fil
 	return count, sqlError
 }
 
-func (userClassRepository *userClassRepository) GetAllUserClassQuran(filter string) ([]shape.UserClass, error) {
-	var userClassList []shape.UserClass
+func (r *userClassRepository) GetAllUserClassQuran(filter string) (*[]model.UserClassQuran, error) {
+	var result []model.UserClassQuran
 	query := fmt.Sprintf(_getAllUserClassQuran, filter)
 
-	rows, sqlError := userClassRepository.db.Query(query)
-
-	if sqlError != nil {
-		utils.PushLogf("SQL error on GetAllUserClassQuran => ", sqlError.Error())
-	} else {
-		defer rows.Close()
-		for rows.Next() {
-			var id int
-			var createdDate time.Time
-			var isActive, is_deleted bool
-			var modifiedDate sql.NullTime
-			var classInitial, classDescription, classImage, modifiedBy, colorPath sql.NullString
-			var packageCode, packageType, classCode, className, classCategory, createdBy,
-				code, userCode string
-
-			sqlError := rows.Scan(
-				&id,
-				&code,
-				&userCode,
-				&classCode,
-				&className,
-				&classInitial,
-				&classCategory,
-				&classDescription,
-				&classImage,
-				&colorPath,
-				&packageCode,
-				&packageType,
-				&isActive,
-				&createdBy,
-				&createdDate,
-				&modifiedBy,
-				&modifiedDate,
-				&is_deleted,
-			)
-
-			if sqlError != nil {
-				utils.PushLogf("SQL error on GetAllUserClassQuran => ", sqlError.Error())
-			} else {
-				userClassList = append(
-					userClassList,
-					shape.UserClass{
-						ID:                id,
-						Code:              code,
-						User_Code:         userCode,
-						Class_Code:        classCode,
-						Class_Name:        className,
-						Class_Initial:     classInitial.String,
-						Class_Category:    classCategory,
-						Class_Description: classDescription.String,
-						Class_Image:       classImage.String,
-						Color_Path:        colorPath.String,
-						Package_Code:      packageCode,
-						Package_Type:      packageType,
-						Is_Active:         isActive,
-						Created_By:        createdBy,
-						Created_Date:      createdDate,
-						Modified_By:       modifiedBy.String,
-						Modified_Date:     modifiedDate.Time,
-						Is_Deleted:        is_deleted,
-					},
-				)
-			}
-		}
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "userClassRepository.GetAllUserClassQuran :  error get")
 	}
-	return userClassList, sqlError
+
+	return &result, nil
 }
 
 func (userClassRepository *userClassRepository) GetAllUserClassQuranCount(filter string) (int, error) {
@@ -632,6 +676,30 @@ func (userClassRepository *userClassRepository) GetAllUserClassQuranCount(filter
 		count = 0
 	}
 	return count, sqlError
+}
+
+func (r *userClassRepository) GetAllUserClassQuranDetail(filter string) (*[]model.UserClassQuranDetail, error) {
+	var result []model.UserClassQuranDetail
+	query := fmt.Sprintf(_getAllUserClassQuranDetail, filter)
+
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "userClassRepository.GetAllUserClassQuranDetail :  error get")
+	}
+
+	return &result, nil
+}
+
+func (r *userClassRepository) GetAllUserClassQuranSchedule(filter string) (*[]model.UserClassQuranSchedule, error) {
+	var result []model.UserClassQuranSchedule
+	query := fmt.Sprintf(_getAllUserClassQuranSchedule, filter)
+
+	err := r.db.Select(&result, query)
+	if err != nil {
+		return nil, utils.WrapError(err, "userClassRepository.GetAllUserClassQuranSchedule :  error get")
+	}
+
+	return &result, nil
 }
 
 func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (model.UserClass, bool, error) {
@@ -667,9 +735,9 @@ func (r *userClassRepository) InsertUserClass(userClass model.UserClass) (model.
 	return userClassRow, err == nil, nil
 }
 
-func (r *userClassRepository) InsertUserClassQuran(userClass model.UserClass) (model.UserClass, bool, error) {
+func (r *userClassRepository) InsertUserClassQuran(userClass model.UserClassQuran) (model.UserClassQuran, bool, error) {
 	var code string
-	var userClassRow model.UserClass
+	var userClassRow model.UserClassQuran
 
 	tx, err := r.db.Beginx()
 	if err != nil {
@@ -679,11 +747,10 @@ func (r *userClassRepository) InsertUserClassQuran(userClass model.UserClass) (m
 	err = tx.QueryRow(_insertUserClassQuran,
 		userClass.UserCode,
 		userClass.ClassCode,
-		userClass.PackageCode,
 		userClass.CreatedBy,
 		userClass.CreatedDate,
-		userClass.ModifiedBy.String,
-		userClass.ModifiedDate.Time,
+		userClass.CreatedBy,
+		userClass.CreatedDate,
 	).Scan(&code)
 
 	if err != nil {
@@ -691,10 +758,116 @@ func (r *userClassRepository) InsertUserClassQuran(userClass model.UserClass) (m
 		return userClassRow, false, utils.WrapError(err, "userClassRepository: InsertUserClassQuran: error insert")
 	}
 
-	userClassRow = model.UserClass{Code: code}
+	userClassRow = model.UserClassQuran{Code: code}
 
 	tx.Commit()
 	return userClassRow, err == nil, nil
+}
+
+func (r *userClassRepository) InsertUserClassQuranDetail(userClass model.UserClassQuran) (model.UserClassQuran, bool, error) {
+	var code string
+	var userClassRow model.UserClassQuran
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return userClassRow, false, errors.New("userClassRepository: InsertUserClassQuranDetail: error begin transaction")
+	}
+
+	err = tx.QueryRow(_insertUserClassQuranDetail,
+		userClass.Code,
+		userClass.PackageCode.String,
+		userClass.CreatedBy,
+		userClass.CreatedDate,
+		userClass.CreatedBy,
+		userClass.CreatedDate,
+	).Scan(&code)
+
+	if err != nil {
+		tx.Rollback()
+		return userClassRow, false, utils.WrapError(err, "userClassRepository: InsertUserClassQuranDetail: error insert")
+	}
+
+	userClassRow = model.UserClassQuran{Code: code}
+
+	tx.Commit()
+	return userClassRow, err == nil, nil
+}
+
+func (r *userClassRepository) InsertUserClassQuranSchedule(userClass model.UserClassQuranSchedule) (model.UserClassQuranSchedule, bool, error) {
+	var code string
+	var userClassRow model.UserClassQuranSchedule
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return userClassRow, false, errors.New("userClassRepository: InsertUserClassQuranSchedule: error begin transaction")
+	}
+
+	err = tx.QueryRow(_insertUserClassQuranSchedule,
+		userClass.UserClassDetailCode,
+		userClass.StartDate.Time,
+		userClass.FinishDate.Time,
+		userClass.MentorMessage.String,
+		userClass.CreatedBy,
+		userClass.CreatedDate,
+		userClass.CreatedBy,
+		userClass.CreatedDate,
+		userClass.Material.String,
+	).Scan(&code)
+
+	if err != nil {
+		tx.Rollback()
+		return userClassRow, false, utils.WrapError(err, "userClassRepository: InsertUserClassQuranSchedule: error insert")
+	}
+
+	userClassRow = model.UserClassQuranSchedule{Code: code}
+
+	tx.Commit()
+	return userClassRow, err == nil, nil
+}
+
+func (r *userClassRepository) UpdateUserClassQuranSchedule(userClass model.UserClassQuranSchedule) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: InsertUserClassQuranSchedule: error begin transaction")
+	}
+
+	_, err = tx.Exec(_updateUserClassQuranSchedule,
+		userClass.StartDate.Time,
+		userClass.FinishDate.Time,
+		userClass.MentorMessage.String,
+		userClass.Material.String,
+		userClass.ModifiedBy.String,
+		userClass.ModifiedDate.Time,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "userClassRepository: InsertUserClassQuranSchedule: error insert")
+	}
+
+	tx.Commit()
+	return err == nil, nil
+}
+
+func (r *userClassRepository) UpdateUserClassQuranProgress(userClass model.UserClassQuran) (bool, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return false, errors.New("userClassRepository: UpdateUserClassQuranProgress: error begin transaction")
+	}
+
+	_, err = tx.Exec(_updateUserClassProgress,
+		userClass.ModifiedBy.String,
+		userClass.ModifiedDate.Time,
+		userClass.Code,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return false, utils.WrapError(err, "userClassRepository: UpdateUserClassQuranProgress: error update")
+	}
+
+	tx.Commit()
+	return err == nil, nil
 }
 
 func (r *userClassRepository) UpdateUserClass(userClass model.UserClass) (model.UserClass, bool, error) {
@@ -744,33 +917,6 @@ func (r *userClassRepository) UpdateUserClassExpired(userClass model.UserClass) 
 	if err != nil {
 		tx.Rollback()
 		return false, utils.WrapError(err, "userClassRepository: UpdateUserClassExpired: error update")
-	}
-
-	tx.Commit()
-	return err == nil, nil
-}
-
-func (r *userClassRepository) UpdateUserClassProgress(userClass model.UserClass) (bool, error) {
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return false, errors.New("userClassRepository: UpdateUserClassProgress: error begin transaction")
-	}
-
-	_, err = tx.Exec(_updateUserClassProgress,
-		userClass.Progress.Float64,
-		userClass.Status,
-		userClass.ModifiedBy.String,
-		userClass.ModifiedDate.Time,
-		userClass.ProgressIndex.Int64,
-		userClass.ProgressSubindex.Int64,
-		userClass.ProgressCount.Int64,
-		userClass.Code,
-		userClass.UserCode,
-	)
-
-	if err != nil {
-		tx.Rollback()
-		return false, utils.WrapError(err, "userClassRepository: UpdateUserClassProgress: error update")
 	}
 
 	tx.Commit()

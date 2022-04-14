@@ -20,7 +20,6 @@ type UserClassHandler interface {
 	UserClass(ctx *gin.Context)
 	GetUserClass(ctx *gin.Context)
 	GetAllUserClass(ctx *gin.Context)
-	UpdateUserClassProgress(ctx *gin.Context)
 }
 
 func InitUserClassHandler(userClassUsecase usecase.UserClassUsecase) UserClassHandler {
@@ -30,11 +29,21 @@ func InitUserClassHandler(userClassUsecase usecase.UserClassUsecase) UserClassHa
 }
 
 func (h *userClassHandler) UserClass(ctx *gin.Context) {
-	var request model.UserClassRequest
+	var request model.UserClassQuranRequest
 	if err := ctx.ShouldBindJSON(&request); err == nil {
 		switch strings.ToUpper(request.Action) {
 		case utils.GET_ALL_USER_CLASS_QURAN:
 			h.getAllUserClassQuran(ctx, request)
+		case utils.GET_ALL_USER_CLASS_DETAIL_QURAN:
+			h.getAllUserClassDetailQuran(ctx, request)
+		case utils.GET_ALL_USER_CLASS_SCHEDULE_QURAN:
+			h.getAllUserClassScheduleQuran(ctx, request)
+		case utils.UPDATE_USER_CLASS_QURAN_PROGRESS:
+			h.updateUserClassQuranProgress(ctx, request)
+		case utils.INSERT_USER_CLASS_QURAN_SCHEDULE:
+			h.insertUserClassQuranSchedule(ctx, request)
+		case utils.UPDATE_USER_CLASS_QURAN_SCHEDULE:
+			h.updateUserClassQuranSchedule(ctx, request)
 		default:
 			utils.NotFoundActionResponse(ctx, request.Action)
 		}
@@ -52,7 +61,7 @@ func (h *userClassHandler) UserClass(ctx *gin.Context) {
 	}
 }
 
-func (h *userClassHandler) getAllUserClassQuran(ctx *gin.Context, r model.UserClassRequest) {
+func (h *userClassHandler) getAllUserClassQuran(ctx *gin.Context, r model.UserClassQuranRequest) {
 	result, count, err := h.userClassUsecase.GetAllUserClassQuran(ctx, r)
 	if err != nil {
 		utils.PushLogStackTrace("", utils.UnwrapError(err))
@@ -61,6 +70,43 @@ func (h *userClassHandler) getAllUserClassQuran(ctx *gin.Context, r model.UserCl
 	}
 
 	utils.Response(ctx, result, count, "", nil)
+}
+
+func (h *userClassHandler) getAllUserClassDetailQuran(ctx *gin.Context, r model.UserClassQuranRequest) {
+	result, count, err := h.userClassUsecase.GetAllUserClassQuranDetail(ctx, r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, "", err)
+		return
+	}
+
+	utils.Response(ctx, result, count, "", nil)
+}
+
+func (h *userClassHandler) getAllUserClassScheduleQuran(ctx *gin.Context, r model.UserClassQuranRequest) {
+	result, count, err := h.userClassUsecase.GetAllUserClassQuranSchedule(ctx, r)
+	if err != nil {
+		utils.PushLogStackTrace("", utils.UnwrapError(err))
+		utils.Response(ctx, struct{}{}, 0, "", err)
+		return
+	}
+
+	utils.Response(ctx, result, count, "", nil)
+}
+
+func (h *userClassHandler) updateUserClassQuranProgress(ctx *gin.Context, r model.UserClassQuranRequest) {
+	result, err := h.userClassUsecase.UpdateUserClassQuranProgress(ctx, r)
+	utils.Response(ctx, result, 1, "", err)
+}
+
+func (h *userClassHandler) insertUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) {
+	result, err := h.userClassUsecase.InsertUserClassQuranSchedule(ctx, r)
+	utils.Response(ctx, result, 1, "", err)
+}
+
+func (h *userClassHandler) updateUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) {
+	result, err := h.userClassUsecase.UpdateUserClassQuranSchedule(ctx, r)
+	utils.Response(ctx, result, 1, "", err)
 }
 
 func (userClassHandler *userClassHandler) GetUserClass(ctx *gin.Context) {
@@ -133,30 +179,5 @@ func (userClassHandler *userClassHandler) GetAllUserClass(ctx *gin.Context) {
 
 	} else {
 		utils.PushLogf("err", err)
-	}
-}
-
-func (userClassHandler *userClassHandler) UpdateUserClassProgress(ctx *gin.Context) {
-	var userClass shape.UserClassPost
-	var email string
-	for _, value := range ctx.Request.Header["Email"] {
-		email = value
-		break
-	}
-	if err := ctx.ShouldBindJSON(&userClass); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	}
-
-	result, err := userClassHandler.userClassUsecase.UpdateUserClassProgress(userClass, email)
-	if err == nil {
-		ctx.JSON(http.StatusOK, gin.H{
-			"result": result,
-			"error":  "",
-		})
-	} else {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"result": result,
-			"error":  err.Error(),
-		})
 	}
 }

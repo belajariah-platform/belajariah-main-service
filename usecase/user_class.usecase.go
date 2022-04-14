@@ -33,9 +33,13 @@ type UserClassUsecase interface {
 	GetUserClass(code string, userObj model.UserHeader) (shape.UserClass, error)
 	GetAllUserClass(query model.Query, userObj model.UserHeader) ([]shape.UserClass, int, error)
 
-	GetAllUserClassQuran(ctx *gin.Context, r model.UserClassRequest) ([]shape.UserClass, int, error)
+	GetAllUserClassQuran(ctx *gin.Context, r model.UserClassQuranRequest) ([]model.UserClassQuran, int, error)
+	GetAllUserClassQuranDetail(ctx *gin.Context, r model.UserClassQuranRequest) ([]model.UserClassQuranDetail, int, error)
+	GetAllUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) ([]model.UserClassQuranSchedule, int, error)
 
-	UpdateUserClassProgress(userClass shape.UserClassPost, email string) (bool, error)
+	UpdateUserClassQuranProgress(ctx *gin.Context, r model.UserClassQuranRequest) (bool, error)
+	UpdateUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) (bool, error)
+	InsertUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) (bool, error)
 }
 
 func InitUserClassUsecase(sytemConfig *model.Config, emailUsecase EmailUsecase, userRepository repository.UserRepository, enumRepository repository.EnumRepository, promotionRepository repository.PromotionRepository, userClassRepository repository.UserClassRepository, notificationRepository repository.NotificationRepository) UserClassUsecase {
@@ -163,7 +167,7 @@ func (u *userClassUsecase) GetAllUserClass(query model.Query, userObj model.User
 	return userClassResult, count, err
 }
 
-func (u *userClassUsecase) GetAllUserClassQuran(ctx *gin.Context, r model.UserClassRequest) ([]shape.UserClass, int, error) {
+func (u *userClassUsecase) GetAllUserClassQuran(ctx *gin.Context, r model.UserClassQuranRequest) ([]model.UserClassQuran, int, error) {
 	email := ctx.Request.Header.Get("email")
 
 	users, err := u.userRepository.GetUserInfo(email)
@@ -181,41 +185,85 @@ func (u *userClassUsecase) GetAllUserClassQuran(ctx *gin.Context, r model.UserCl
 		return nil, 0, utils.WrapError(err, "userClassUsecase.GetAllUserClassQuran")
 	}
 
-	userClassEmpty := make([]shape.UserClass, 0)
-	if len(result) == 0 {
+	userClassEmpty := make([]model.UserClassQuran, 0)
+	if len(*result) == 0 {
 		return userClassEmpty, 0, err
 	}
 
-	return result, len(result), nil
+	return *result, len(*result), nil
 }
 
-func (userClassUsecase *userClassUsecase) UpdateUserClassProgress(userClass shape.UserClassPost, email string) (bool, error) {
+func (u *userClassUsecase) GetAllUserClassQuranDetail(ctx *gin.Context, r model.UserClassQuranRequest) ([]model.UserClassQuranDetail, int, error) {
+	var orderDefault = "ORDER BY code asc"
+	var filterDefault = fmt.Sprintf("is_deleted = false and is_active = true")
 
-	dataUserClass := model.UserClass{
-		ID:       userClass.ID,
-		UserCode: userClass.User_Code,
-		Status:   userClass.Status,
-		Progress: sql.NullFloat64{
-			Float64: userClass.Progress,
-		},
-		ProgressCount: sql.NullInt64{
-			Int64: userClass.Progress_Count,
-		},
-		ProgressIndex: sql.NullInt64{
-			Int64: userClass.Progress_Index,
-		},
-		ProgressSubindex: sql.NullInt64{
-			Int64: userClass.Progress_Subindex,
-		},
-		ModifiedBy: sql.NullString{
-			String: email,
-		},
-		ModifiedDate: sql.NullTime{
-			Time: time.Now(),
-		},
+	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
+
+	result, err := u.userClassRepository.GetAllUserClassQuranDetail(filterFinal)
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "userClassUsecase.GetAllUserClassQuranDetail")
 	}
 
-	result, err := userClassUsecase.userClassRepository.UpdateUserClassProgress(dataUserClass)
+	userClassEmpty := make([]model.UserClassQuranDetail, 0)
+	if len(*result) == 0 {
+		return userClassEmpty, 0, err
+	}
+
+	return *result, len(*result), nil
+}
+
+func (u *userClassUsecase) GetAllUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) ([]model.UserClassQuranSchedule, int, error) {
+	var orderDefault = "ORDER BY code asc"
+	var filterDefault = fmt.Sprintf("is_deleted = false and is_active = true")
+
+	filterFinal := utils.GetFilterOrderHandler(filterDefault, orderDefault, r.Query)
+
+	result, err := u.userClassRepository.GetAllUserClassQuranSchedule(filterFinal)
+	if err != nil {
+		return nil, 0, utils.WrapError(err, "userClassUsecase.GetAllUserClassQuranSchedule")
+	}
+
+	userClassEmpty := make([]model.UserClassQuranSchedule, 0)
+	if len(*result) == 0 {
+		return userClassEmpty, 0, err
+	}
+
+	return *result, len(*result), nil
+}
+
+func (u *userClassUsecase) InsertUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) (bool, error) {
+	email := ctx.Request.Header.Get("email")
+
+	r.DataSchedule.CreatedBy = email
+	r.DataSchedule.CreatedDate = time.Now()
+	_, result, err := u.userClassRepository.InsertUserClassQuranSchedule(r.DataSchedule)
+	if err != nil {
+		return false, utils.WrapError(err, "userClassUsecase.InsertUserClassQuranSchedule")
+	}
+
+	return result, nil
+}
+
+func (u *userClassUsecase) UpdateUserClassQuranSchedule(ctx *gin.Context, r model.UserClassQuranRequest) (bool, error) {
+	email := ctx.Request.Header.Get("email")
+
+	r.DataSchedule.ModifiedBy.String = email
+	r.DataSchedule.ModifiedDate.Time = time.Now()
+	result, err := u.userClassRepository.UpdateUserClassQuranSchedule(r.DataSchedule)
+	if err != nil {
+		return false, utils.WrapError(err, "userClassUsecase.UpdateUserClassQuranSchedule")
+	}
+
+	return result, nil
+}
+
+func (userClassUsecase *userClassUsecase) UpdateUserClassQuranProgress(ctx *gin.Context, r model.UserClassQuranRequest) (bool, error) {
+	email := ctx.Request.Header.Get("email")
+
+	r.Data.ModifiedBy.String = email
+	r.Data.ModifiedDate.Time = time.Now()
+
+	result, err := userClassUsecase.userClassRepository.UpdateUserClassQuranProgress(r.Data)
 	if err != nil {
 		return false, utils.WrapError(err, "userClassUsecase.userClassRepository.UpdateUserClassProgress : ")
 	}

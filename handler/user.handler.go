@@ -4,6 +4,7 @@ import (
 	"belajariah-main-service/shape"
 	"belajariah-main-service/usecase"
 	"belajariah-main-service/utils"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -79,6 +80,7 @@ func (userHandler *userHandler) GoogleLogin(ctx *gin.Context) {
 	var loginJSON shape.Users
 	var userInfo shape.UserInfo
 
+	fmt.Println("masuk")
 	if err := ctx.ShouldBindJSON(&loginJSON); err == nil {
 		userInfo, result, err = userHandler.userUsecase.GoogleLogin(loginJSON)
 		if err == nil && userInfo != (shape.UserInfo{}) {

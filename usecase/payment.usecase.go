@@ -798,8 +798,9 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 	var result bool
 	var email string
 	var enum model.Enum
-	var class []shape.UserClass
-	var statusCode, paymentType, emailType string
+	var class *[]model.UserClassQuran
+	var classRow model.UserClassQuran
+	var statusCode, paymentType, emailType, userClassCode string
 
 	var filter = fmt.Sprintf(`WHERE is_deleted=false AND user_code='%s' AND class_code='%s'`,
 		payment.User_Code,
@@ -818,17 +819,17 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 		paymentType = "Completed|Complete|Lunas"
 		emailType = "Payment Success"
 
-		dataUserClass := model.UserClass{
-			StatusCode:   statusCode,
-			UserCode:     payment.User_Code,
-			ClassCode:    payment.Class_Code,
-			PackageCode:  payment.Package_Code,
-			StartDate:    sql.NullTime{Time: time.Now()},
-			PromoCode:    sql.NullString{String: payment.Promo_Code},
-			CreatedBy:    email,
-			CreatedDate:  time.Now(),
-			ModifiedBy:   sql.NullString{String: email},
-			ModifiedDate: sql.NullTime{Time: time.Now()},
+		dataUserClass := model.UserClassQuran{
+			UserCode:  payment.User_Code,
+			ClassCode: payment.Class_Code,
+			PackageCode: model.NullString{
+				NullString: sql.NullString{
+					String: payment.Package_Code,
+					Valid:  true,
+				},
+			},
+			CreatedBy:   email,
+			CreatedDate: time.Now(),
 		}
 
 		class, err = paymentUsecase.userClassRepository.GetAllUserClassQuran(filter)
@@ -836,12 +837,24 @@ func (paymentUsecase *paymentUsecase) ConfirmPaymentQuran(ctx *gin.Context, paym
 			return false, utils.WrapError(err, "paymentUsecase.userClassRepository.GetUserClassQuran : ")
 		}
 
-		if len(class) == 0 {
-			_, result, err = paymentUsecase.userClassRepository.InsertUserClassQuran(dataUserClass)
+		if len(*class) == 0 {
+			classRow, result, err = paymentUsecase.userClassRepository.InsertUserClassQuran(dataUserClass)
 			if err != nil {
 				return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClassQuran : PaymentClassQuran ")
 			}
+			userClassCode = classRow.Code
+		} else {
+			for _, cl := range *class {
+				userClassCode = cl.Code
+			}
 		}
+
+		dataUserClass.Code = userClassCode
+		_, result, err = paymentUsecase.userClassRepository.InsertUserClassQuranDetail(dataUserClass)
+		if err != nil {
+			return false, utils.WrapError(err, "paymentUsecase.userClassRepository.InsertUserClassQuranDetail : PaymentClassQuran ")
+		}
+
 	case "rejected":
 		email = ctx.Request.Header.Get("email")
 		statusCode = status.RejectStatus.String

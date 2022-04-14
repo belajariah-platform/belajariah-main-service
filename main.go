@@ -213,7 +213,6 @@ func main() {
 	router.POST("/user_class", userClassHandler.UserClass)
 	router.GET("/user_class", userClassHandler.GetAllUserClass)
 	router.GET("/user_class/detail/:code", userClassHandler.GetUserClass)
-	router.PUT("/user_class/progress", userClassHandler.UpdateUserClassProgress)
 
 	// router-consultation
 	router.GET("/consultations", consultationHandler.GetAllConsultation)
