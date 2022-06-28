@@ -101,14 +101,14 @@ func (u *promotionUsecase) ClaimPromotion(ctx *gin.Context, r model.PromotionReq
 		)
 	} else {
 		filterDefault = fmt.Sprintf(`WHERE is_deleted=false AND is_active=true 
-			AND class_code='%s' AND package_code like '%%%s%%' AND (code = '%s' OR promo_code = '%s') LIMIT 1`,
+			AND class_code='%s' AND package_code ilike '%%%s%%' AND (code = '%s' OR promo_code = '%s') LIMIT 1`,
 			r.Data.ClassCode,
 			strings.ToLower(r.Data.PackageCode),
 			r.Data.Code,
 			r.Data.PromoCode,
 		)
 	}
-
+	
 	var filterPayment = fmt.Sprintf(`AND promo_code ='%s' AND status_payment in 
 		('Waiting for Payment', 'Has been Payment', 'Completed')`,
 		r.Data.PromoCode,
