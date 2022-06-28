@@ -12,7 +12,9 @@ type PromotionRequest struct {
 type Promotion struct {
 	ID            int       `form:"id" json:"id" xml:"id" db:"id"`
 	Code          string    `form:"code" json:"code" xml:"code" db:"code"`
+	PromoLevel    string    `form:"promo_level" json:"promo_level" xml:"promo_level" db:"promo_level"`
 	ClassCode     string    `form:"class_code" json:"class_code" xml:"class_code" db:"class_code"`
+	PackageCode   string    `form:"package_code" json:"package_code" xml:"package_code" db:"package_code"`
 	Title         string    `form:"title" json:"title" xml:"title" db:"title"`
 	Description   string    `form:"description" json:"description" xml:"description" db:"description"`
 	PromoCode     string    `form:"promo_code" json:"promo_code" xml:"promo_code" db:"promo_code"`

@@ -5,6 +5,7 @@ import (
 	"belajariah-main-service/repository"
 	"belajariah-main-service/utils"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -76,7 +77,7 @@ func (u *promotionUsecase) GetAllPromotionHeader(r model.PromotionRequest) ([]mo
 }
 
 func (u *promotionUsecase) ClaimPromotion(ctx *gin.Context, r model.PromotionRequest) (model.Promotion, string, error) {
-	var message string
+	var message, filterDefault string
 	var result model.Promotion
 
 	email := ctx.Request.Header.Get("email")
@@ -91,12 +92,22 @@ func (u *promotionUsecase) ClaimPromotion(ctx *gin.Context, r model.PromotionReq
 		r.Data.ClassCode,
 	)
 
-	var filterDefault = fmt.Sprintf(`WHERE is_deleted=false AND is_active=true 
-		AND class_code='%s' AND (code = '%s' OR promo_code = '%s') LIMIT 1`,
-		r.Data.ClassCode,
-		r.Data.Code,
-		r.Data.PromoCode,
-	)
+	if r.Data.PromoLevel == "detail" {
+		 filterDefault = fmt.Sprintf(`WHERE is_deleted=false AND is_active=true 
+			AND class_code='%s' AND (code = '%s' OR promo_code = '%s') LIMIT 1`,
+			r.Data.ClassCode,
+			r.Data.Code,
+			r.Data.PromoCode,
+		)
+	} else {
+		filterDefault = fmt.Sprintf(`WHERE is_deleted=false AND is_active=true 
+			AND class_code='%s' AND package_code like '%%%s%%' AND (code = '%s' OR promo_code = '%s') LIMIT 1`,
+			r.Data.ClassCode,
+			strings.ToLower(r.Data.PackageCode),
+			r.Data.Code,
+			r.Data.PromoCode,
+		)
+	}
 
 	var filterPayment = fmt.Sprintf(`AND promo_code ='%s' AND status_payment in 
 		('Waiting for Payment', 'Has been Payment', 'Completed')`,
